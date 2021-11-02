@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ofxBlendScreen.h"
 #include "ofxEditorFrame.h"
 #include "ofxMapperMesh.h"
 #include "ofxMapperSelector.h"
@@ -34,8 +33,7 @@ private:
 class MeshPicker
 {
 public:
-	MeshPicker(ofx::mapper::Mesh &mesh);
-	virtual ~MeshPicker();
+	void setMesh(std::shared_ptr<ofx::mapper::Mesh> mesh);
 	
 	void setSelectable(std::initializer_list<std::pair<int,int>> selectables);
 	
@@ -52,35 +50,8 @@ public:
 	std::vector<glm::ivec2> getSelected();
 	
 private:
-	ofx::mapper::Mesh &mesh_;
+	std::shared_ptr<ofx::mapper::Mesh> mesh_;
 	PointPick picker_;
 	Mode mode_;
 	ofx::mapper::Selector hover_, selection_, selectable_;
-};
-
-class BlendingEditor : public ofxEditorFrame
-{
-public:
-	virtual ~BlendingEditor();
-	using FrameID = std::size_t;
-	FrameID addFrame(const ofRectangle &rect, glm::vec2 h_range={0,1}, glm::vec2 v_range={0,1}, const ofxBlendScreen::Quad &uv={1,1});
-	void removeFrame(FrameID identifier);
-	void clear();
-	ofMesh getResult() const;
-	ofMesh getResult(FrameID identifier) const;
-	
-	std::vector<ofx::mapper::Mesh::PointRef> getHover();
-	std::vector<ofx::mapper::Mesh::PointRef> getSelected();
-	std::vector<ofx::mapper::Mesh::PointRef> getHover() const;
-	std::vector<ofx::mapper::Mesh::PointRef> getSelected() const;
-	
-private:
-	struct Frame {
-		ofxBlendScreen::Quad vertex_frame;
-		ofxBlendScreen::Quad texture_uv_for_frame;
-		ofx::mapper::Mesh points;
-		MeshPicker picker;
-		Frame():picker(points){}
-	};
-	std::unordered_map<FrameID, std::shared_ptr<Frame>> frame_;
 };
