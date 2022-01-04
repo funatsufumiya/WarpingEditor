@@ -15,7 +15,7 @@ std::shared_ptr<MeshType> WarpingEditor::getMeshType(const Data::Mesh &data) con
 }
 
 template<>
-void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
+void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world) const
 {
 	auto &mesh = *data.mesh;
 	for(int r = 0; r <= mesh.getNumRows(); ++r) {
@@ -26,24 +26,11 @@ void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(cons
 }
 
 template<>
-std::pair<std::weak_ptr<MeshType>, IndexType> WarpingEditor::getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2)
+bool WarpingEditor::isEditablePoint(const Data::Mesh &data, IndexType index) const
 {
-	std::pair<std::weak_ptr<MeshType>, IndexType> ret;
-	distance2 = std::numeric_limits<float>::max();
-	auto p = getIn(pos);
-	auto &mesh = *data->mesh;
-	for(int r = 0; r <= mesh.getNumRows(); ++r) {
-		for(int c = 0; c <= mesh.getNumCols(); ++c) {
-			float d2 = glm::distance2(glm::vec2(*mesh.getPoint(c, r).v), p);
-			if(d2 < distance2) {
-				decltype(ret) tmp{data->mesh, {c,r}};
-				swap(ret, tmp);
-				distance2 = d2;
-			}
-		}
-	}
-	return ret;
+	return data.interpolator->isSelected(index.first, index.second);
 }
+
 template<>
 std::shared_ptr<MeshType> WarpingEditor::getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance)
 {

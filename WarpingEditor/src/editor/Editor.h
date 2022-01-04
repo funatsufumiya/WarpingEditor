@@ -52,20 +52,22 @@ private:
 	
 	std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const;
 	
+	bool isEditableMesh(const Data::Mesh &data) const { return true; }
+	bool isEditablePoint(const Data::Mesh &data, IndexType index) const;
 	bool isHoveredMesh(const Data::Mesh &data) const;
 	bool isHoveredPoint(const Data::Mesh &data, IndexType index) const;
 	bool isSelectedMesh(const Data::Mesh &data) const;
 	bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
 	
 	void forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const;
-	void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const;
+	void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world=true) const;
 	
 	ofMesh makeMeshFromMesh(const Data::Mesh &mesh, const ofColor &color) const;
 	ofMesh makeWireFromMesh(const Data::Mesh &mesh, const ofColor &color) const;
 	ofMesh makeMeshFromPoint(const PointType &point, const ofColor &color, float point_size) const;
 	ofMesh makeBackground() const { return ofMesh(); }
 
-	std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2);
+	std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
 	std::shared_ptr<MeshType> getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance);
 };
 
@@ -171,7 +173,6 @@ void Editor<MeshType, IndexType, PointType>::update()
 	auto &&meshes = data.getMesh();
 	mouse_.update();
 	if(mouse_.isFrameNew()) {
-		glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
 		auto proc = [&]() {
 			if(mouse_.isReleased(OF_MOUSE_BUTTON_LEFT)) {
 			}
@@ -235,6 +236,9 @@ void Editor<MeshType, IndexType, PointType>::draw() const
 		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 		forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
 			forEachPoint(*m, [&](const PointType &point, IndexType i) {
+				if(!isEditablePoint(*m, i)) {
+					return;
+				}
 				if(isSelectedPoint(*m, i)) {
 					mesh.append(makeMeshFromPoint(point, ofColor::white, point_size));
 				}
@@ -250,6 +254,25 @@ void Editor<MeshType, IndexType, PointType>::draw() const
 	popMatrix();
 }
 
+template<typename MeshType, typename IndexType, typename PointType>
+std::pair<std::weak_ptr<MeshType>, IndexType> Editor<MeshType, IndexType, PointType>::getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable)
+{
+	std::pair<std::weak_ptr<MeshType>, IndexType> ret;
+	distance2 = std::numeric_limits<float>::max();
+	auto p = getIn(pos);
+	forEachPoint(*data, [&](const PointType &point, IndexType index) {
+		if(filter_by_if_editable && !isEditablePoint(*data, index)) {
+			return;
+		}
+		float d2 = glm::distance2(point, p);
+		if(d2 < distance2) {
+			decltype(ret) tmp{getMeshType(*data), index};
+			swap(ret, tmp);
+			distance2 = d2;
+		}
+	});
+	return ret;
+}
 
 template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexType, PointType>::getHover(const glm::vec2 &screen_pos)
@@ -261,6 +284,9 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 	
 	float max_distance = std::numeric_limits<float>::max();
 	for(auto &&m : meshes) {
+		if(!isEditableMesh(*m.second)) {
+			continue;
+		}
 		const float threshold = pow(10/getScale(), 2);
 		float distance;
 		auto nearest = getNearestPoint(m.second, mouse_.pos, distance);

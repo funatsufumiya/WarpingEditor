@@ -18,6 +18,8 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+	auto &data = Data::shared();
+	data.update();
 	switch(state_) {
 		case EDIT_UV:
 			uv_.setRegion(ofGetCurrentViewport());
