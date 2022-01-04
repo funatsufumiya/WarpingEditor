@@ -67,7 +67,7 @@ void ImGui::ImageWithUVOverlapped(ImTextureID user_texture_id, const ImVec2& uv_
 	, p3 = ImLerp(bb.Min, bb.Max, uv_c)
 	, p4 = ImLerp(bb.Min, bb.Max, uv_d);
 	window->DrawList->AddImageQuad(user_texture_id, p1, p2, p3, p4, uv_a, uv_b, uv_c, uv_d, GetColorU32(overlap_tint_col));
-	window->DrawList->AddQuad(p1, p2, p3, p4, GetColorU32(overlap_border_col), 0.0f);
+	window->DrawList->AddQuad(p1, p2, p3, p4, GetColorU32(overlap_border_col), 1.0f);
 }
 
 bool ImGui::Drag2DButton(const char* label, ImVec2 &value, const ImVec2 &step, const char *value_format, const ImVec2& size) {
