@@ -45,40 +45,12 @@ public:
 			interpolator->update();
 		}
 	};
-	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data") {
-		std::string n = name;
-		int index=0;
-		auto m = std::make_shared<Mesh>();
-		while(!add(n, m)) {
-			n = name+ofToString(index++);
-		}
-		m->init({0,0,640, 480});
-		return std::make_pair(n, m);
-	}
-	void update() {
-		std::for_each(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
-			m.second->update();
-		});
-	}
-	bool remove(const std::string &name) {
-		auto found = mesh_.find(name);
-		if(found == std::end(mesh_)) {
-			return false;
-		}
-		mesh_.erase(found);
-		return true;
-	}
-	bool remove(const std::shared_ptr<Mesh> mesh) {
-		auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
-			return m.second == mesh;
-		});
-		if(found == std::end(mesh_)) {
-			return false;
-		}
-		mesh_.erase(found);
-		return true;
-	}
+	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data");
+	void update();
+	bool remove(const std::string &name);
+	bool remove(const std::shared_ptr<Mesh> mesh);
 	std::map<std::string, std::shared_ptr<Mesh>>& getMesh() { return mesh_; }
+	std::shared_ptr<Mesh> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
 private:
 	std::map<std::string, std::shared_ptr<Mesh>> mesh_;
 	bool add(const std::string &name, std::shared_ptr<Mesh> mesh) {

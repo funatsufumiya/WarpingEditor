@@ -10,13 +10,16 @@ class Editor : public ofxEditorFrame
 {
 public:
 	void setup();
-	void update();
+	virtual void update();
 	void setTexture(ofTexture tex) { tex_ = tex; }
-	void draw() const;
+	virtual void draw() const;
 	
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
-private:
+	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
+protected:
 	ofTexture tex_;
+	bool is_enabled_hovering_uneditable_point_=false;
+	float mouse_near_distance_ = 10;
 	class MouseEvent : public ofxEditorFrame::MouseEventArg {
 	public:
 		bool isFrameNew() const { return is_frame_new_; }
@@ -44,31 +47,35 @@ private:
 	bool isOpAlt() const;
 	bool isOpDefault() const;
 	
-	OpHover getHover(const glm::vec2 &screen_pos);
-	OpSelection updateGrab(const OpSelection &selection, const OpHover &hover);
+	void drawMesh() const;
+	void drawWire() const;
+	void drawPoint(bool only_editable_point) const;
+	
+	OpHover getHover(const glm::vec2 &screen_pos, bool only_editable_point);
+	OpSelection updateSelection(const OpSelection &selection, const OpHover &hover);
 	void moveSelected(const glm::vec2 &delta);
-	void moveMesh(MeshType &mesh, const glm::vec2 &delta);
-	void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta);
+	virtual void moveMesh(MeshType &mesh, const glm::vec2 &delta) {}
+	virtual void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta){}
 	
-	std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const;
+	virtual std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const { return nullptr; }
 	
-	bool isEditableMesh(const Data::Mesh &data) const { return true; }
-	bool isEditablePoint(const Data::Mesh &data, IndexType index) const;
-	bool isHoveredMesh(const Data::Mesh &data) const;
-	bool isHoveredPoint(const Data::Mesh &data, IndexType index) const;
-	bool isSelectedMesh(const Data::Mesh &data) const;
-	bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
+	virtual bool isEditableMesh(const Data::Mesh &data) const { return true; }
+	virtual bool isEditablePoint(const Data::Mesh &data, IndexType index) const { return true; }
+	virtual bool isHoveredMesh(const Data::Mesh &data) const;
+	virtual bool isHoveredPoint(const Data::Mesh &data, IndexType index) const;
+	virtual bool isSelectedMesh(const Data::Mesh &data) const;
+	virtual bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
 	
-	void forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const;
-	void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world=true) const;
+	virtual void forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const;
+	virtual void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world=true) const {}
 	
-	ofMesh makeMeshFromMesh(const Data::Mesh &mesh, const ofColor &color) const;
-	ofMesh makeWireFromMesh(const Data::Mesh &mesh, const ofColor &color) const;
+	virtual ofMesh makeMeshFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
+	virtual ofMesh makeWireFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
 	ofMesh makeMeshFromPoint(const PointType &point, const ofColor &color, float point_size) const;
 	ofMesh makeBackground() const { return ofMesh(); }
 
-	std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
-	std::shared_ptr<MeshType> getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance);
+	virtual std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
+	virtual std::shared_ptr<MeshType> getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance) { return nullptr; }
 };
 
 template<typename MeshType, typename IndexType, typename PointType>
@@ -99,7 +106,7 @@ inline void Editor<MeshType, IndexType, PointType>::setup()
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, IndexType, PointType>::updateGrab(const OpSelection &selection, const OpHover &hover)
+typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, IndexType, PointType>::updateSelection(const OpSelection &selection, const OpHover &hover)
 {
 	OpSelection ret = selection;
 	bool is_grabbing = false;
@@ -169,87 +176,89 @@ template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::update()
 {
 	ofxEditorFrame::update();
-	auto &&data = Data::shared();
-	auto &&meshes = data.getMesh();
 	mouse_.update();
 	if(mouse_.isFrameNew()) {
-		auto proc = [&]() {
-			if(mouse_.isReleased(OF_MOUSE_BUTTON_LEFT)) {
+		if(mouse_.isPressed(OF_MOUSE_BUTTON_LEFT)) {
+			op_selection_ = updateSelection(op_selection_, op_hover_);
+			op_hover_ = OpHover();
+		}
+		else if(!mouse_.isPressing(OF_MOUSE_BUTTON_LEFT)) {
+			op_hover_ = getHover(mouse_.pos, !is_enabled_hovering_uneditable_point_);
+		}
+		if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
+			if(op_selection_.is_grabbing) {
+				moveSelected(mouse_.delta);
 			}
-			if(mouse_.isPressed(OF_MOUSE_BUTTON_LEFT)) {
-				op_selection_ = updateGrab(op_selection_, op_hover_);
-				op_hover_ = OpHover();
+			else {
+				translate(mouse_.delta);
 			}
-			else if(!mouse_.isPressing(OF_MOUSE_BUTTON_LEFT)) {
-				op_hover_ = getHover(mouse_.pos);
-			}
-			if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
-				if(op_selection_.is_grabbing) {
-					moveSelected(mouse_.delta);
-				}
-				else {
-					translate(mouse_.delta);
-				}
-			}
-			if(mouse_.isScrolledY()) {
-				scale(pow(2, mouse_.scroll.y/10.f), mouse_.pos);
-			}
-		};
-		proc();
+		}
+		if(mouse_.isScrolledY()) {
+			scale(pow(2, mouse_.scroll.y/10.f), mouse_.pos);
+		}
 	}
+}
+
+template<typename MeshType, typename IndexType, typename PointType>
+void Editor<MeshType, IndexType, PointType>::drawMesh() const
+{
+	ofMesh mesh;
+	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+	mesh.append(makeBackground());
+	forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+		if(isSelectedMesh(*m)) {
+			mesh.append(makeMeshFromMesh(*m, ofColor::white));
+		}
+		if(isHoveredMesh(*m)) {
+			mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
+		}
+		mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+	});
+	tex_.bind();
+	mesh.draw();
+	tex_.unbind();
+}
+template<typename MeshType, typename IndexType, typename PointType>
+void Editor<MeshType, IndexType, PointType>::drawWire() const
+{
+	ofMesh mesh;
+	mesh.setMode(OF_PRIMITIVE_LINES);
+	forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+		mesh.append(makeWireFromMesh(*m, ofColor::white));
+	});
+	mesh.draw();
+}
+template<typename MeshType, typename IndexType, typename PointType>
+void Editor<MeshType, IndexType, PointType>::drawPoint(bool only_editable_point) const
+{
+	float point_size = mouse_near_distance_/getScale();
+	ofMesh mesh;
+	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+	forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+		forEachPoint(*m, [&](const PointType &point, IndexType i) {
+			if(only_editable_point && !isEditablePoint(*m, i)) {
+				return;
+			}
+			if(isSelectedPoint(*m, i)) {
+				mesh.append(makeMeshFromPoint(point, ofColor::white, point_size));
+			}
+			if(isHoveredPoint(*m, i)) {
+				mesh.append(makeMeshFromPoint(point, {ofColor::yellow, 128}, point_size));
+			}
+			mesh.append(makeMeshFromPoint(point, {ofColor::gray, 128}, point_size));
+		});
+	});
+	mesh.draw();
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::draw() const
 {
-	auto &&tex = tex_;
 	pushMatrix();
 	pushScissor();
-	{
-		ofMesh mesh;
-		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-		mesh.append(makeBackground());
-		forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
-			if(isSelectedMesh(*m)) {
-				mesh.append(makeMeshFromMesh(*m, ofColor::white));
-			}
-			if(isHoveredMesh(*m)) {
-				mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
-			}
-			mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
-		});
-		tex.bind();
-		mesh.draw();
-		tex.unbind();
-	}
-	{
-		ofMesh mesh;
-		mesh.setMode(OF_PRIMITIVE_LINES);
-		forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
-			mesh.append(makeWireFromMesh(*m, ofColor::white));
-		});
-		mesh.draw();
-	}
-	{
-		float point_size = 10/getScale();
-		ofMesh mesh;
-		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-		forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
-			forEachPoint(*m, [&](const PointType &point, IndexType i) {
-				if(!isEditablePoint(*m, i)) {
-					return;
-				}
-				if(isSelectedPoint(*m, i)) {
-					mesh.append(makeMeshFromPoint(point, ofColor::white, point_size));
-				}
-				if(isHoveredPoint(*m, i)) {
-					mesh.append(makeMeshFromPoint(point, {ofColor::yellow, 128}, point_size));
-				}
-				mesh.append(makeMeshFromPoint(point, {ofColor::gray, 128}, point_size));
-			});
-		});
-		mesh.draw();
-	}
+	drawMesh();
+	drawWire();
+	drawPoint(!is_enabled_hovering_uneditable_point_);
 	popScissor();
 	popMatrix();
 }
@@ -275,7 +284,7 @@ std::pair<std::weak_ptr<MeshType>, IndexType> Editor<MeshType, IndexType, PointT
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexType, PointType>::getHover(const glm::vec2 &screen_pos)
+typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexType, PointType>::getHover(const glm::vec2 &screen_pos, bool only_editable_point)
 {
 	auto &&data = Data::shared();
 	auto &&meshes = data.getMesh();
@@ -287,9 +296,9 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 		if(!isEditableMesh(*m.second)) {
 			continue;
 		}
-		const float threshold = pow(10/getScale(), 2);
+		const float threshold = pow(mouse_near_distance_/getScale(), 2);
 		float distance;
-		auto nearest = getNearestPoint(m.second, mouse_.pos, distance);
+		auto nearest = getNearestPoint(m.second, mouse_.pos, distance, only_editable_point);
 		if(max_distance > distance && distance < threshold) {
 			ret.point = nearest;
 			max_distance = distance;
@@ -353,8 +362,11 @@ ofMesh Editor<MeshType, IndexType, PointType>::makeMeshFromPoint(const PointType
 	const int resolution = 16;
 	float angle = TWO_PI/(float)resolution;
 	for(int i = 0; i < resolution; ++i) {
+		ret.addIndex(ret.getNumVertices());
 		ret.addVertex(glm::vec3(point+glm::vec2(cos(angle*i), sin(angle*i))*point_size,0));
+		ret.addIndex(ret.getNumVertices());
 		ret.addVertex(glm::vec3(point,0));
+		ret.addIndex(ret.getNumVertices());
 		ret.addVertex(glm::vec3(point+glm::vec2(cos(angle*(i+1)), sin(angle*(i+1)))*point_size,0));
 		ret.addColor(color);
 		ret.addColor(color);

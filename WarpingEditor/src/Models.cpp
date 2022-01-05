@@ -1,8 +1,46 @@
-//
-//  Models.cpp
-//  WarpingEditor
-//
-//  Created by Iwatani Nariaki on 2021/12/22.
-//
-
 #include "Models.h"
+
+std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::string &name) {
+	std::string n = name;
+	int index=0;
+	auto m = std::make_shared<Mesh>();
+	while(!add(n, m)) {
+		n = name+ofToString(index++);
+	}
+	m->init({0,0,640, 480});
+	return std::make_pair(n, m);
+}
+void Data::update() {
+	std::for_each(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
+		m.second->update();
+	});
+}
+bool Data::remove(const std::string &name) {
+	auto found = mesh_.find(name);
+	if(found == std::end(mesh_)) {
+		return false;
+	}
+	mesh_.erase(found);
+	return true;
+}
+bool Data::remove(const std::shared_ptr<Mesh> mesh) {
+	auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
+		return m.second == mesh;
+	});
+	if(found == std::end(mesh_)) {
+		return false;
+	}
+	mesh_.erase(found);
+	return true;
+}
+
+std::shared_ptr<Data::Mesh> Data::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
+{
+	auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
+		return m.second->mesh == mesh;
+	});
+	if(found == std::end(mesh_)) {
+		return nullptr;
+	}
+	return found->second;
+}
