@@ -146,6 +146,9 @@ void WarpingEditor::update()
 				auto pos = getIn(mouse_.pos);
 				for(auto weak : op_selection_.quad) {
 					if(auto data = Data::shared().find(weak.lock())) {
+						if(!isEditableMesh(*data)) {
+							continue;
+						}
 						auto mesh = data->mesh;
 						glm::vec2 dst_findex;
 						glm::vec2 result;
@@ -183,6 +186,7 @@ void WarpingEditor::update()
 					}
 				}
 				op_selection_.point.clear();
+				op_hover_ = getHover(mouse_.pos, !is_enabled_hovering_uneditable_point_);
 			}
 		}
 	}

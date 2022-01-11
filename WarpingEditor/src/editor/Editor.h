@@ -307,6 +307,9 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 	max_distance = std::numeric_limits<float>::max();
 	if(ret.point.first.expired()) {
 		for(auto &&m : meshes) {
+			if(!isEditableMesh(*m.second)) {
+				continue;
+			}
 			float distance;
 			auto quad = getIfInside(m.second, mouse_.pos, distance);
 			if(quad && max_distance > distance) {
