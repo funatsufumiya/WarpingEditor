@@ -3,6 +3,7 @@
 #include "ofFileUtils.h"
 #include "ofUtils.h"
 #include "ofSystemUtils.h"
+#include "ofMath.h"
 
 ImVec2 ImGui::GetMousePosInCurrentWindow()
 {
@@ -248,4 +249,153 @@ bool ImGui::ToggleButton(const std::string &gui_id, bool &value, GLuint true_tex
 	auto ret = ImageButton((ImTextureID*)(value?true_tex:false_tex), size, {0,0}, {1,1}, frame_padding, bg_col, tint_col);
 	value ^= ret;
 	return ret;
+}
+
+bool ImGui::SliderFloatAs(const std::string &label_str, float* v, float v_min, float v_max, std::vector<std::pair<std::string, ScalarAsParam>> params, ImGuiSliderFlags flags)
+{
+	auto label = label_str.c_str();
+	if(params.empty()) {
+		return SliderScalar(label, ImGuiDataType_Float, &v, &v_min, &v_max, "%.3f", flags);
+	}
+	PushID(label);
+	ImGuiID type_index_id = ImGui::GetCurrentWindow()->GetID("data_type");
+	auto storage = ImGui::GetStateStorage();
+	int type_index = storage->GetInt(type_index_id, 0);
+	if(type_index >= params.size()) {
+		type_index = 0;
+	}
+	auto &&active = params[type_index];
+	SliderFloatAs(label, v, v_min, v_max, active, flags);
+	SameLine();
+	if(BeginCombo("##type", active.first.c_str())) {
+		for(int i = 0; i < params.size(); ++i) {
+			auto &type_label = params[i].first;
+			if(Selectable(type_label.c_str(), i==type_index)) {
+				storage->SetInt(type_index_id, i);
+			}
+		}
+		EndCombo();
+	}
+	PopID();
+	return false;
+}
+
+bool ImGui::SliderFloatAs(const std::string &label_str, float* v, float v_min, float v_max, std::pair<std::string, ScalarAsParam> p, ImGuiSliderFlags flags)
+{
+	auto label = label_str.c_str();
+	PushID(label);
+	auto &param = p.second;
+	ScalarAsParam::Value value;
+	switch(param.type) {
+		case ImGuiDataType_S8:		value.s_8 = ofMap(*v, v_min, v_max, param.v_min.s_8, param.v_max.s_8);	break;
+		case ImGuiDataType_U8:		value.u_8 = ofMap(*v, v_min, v_max, param.v_min.u_8, param.v_max.u_8);	break;
+		case ImGuiDataType_S16:		value.s_16 = ofMap(*v, v_min, v_max, param.v_min.s_16, param.v_max.s_16);	break;
+		case ImGuiDataType_U16:		value.u_16 = ofMap(*v, v_min, v_max, param.v_min.u_16, param.v_max.u_16);	break;
+		case ImGuiDataType_S32:		value.s_32 = ofMap(*v, v_min, v_max, param.v_min.s_32, param.v_max.s_32);	break;
+		case ImGuiDataType_U32:		value.u_32 = ofMap(*v, v_min, v_max, param.v_min.u_32, param.v_max.u_32);	break;
+		case ImGuiDataType_S64:		value.s_64 = ofMap(*v, v_min, v_max, param.v_min.s_64, param.v_max.s_64);	break;
+		case ImGuiDataType_U64:		value.u_64 = ofMap(*v, v_min, v_max, param.v_min.u_64, param.v_max.u_64);	break;
+		case ImGuiDataType_Float:		value.f = ofMap(*v, v_min, v_max, param.v_min.f, param.v_max.f);	break;
+		case ImGuiDataType_Double:		value.d = ofMap(*v, v_min, v_max, param.v_min.d, param.v_max.d);	break;
+	}
+	bool ret = SliderScalar(label, param.type, &value, &param.v_min, &param.v_max, param.format, flags);
+	if(ret) {
+		switch(param.type) {
+			case ImGuiDataType_S8:		*v = ofMap(value.s_8, param.v_min.s_8, param.v_max.s_8, v_min, v_max);	break;
+			case ImGuiDataType_U8:		*v = ofMap(value.u_8, param.v_min.u_8, param.v_max.u_8, v_min, v_max);	break;
+			case ImGuiDataType_S16:		*v = ofMap(value.s_16, param.v_min.s_16, param.v_max.s_16, v_min, v_max);	break;
+			case ImGuiDataType_U16:		*v = ofMap(value.u_16, param.v_min.u_16, param.v_max.u_16, v_min, v_max);	break;
+			case ImGuiDataType_S32:		*v = ofMap(value.s_32, param.v_min.s_32, param.v_max.s_32, v_min, v_max);	break;
+			case ImGuiDataType_U32:		*v = ofMap(value.u_32, param.v_min.u_32, param.v_max.u_32, v_min, v_max);	break;
+			case ImGuiDataType_S64:		*v = ofMap(value.s_64, param.v_min.s_64, param.v_max.s_64, v_min, v_max);	break;
+			case ImGuiDataType_U64:		*v = ofMap(value.u_64, param.v_min.u_64, param.v_max.u_64, v_min, v_max);	break;
+			case ImGuiDataType_Float:		*v = ofMap(value.f, param.v_min.f, param.v_max.f, v_min, v_max);	break;
+			case ImGuiDataType_Double:		*v = ofMap(value.d, param.v_min.d, param.v_max.d, v_min, v_max);	break;
+		}
+	}
+	PopID();
+	return false;
+}
+
+bool ImGui::SliderFloatNAs(const std::string &label_str, float* v, int components, const float *v_min, const float *v_max, std::vector<std::pair<std::string, std::vector<ScalarAsParam>>> params, ImGuiSliderFlags flags)
+{
+	ImGuiWindow* window = GetCurrentWindow();
+	if (window->SkipItems)
+		return false;
+
+	auto storage = ImGui::GetStateStorage();
+	ImGuiID collapse_id = ImGui::GetCurrentWindow()->GetID("collapsed");
+	bool is_opened = storage->GetBool(collapse_id, false);
+
+	auto label = label_str.c_str();
+	ImGuiContext& g = *GImGui;
+	bool value_changed = false;
+	BeginGroup();
+	PushID(label);
+
+	const char* label_end = FindRenderedTextEnd(label);
+	if (label != label_end) {
+		TextEx(label, label_end);
+		is_opened ^= IsItemClicked();
+		storage->SetBool(collapse_id, is_opened);
+	}
+	SameLine(0, g.Style.ItemInnerSpacing.x);
+
+	PushMultiItemsWidths(components, CalcItemWidth());
+
+	ImGuiID type_index_id = ImGui::GetCurrentWindow()->GetID("data_type");
+	int type_index = storage->GetInt(type_index_id, 0);
+	if(type_index >= params.size()) {
+		type_index = 0;
+	}
+	auto &&active = params[type_index];
+
+	for (int i = 0; i < components; i++)
+	{
+		PushID(i);
+		if (i > 0)
+			SameLine(0, g.Style.ItemInnerSpacing.x);
+		std::pair<std::string, ScalarAsParam> param;
+		param.first = active.first;
+		param.second = active.second[i];
+		
+		value_changed |= SliderFloatAs("", v+i, v_min[i], v_max[i], param, flags);
+		PopID();
+		PopItemWidth();
+	}
+
+	SameLine();
+	if(BeginCombo("##type", active.first.c_str())) {
+		for(int i = 0; i < params.size(); ++i) {
+			auto &type_label = params[i].first;
+			if(Selectable(type_label.c_str(), i==type_index)) {
+				storage->SetInt(type_index_id, i);
+			}
+		}
+		EndCombo();
+	}
+	
+	if(is_opened) {
+		PushID("elements");
+		Indent(12);
+		for (int i = 0; i < components; i++)
+		{
+			PushID(i);
+			std::vector<std::pair<std::string, ScalarAsParam>> param(params.size());
+			for(int j = 0; j < params.size(); ++j) {
+				param[j].first = params[j].first;
+				param[j].second = params[j].second[i];
+			}
+			
+			value_changed |= SliderFloatAs("", v+i, v_min[i], v_max[i], param, flags);
+			PopID();
+		}
+		Unindent(12);
+		PopID();
+	}
+	
+	PopID();
+
+	EndGroup();
+	return value_changed;
 }

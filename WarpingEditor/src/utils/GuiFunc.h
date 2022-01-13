@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include <math.h>
 #include <numeric>
+#include <glm/fwd.hpp>
 
 namespace ImGui {
 	ImVec2 GetMousePosInCurrentWindow();
@@ -20,4 +21,41 @@ namespace ImGui {
 	bool IsKeyDownMac(int key_index, ImGuiKeyModFlags mod);
 	bool IsKeyDownWin(int key_index, ImGuiKeyModFlags mod);
 	bool ToggleButton(const std::string &gui_id, bool &value, GLuint true_tex, GLuint false_tex, ImVec2 size={0,0}, int frame_padding = -1, const ImVec4& bg_col = ImVec4(0,0,0,0), const ImVec4& tint_col = ImVec4(1,1,1,1));
+
+
+	struct ScalarAsParam {
+		ScalarAsParam() {}
+		template<typename T>
+		ScalarAsParam(glm::vec<2, T> range, const char *format)
+		:format(format) {
+			memcpy(&this->v_min, &range[0], sizeof(T));
+			memcpy(&this->v_max, &range[1], sizeof(T));
+			setType<T>();
+		}
+		ImGuiDataType type;
+		union Value {
+			char s_8; unsigned char u_8;
+			short s_16; unsigned short u_16;
+			int s_32; unsigned int u_32;
+			long long s_64; unsigned long long u_64;
+			float f;
+			double d;
+		} v_min, v_max;
+		const char *format;
+	private:
+		template<typename T> void setType();
+		template<> void setType<char>() { type = ImGuiDataType_S8; }
+		template<> void setType<unsigned char>() { type = ImGuiDataType_U8; }
+		template<> void setType<short>() { type = ImGuiDataType_S16; }
+		template<> void setType<unsigned short>() { type = ImGuiDataType_U16; }
+		template<> void setType<int>() { type = ImGuiDataType_S32; }
+		template<> void setType<unsigned int>() { type = ImGuiDataType_U32; }
+		template<> void setType<long long>() { type = ImGuiDataType_S64; }
+		template<> void setType<unsigned long long>() { type = ImGuiDataType_U64; }
+		template<> void setType<float>() { type = ImGuiDataType_Float; }
+		template<> void setType<double>() { type = ImGuiDataType_Double; }
+	};
+bool SliderFloatAs(const std::string &label, float* v, float v_min, float v_max, std::vector<std::pair<std::string, ScalarAsParam>> params, ImGuiSliderFlags flags=0);
+bool SliderFloatAs(const std::string &label, float* v, float v_min, float v_max, std::pair<std::string, ScalarAsParam> param, ImGuiSliderFlags flags=0);
+bool SliderFloatNAs(const std::string &label, float* v, int num_components, const float *v_min, const float *v_max, std::vector<std::pair<std::string, std::vector<ScalarAsParam>>> params, ImGuiSliderFlags flags=0);
 }

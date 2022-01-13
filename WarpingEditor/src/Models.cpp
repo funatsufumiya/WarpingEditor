@@ -34,6 +34,29 @@ bool Data::remove(const std::shared_ptr<Mesh> mesh) {
 	return true;
 }
 
+
+bool Data::isVisible(std::shared_ptr<Mesh> mesh) const
+{
+	return std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
+		return m.second->is_solo;
+	}) ? mesh->is_solo && !mesh->is_hidden : !mesh->is_hidden;
+}
+bool Data::isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden) const
+{
+	return !mesh->is_locked && (include_hidden || isVisible(mesh));
+}
+
+std::shared_ptr<Data::Mesh> Data::find(std::shared_ptr<geom::Quad> quad)
+{
+	auto found = std::find_if(begin(mesh_), end(mesh_), [quad](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
+		return m.second->uv_quad == quad;
+	});
+	if(found == std::end(mesh_)) {
+		return nullptr;
+	}
+	return found->second;
+}
+
 std::shared_ptr<Data::Mesh> Data::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
 {
 	auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
@@ -50,13 +73,13 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh()
 	std::map<std::string, std::shared_ptr<Data::Mesh>> ret;
 	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
 		return m.second->is_solo;
-	}) ? [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
-		return m.second->is_solo && !m.second->is_hidden;
-	} : [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
-		return !m.second->is_hidden;
+	}) ? [](std::shared_ptr<Data::Mesh> m) {
+		return m->is_solo && !m->is_hidden;
+	} : [](std::shared_ptr<Data::Mesh> m) {
+		return !m->is_hidden;
 	};
 	for(auto &&m : mesh_) {
-		if(isVisible(m)) {
+		if(isVisible(m.second)) {
 			ret.insert(m);
 		}
 	}
@@ -67,13 +90,13 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool in
 	std::map<std::string, std::shared_ptr<Data::Mesh>> ret;
 	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
 		return m.second->is_solo;
-	}) ? [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
-		return m.second->is_solo && !m.second->is_hidden;
-	} : [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
-		return !m.second->is_hidden;
+	}) ? [](std::shared_ptr<Data::Mesh> m) {
+		return m->is_solo && !m->is_hidden;
+	} : [](std::shared_ptr<Data::Mesh> m) {
+		return !m->is_hidden;
 	};
 	for(auto &&m : mesh_) {
-		if(!m.second->is_locked && (include_hidden || isVisible(m))) {
+		if(!m.second->is_locked && (include_hidden || isVisible(m.second))) {
 			ret.insert(m);
 		}
 	}

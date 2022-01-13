@@ -1,26 +1,18 @@
 #include "UVEditor.h"
 #include "ofGraphics.h"
 
-namespace {
-	using DataType = Data::Mesh;
-	using MeshType = geom::Quad;
-	using IndexType = int;
-	using PointType = glm::vec2;
-}
-
-template<>
-std::shared_ptr<MeshType> UVEditor::getMeshType(const Data::Mesh &data) const
+std::shared_ptr<UVEditor::MeshType> UVEditor::getMeshType(const Data::Mesh &data) const
 {
 	return data.uv_quad;
 }
 
-template<>
+
 bool UVEditor::isEditablePoint(const Data::Mesh &data, IndexType index) const
 {
 	return true;
 }
 
-template<>
+
 void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world) const
 {
 	auto mesh = *getMeshType(data);
@@ -32,8 +24,8 @@ void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const Poi
 	}
 }
 
-template<>
-std::shared_ptr<MeshType> UVEditor::getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance)
+
+std::shared_ptr<UVEditor::MeshType> UVEditor::getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance)
 {
 	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
 	auto uv = getScaled(*data->uv_quad, tex_uv);
@@ -46,14 +38,14 @@ std::shared_ptr<MeshType> UVEditor::getIfInside(std::shared_ptr<DataType> data, 
 }
 
 
-template<>
+
 void UVEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
 {
 	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
 	auto d = delta/getScale()/tex_uv;
 	mesh = geom::getTranslated(mesh, d);
 }
-template<>
+
 void UVEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta)
 {
 	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
@@ -61,7 +53,7 @@ void UVEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta
 	mesh[index] += d;
 }
 
-template<>
+
 ofMesh UVEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) const
 {
 	auto mesh = *data.uv_quad;
@@ -80,7 +72,7 @@ ofMesh UVEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) co
 	return ret;
 }
 
-template<>
+
 ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) const
 {
 	auto mesh = *data.uv_quad;
@@ -99,7 +91,7 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 	return ret;
 }
 
-template<>
+
 ofMesh UVEditor::makeBackground() const
 {
 	MeshType mesh{1,1};
@@ -116,4 +108,29 @@ ofMesh UVEditor::makeBackground() const
 		ret.addIndex(i);
 	}
 	return ret;
+}
+
+
+void UVEditor::gui()
+{
+	auto data = Data::shared();
+	using namespace ImGui;
+	if(Begin("UV")) {
+		for(auto &&mesh : data.getMesh()) {
+			if(data.isEditable(mesh.second)) {
+				if(TreeNode(mesh.first.c_str())) {
+					auto m = getMeshType(*mesh.second);
+					const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
+					for(int i = 0; i < m->size(); ++i) {
+						DragFloat2(names[i].c_str(), &m->operator[](i).x, 0.01f, 0, 1);
+					}
+					TreePop();
+				}
+			}
+			else {
+				Text("%s", mesh.first.c_str());
+			}
+		}
+	}
+	End();
 }

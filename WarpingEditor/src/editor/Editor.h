@@ -13,6 +13,7 @@ public:
 	virtual void update();
 	void setTexture(ofTexture tex) { tex_ = tex; }
 	virtual void draw() const;
+	virtual void gui() {}
 	
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }

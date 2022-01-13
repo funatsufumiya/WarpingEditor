@@ -56,6 +56,9 @@ public:
 	std::map<std::string, std::shared_ptr<Mesh>>& getMesh() { return mesh_; }
 	std::map<std::string, std::shared_ptr<Mesh>> getVisibleMesh();
 	std::map<std::string, std::shared_ptr<Mesh>> getEditableMesh(bool include_hidden=false);
+	bool isVisible(std::shared_ptr<Mesh> mesh) const;
+	bool isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden=false) const;
+	std::shared_ptr<Mesh> find(std::shared_ptr<geom::Quad> quad);
 	std::shared_ptr<Mesh> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
 	void save(const std::string &filepath) const;
 	void load(const std::string &filepath);
