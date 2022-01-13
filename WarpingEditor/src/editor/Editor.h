@@ -16,9 +16,13 @@ public:
 	
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
+	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }
+	void setEnableMeshEditByMouse(bool enable) { is_mesh_editable_by_mouse_ = enable; }
 protected:
 	ofTexture tex_;
 	bool is_enabled_hovering_uneditable_point_=false;
+	bool is_viewport_editable_by_mouse_=true;
+	bool is_mesh_editable_by_mouse_=true;
 	float mouse_near_distance_ = 10;
 	class MouseEvent : public ofxEditorFrame::MouseEventArg {
 	public:
@@ -59,7 +63,7 @@ protected:
 	
 	virtual std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const { return nullptr; }
 	
-	virtual bool isEditableMesh(const Data::Mesh &data) const { return true; }
+	virtual bool isEditableMesh(const Data::Mesh &data) const;
 	virtual bool isEditablePoint(const Data::Mesh &data, IndexType index) const { return true; }
 	virtual bool isHoveredMesh(const Data::Mesh &data) const;
 	virtual bool isHoveredPoint(const Data::Mesh &data, IndexType index) const;
@@ -178,23 +182,32 @@ void Editor<MeshType, IndexType, PointType>::update()
 	ofxEditorFrame::update();
 	mouse_.update();
 	if(mouse_.isFrameNew()) {
-		if(mouse_.isPressed(OF_MOUSE_BUTTON_LEFT)) {
-			op_selection_ = updateSelection(op_selection_, op_hover_);
-			op_hover_ = OpHover();
-		}
-		else if(!mouse_.isPressing(OF_MOUSE_BUTTON_LEFT)) {
-			op_hover_ = getHover(mouse_.pos, !is_enabled_hovering_uneditable_point_);
-		}
-		if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
-			if(op_selection_.is_grabbing) {
-				moveSelected(mouse_.delta);
+		bool used = false;
+		if(!used && is_mesh_editable_by_mouse_) {
+			if(mouse_.isPressed(OF_MOUSE_BUTTON_LEFT)) {
+				op_selection_ = updateSelection(op_selection_, op_hover_);
+				op_hover_ = OpHover();
+				used = true;
 			}
-			else {
+			else if(!mouse_.isPressing(OF_MOUSE_BUTTON_LEFT)) {
+				op_hover_ = getHover(mouse_.pos, !is_enabled_hovering_uneditable_point_);
+			}
+			else if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
+				if(op_selection_.is_grabbing) {
+					moveSelected(mouse_.delta);
+					used = true;
+				}
+			}
+		}
+		if(!used && is_viewport_editable_by_mouse_) {
+			if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
 				translate(mouse_.delta);
+				used = true;
 			}
-		}
-		if(mouse_.isScrolledY()) {
-			scale(pow(2, mouse_.scroll.y/10.f), mouse_.pos);
+			if(mouse_.isScrolledY()) {
+				scale(pow(2, mouse_.scroll.y/10.f), mouse_.pos);
+				used = true;
+			}
 		}
 	}
 }
@@ -205,7 +218,9 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	mesh.append(makeBackground());
-	forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+	auto meshes = Data::shared().getVisibleMesh();
+	for(auto &&mm : meshes) {
+		auto m = mm.second;
 		if(isSelectedMesh(*m)) {
 			mesh.append(makeMeshFromMesh(*m, ofColor::white));
 		}
@@ -213,7 +228,7 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 			mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
 		}
 		mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
-	});
+	};
 	tex_.bind();
 	mesh.draw();
 	tex_.unbind();
@@ -223,9 +238,11 @@ void Editor<MeshType, IndexType, PointType>::drawWire() const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_LINES);
-	forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+	auto meshes = Data::shared().getVisibleMesh();
+	for(auto &&mm : meshes) {
+		auto m = mm.second;
 		mesh.append(makeWireFromMesh(*m, ofColor::white));
-	});
+	};
 	mesh.draw();
 }
 template<typename MeshType, typename IndexType, typename PointType>
@@ -234,7 +251,9 @@ void Editor<MeshType, IndexType, PointType>::drawPoint(bool only_editable_point)
 	float point_size = mouse_near_distance_/getScale();
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-	forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+	auto meshes = Data::shared().getVisibleMesh();
+	for(auto &&mm : meshes) {
+		auto m = mm.second;
 		forEachPoint(*m, [&](const PointType &point, IndexType i) {
 			if(only_editable_point && !isEditablePoint(*m, i)) {
 				return;
@@ -247,7 +266,7 @@ void Editor<MeshType, IndexType, PointType>::drawPoint(bool only_editable_point)
 			}
 			mesh.append(makeMeshFromPoint(point, {ofColor::gray, 128}, point_size));
 		});
-	});
+	};
 	mesh.draw();
 }
 
@@ -319,6 +338,16 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 		}
 	}
 	return ret;
+}
+
+template<typename MeshType, typename IndexType, typename PointType>
+bool Editor<MeshType, IndexType, PointType>::isEditableMesh(const Data::Mesh &data) const
+{
+	auto d = Data::shared().find(data.mesh);
+	auto &&mesh = Data::shared().getEditableMesh();
+	return any_of(begin(mesh), end(mesh), [d](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
+		return m.second == d;
+	});
 }
 
 template<typename MeshType, typename IndexType, typename PointType>

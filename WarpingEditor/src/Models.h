@@ -20,6 +20,9 @@ public:
 		return instance;
 	}
 	struct Mesh {
+		bool is_hidden=false;
+		bool is_locked=false;
+		bool is_solo=false;
 		std::shared_ptr<geom::Quad> uv_quad;
 		std::shared_ptr<ofx::mapper::Mesh> mesh;
 		std::shared_ptr<ofx::mapper::Interpolator> interpolator;
@@ -50,6 +53,8 @@ public:
 	bool remove(const std::string &name);
 	bool remove(const std::shared_ptr<Mesh> mesh);
 	std::map<std::string, std::shared_ptr<Mesh>>& getMesh() { return mesh_; }
+	std::map<std::string, std::shared_ptr<Mesh>> getVisibleMesh();
+	std::map<std::string, std::shared_ptr<Mesh>> getEditableMesh(bool include_hidden=false);
 	std::shared_ptr<Mesh> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
 private:
 	std::map<std::string, std::shared_ptr<Mesh>> mesh_;

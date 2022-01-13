@@ -242,3 +242,10 @@ bool ImGui::IsKeyDownWin(int key_index, ImGuiKeyModFlags mod)
 	return false;
 #endif
 }
+
+bool ImGui::ToggleButton(const std::string &gui_id, bool &value, GLuint true_tex, GLuint false_tex, ImVec2 size, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
+{
+	auto ret = ImageButton((ImTextureID*)(value?true_tex:false_tex), size, {0,0}, {1,1}, frame_padding, bg_col, tint_col);
+	value ^= ret;
+	return ret;
+}

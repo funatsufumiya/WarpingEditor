@@ -68,7 +68,7 @@ ofMesh UVEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) co
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
 	auto vert = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
-	auto coord = getScaled(mesh, {tex_.getWidth(),tex_.getHeight()});
+	auto coord = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -87,7 +87,7 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_LINES);
 	auto vert = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
-	auto coord = getScaled(mesh, {tex_.getWidth(),tex_.getHeight()});
+	auto coord = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -106,7 +106,7 @@ ofMesh UVEditor::makeBackground() const
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
 	auto vert = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
-	auto coord = getScaled(mesh, {tex_.getWidth(),tex_.getHeight()});
+	auto coord = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));

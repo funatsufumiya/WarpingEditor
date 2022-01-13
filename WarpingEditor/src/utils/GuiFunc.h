@@ -19,4 +19,5 @@ namespace ImGui {
 	bool IsKeyDown(int key_index, ImGuiKeyModFlags mod);
 	bool IsKeyDownMac(int key_index, ImGuiKeyModFlags mod);
 	bool IsKeyDownWin(int key_index, ImGuiKeyModFlags mod);
+	bool ToggleButton(const std::string &gui_id, bool &value, GLuint true_tex, GLuint false_tex, ImVec2 size={0,0}, int frame_padding = -1, const ImVec4& bg_col = ImVec4(0,0,0,0), const ImVec4& tint_col = ImVec4(1,1,1,1));
 }
