@@ -34,19 +34,23 @@ public:
 			}
 			return ret;
 		}
-		void init(const ofRectangle &rect) {
+		Mesh() {
 			uv_quad = std::make_shared<geom::Quad>();
 			mesh = std::make_shared<ofx::mapper::Mesh>();
-			mesh->init({1,1}, rect);
 			interpolator = std::make_shared<ofx::mapper::Interpolator>();
 			interpolator->setMesh(mesh);
-			mesh->divideRow(0, 0.5f);
-			mesh->divideCol(0, 0.5f);
-			interpolator->selectPoint(1,1);
+		}
+		void init(const ofRectangle &rect) {
+			mesh->init({1,1}, rect);
+//			mesh->divideRow(0, 0.5f);
+//			mesh->divideCol(0, 0.5f);
+//			interpolator->selectPoint(1,1);
 		}
 		void update() {
 			interpolator->update();
 		}
+		void pack(std::ostream &stream) const;
+		void unpack(std::istream &stream);
 	};
 	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data");
 	void update();
@@ -56,6 +60,10 @@ public:
 	std::map<std::string, std::shared_ptr<Mesh>> getVisibleMesh();
 	std::map<std::string, std::shared_ptr<Mesh>> getEditableMesh(bool include_hidden=false);
 	std::shared_ptr<Mesh> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
+	void save(const std::string &filepath) const;
+	void load(const std::string &filepath);
+	void pack(std::ostream &stream) const;
+	void unpack(std::istream &stream);
 private:
 	std::map<std::string, std::shared_ptr<Mesh>> mesh_;
 	bool add(const std::string &name, std::shared_ptr<Mesh> mesh) {

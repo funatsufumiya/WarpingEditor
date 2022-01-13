@@ -79,3 +79,85 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool in
 	}
 	return ret;
 }
+
+#pragma mark - IO
+
+namespace {
+template<typename T>
+void writeTo(std::ostream& os, const T& t) {
+	os.write(reinterpret_cast<const char*>(&t), sizeof(T));
+}
+template<typename T>
+void readFrom(std::istream& is, T& t) {
+	is.read(reinterpret_cast<char*>(&t), sizeof(T));
+}
+}
+
+void Data::save(const std::string &filepath) const
+{
+	ofFile file(filepath, ofFile::WriteOnly);
+	pack(file);
+	file.close();
+}
+void Data::load(const std::string &filepath)
+{
+	mesh_.clear();
+	ofFile file(filepath);
+	unpack(file);
+	file.close();
+}
+
+void Data::pack(std::ostream &stream) const
+{
+	writeTo(stream, mesh_.size());
+	const int name_alignemt = 4;
+	for(auto &&m : mesh_) {
+		auto name = m.first;
+		std::size_t name_size = name.size();
+		std::size_t pad_size = std::ceil(name_size/(float)name_alignemt) * name_alignemt;
+		writeTo(stream, name.size());
+		stream.write(name.c_str(), pad_size);
+		m.second->pack(stream);
+	}
+}
+void Data::unpack(std::istream &stream)
+{
+	const int name_alignemt = 4;
+	std::size_t num;
+	readFrom(stream, num);
+	while(num-->0) {
+		std::size_t name_size;
+		readFrom(stream, name_size);
+		std::size_t pad_size = std::ceil(name_size/(float)name_alignemt) * name_alignemt;
+		std::string name;
+		name.resize(pad_size);
+		stream.read(const_cast<char*>(name.data()), pad_size);
+		name.resize(name_size);
+		auto mesh = std::make_shared<Mesh>();
+		mesh->unpack(stream);
+		mesh_.insert(std::make_pair(name, mesh));
+	}
+}
+
+void Data::Mesh::pack(std::ostream &stream) const
+{
+	writeTo(stream, is_hidden);
+	writeTo(stream, is_locked);
+	writeTo(stream, is_solo);
+	for(int i = 0; i < uv_quad->size(); ++i) {
+		writeTo(stream, uv_quad->pt[i].x);
+		writeTo(stream, uv_quad->pt[i].y);
+	}
+	mesh->pack(stream, interpolator.get());
+}
+void Data::Mesh::unpack(std::istream &stream)
+{
+	readFrom(stream, is_hidden);
+	readFrom(stream, is_locked);
+	readFrom(stream, is_solo);
+	for(int i = 0; i < uv_quad->size(); ++i) {
+		readFrom(stream, uv_quad->pt[i].x);
+		readFrom(stream, uv_quad->pt[i].y);
+	}
+	mesh->unpack(stream, interpolator.get());
+}

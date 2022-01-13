@@ -87,6 +87,8 @@ void ofApp::keyPressed(int key){
 		case OF_KEY_TAB:
 			state_ ^= 1;
 			break;
+		case 's': Data::shared().save("saved.bin"); break;
+		case 'l': Data::shared().load("saved.bin"); break;
 	}
 }
 
