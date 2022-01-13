@@ -93,6 +93,15 @@ void readFrom(std::istream& is, T& t) {
 }
 }
 
+void Data::exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size) const
+{
+	ofMesh all;
+	for(auto &&m : mesh_) {
+		all.append(m.second->getMesh(resample_min_interval, coord_size));
+	}
+	all.save(filepath);
+}
+
 void Data::save(const std::string &filepath) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
@@ -161,3 +170,4 @@ void Data::Mesh::unpack(std::istream &stream)
 	}
 	mesh->unpack(stream, interpolator.get());
 }
+

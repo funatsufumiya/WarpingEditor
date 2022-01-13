@@ -15,8 +15,6 @@ void ofApp::setup(){
 	gui_.setup();
 	
 	Icon::init();
-	ofLoadImage(t, "t.png");
-	ofLoadImage(f, "f.png");
 	
 	uv_.setup();
 	warp_.setup();
@@ -89,6 +87,10 @@ void ofApp::keyPressed(int key){
 			break;
 		case 's': Data::shared().save("saved.bin"); break;
 		case 'l': Data::shared().load("saved.bin"); break;
+		case 'e': {
+			Data::shared().exportMesh("export.ply", 10, {1,1});
+			Data::shared().exportMesh("export_arb.ply", 10, {texture_.getWidth(), texture_.getHeight()});
+		}	break;
 	}
 }
 

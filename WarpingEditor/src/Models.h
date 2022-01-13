@@ -42,9 +42,6 @@ public:
 		}
 		void init(const ofRectangle &rect) {
 			mesh->init({1,1}, rect);
-//			mesh->divideRow(0, 0.5f);
-//			mesh->divideCol(0, 0.5f);
-//			interpolator->selectPoint(1,1);
 		}
 		void update() {
 			interpolator->update();
@@ -64,6 +61,7 @@ public:
 	void load(const std::string &filepath);
 	void pack(std::ostream &stream) const;
 	void unpack(std::istream &stream);
+	void exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size) const;
 private:
 	std::map<std::string, std::shared_ptr<Mesh>> mesh_;
 	bool add(const std::string &name, std::shared_ptr<Mesh> mesh) {
