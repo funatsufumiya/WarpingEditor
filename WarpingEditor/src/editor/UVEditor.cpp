@@ -121,8 +121,21 @@ void UVEditor::gui()
 				if(TreeNode(mesh.first.c_str())) {
 					auto m = getMeshType(*mesh.second);
 					const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
+					float v_min[2] = {0,0};
+					float v_max[2] = {1,1};
 					for(int i = 0; i < m->size(); ++i) {
-						DragFloat2(names[i].c_str(), &m->operator[](i).x, 0.01f, 0, 1);
+						DragFloatNAs(names[i], &m->operator[](i).x, 2, v_min, v_max, nullptr, nullptr, {
+							{"px", {
+								{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
+								{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
+							}},
+							{"%", {
+								{glm::vec2{0, 100}, 0.1f, "%.02f%"}
+							}},
+							{"rate", {
+								{glm::vec2{0, 1}, 0.001f, "%.03f%"}
+							}},
+						});
 					}
 					TreePop();
 				}

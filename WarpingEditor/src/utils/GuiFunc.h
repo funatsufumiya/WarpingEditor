@@ -22,17 +22,10 @@ namespace ImGui {
 	bool IsKeyDownWin(int key_index, ImGuiKeyModFlags mod);
 	bool ToggleButton(const std::string &gui_id, bool &value, GLuint true_tex, GLuint false_tex, ImVec2 size={0,0}, int frame_padding = -1, const ImVec4& bg_col = ImVec4(0,0,0,0), const ImVec4& tint_col = ImVec4(1,1,1,1));
 
-
 	struct ScalarAsParam {
 		ScalarAsParam() {}
-		template<typename T>
-		ScalarAsParam(glm::vec<2, T> range, const char *format)
-		:format(format) {
-			memcpy(&this->v_min, &range[0], sizeof(T));
-			memcpy(&this->v_max, &range[1], sizeof(T));
-			setType<T>();
-		}
-		ImGuiDataType type;
+		ScalarAsParam(const char *format)
+		:format(format) {}
 		union Value {
 			char s_8; unsigned char u_8;
 			short s_16; unsigned short u_16;
@@ -40,22 +33,49 @@ namespace ImGui {
 			long long s_64; unsigned long long u_64;
 			float f;
 			double d;
-		} v_min, v_max;
+		};
+		ImGuiDataType type;
 		const char *format;
-	private:
-		template<typename T> void setType();
-		template<> void setType<char>() { type = ImGuiDataType_S8; }
-		template<> void setType<unsigned char>() { type = ImGuiDataType_U8; }
-		template<> void setType<short>() { type = ImGuiDataType_S16; }
-		template<> void setType<unsigned short>() { type = ImGuiDataType_U16; }
-		template<> void setType<int>() { type = ImGuiDataType_S32; }
-		template<> void setType<unsigned int>() { type = ImGuiDataType_U32; }
-		template<> void setType<long long>() { type = ImGuiDataType_S64; }
-		template<> void setType<unsigned long long>() { type = ImGuiDataType_U64; }
-		template<> void setType<float>() { type = ImGuiDataType_Float; }
-		template<> void setType<double>() { type = ImGuiDataType_Double; }
+		private:
+			template<typename T> void setType();
+			template<> void setType<char>() { type = ImGuiDataType_S8; }
+			template<> void setType<unsigned char>() { type = ImGuiDataType_U8; }
+			template<> void setType<short>() { type = ImGuiDataType_S16; }
+			template<> void setType<unsigned short>() { type = ImGuiDataType_U16; }
+			template<> void setType<int>() { type = ImGuiDataType_S32; }
+			template<> void setType<unsigned int>() { type = ImGuiDataType_U32; }
+			template<> void setType<long long>() { type = ImGuiDataType_S64; }
+			template<> void setType<unsigned long long>() { type = ImGuiDataType_U64; }
+			template<> void setType<float>() { type = ImGuiDataType_Float; }
+			template<> void setType<double>() { type = ImGuiDataType_Double; }
 	};
-bool SliderFloatAs(const std::string &label, float* v, float v_min, float v_max, std::vector<std::pair<std::string, ScalarAsParam>> params, ImGuiSliderFlags flags=0);
-bool SliderFloatAs(const std::string &label, float* v, float v_min, float v_max, std::pair<std::string, ScalarAsParam> param, ImGuiSliderFlags flags=0);
-bool SliderFloatNAs(const std::string &label, float* v, int num_components, const float *v_min, const float *v_max, std::vector<std::pair<std::string, std::vector<ScalarAsParam>>> params, ImGuiSliderFlags flags=0);
+	struct SliderScalarAsParam : public ScalarAsParam {
+		SliderScalarAsParam() {}
+		template<typename T>
+		SliderScalarAsParam(glm::vec<2, T> range, const char *format)
+		:ScalarAsParam(format) {
+			memcpy(&this->v_min, &range[0], sizeof(T));
+			memcpy(&this->v_max, &range[1], sizeof(T));
+			setType<T>();
+		}
+		Value v_min, v_max;
+		float getPosition(ImGui::ScalarAsParam::Value value, float v_min, float v_max);
+		ImGui::ScalarAsParam::Value getValue(float v, float v_min, float v_max);
+	};
+	struct DragScalarAsParam : public SliderScalarAsParam {
+		DragScalarAsParam() {}
+		template<typename T>
+		DragScalarAsParam(glm::vec<2, T> range, float speed, const char *format)
+		:SliderScalarAsParam(range, format),speed(speed) {
+		}
+		float speed;
+	};
+	bool SliderFloatAs(const std::string &label, float *v, float v_min, float v_max, std::vector<std::pair<std::string, SliderScalarAsParam>> params, ImGuiSliderFlags flags=0);
+	bool SliderFloatAs(const std::string &label, float *v, float v_min, float v_max, std::pair<std::string, SliderScalarAsParam> param, ImGuiSliderFlags flags=0);
+	bool SliderFloatNAs(const std::string &label, float *v, int num_components, const float *v_min, const float *v_max, std::vector<std::pair<std::string, std::vector<SliderScalarAsParam>>> params, ImGuiSliderFlags flags=0);
+
+	bool DragFloatAs(const std::string &label, float *v, float v_min, float v_max, bool clamp_min, bool clamp_max, std::vector<std::pair<std::string, DragScalarAsParam>> params, ImGuiSliderFlags flags=0);
+	bool DragFloatAs(const std::string &label, float *v, float v_min, float v_max, bool clamp_min, bool clamp_max, std::pair<std::string, DragScalarAsParam> param, ImGuiSliderFlags flags=0);
+	bool DragFloatNAs(const std::string &label, float *v, int components, const float *v_min, const float *v_max, bool *clamp_min, bool *clamp_max, std::vector<std::pair<std::string, std::vector<DragScalarAsParam>>> params, ImGuiSliderFlags flags=0);
+
 }

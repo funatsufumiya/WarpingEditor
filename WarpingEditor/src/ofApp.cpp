@@ -20,8 +20,7 @@ void ofApp::setup(){
 	warp_.setup();
 	ofLoadImage(texture_, "of.png");
 	auto &data = Data::shared();
-	data.create();
-	data.create();
+	data.create("mesh");
 	uv_.setTexture(texture_);
 	warp_.setTexture(texture_);
 	
@@ -74,35 +73,6 @@ void ofApp::draw(){
 			Selectable(m.first.c_str());
 			PopID();
 		}
-	}
-	End();
-	if(Begin("test")) {
-		static float value=0;
-		SliderFloatAs("value", &value, -1, 1, {
-			{"px", {glm::ivec2{0, 256}, "%d"}},
-			{" %", {glm::vec2{0, 100}, "%.02f%"}},
-			{" f", {glm::vec2{0, 1}, "%.03f%"}},
-		});
-		Value("raw value", value);
-		static float v[2];
-		float v_min[2] = {-1,-1};
-		float v_max[2] = {1,1};
-		SliderFloatNAs("value2", v, 2, v_min, v_max, {
-			{"px", {
-				{glm::ivec2{0, 256}, "%d"},
-				{glm::ivec2{0, 256}, "%d"}
-			}},
-			{" %", {
-				{glm::vec2{0, 100}, "%.02f%"},
-				{glm::vec2{0, 100}, "%.02f%"}
-			}},
-			{" f", {
-				{glm::vec2{0, 1}, "%.03f%"},
-				{glm::vec2{0, 1}, "%.03f%"}
-			}},
-		});
-		Value("raw value[0]", v[0]);
-		Value("raw value[1]", v[1]);
 	}
 	End();
 	switch(state_) {
