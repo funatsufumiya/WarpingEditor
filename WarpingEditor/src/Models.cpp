@@ -46,26 +46,26 @@ bool Data::isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden) const
 	return !mesh->is_locked && (include_hidden || isVisible(mesh));
 }
 
-std::shared_ptr<Data::Mesh> Data::find(std::shared_ptr<geom::Quad> quad)
+std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<geom::Quad> quad)
 {
 	auto found = std::find_if(begin(mesh_), end(mesh_), [quad](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
 		return m.second->uv_quad == quad;
 	});
 	if(found == std::end(mesh_)) {
-		return nullptr;
+		return {"", nullptr};
 	}
-	return found->second;
+	return *found;
 }
 
-std::shared_ptr<Data::Mesh> Data::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
+std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
 {
 	auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
 		return m.second->mesh == mesh;
 	});
 	if(found == std::end(mesh_)) {
-		return nullptr;
+		return {"", nullptr};
 	}
-	return found->second;
+	return *found;
 }
 
 std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh()

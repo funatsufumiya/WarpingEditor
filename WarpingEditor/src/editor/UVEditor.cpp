@@ -113,36 +113,55 @@ ofMesh UVEditor::makeBackground() const
 
 void UVEditor::gui()
 {
+	auto guiPoint = [&](const std::string &label, PointType &p) {
+		float v_min[2] = {0,0};
+		float v_max[2] = {1,1};
+		std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
+			{"px", {
+				{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
+				{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
+			}},
+			{"%", {
+				{glm::vec2{0, 100}, 0.1f, "%.02f%%"}
+			}},
+			{"rate", {
+				{glm::vec2{0, 1}, 0.001f, "%.03f"}
+			}},
+		};
+		return DragFloatNAs(label, &p.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+	};
 	auto data = Data::shared();
+	struct GuiPoint {
+		std::string label;
+		std::shared_ptr<MeshType> mesh;
+		IndexType index;
+	};
+	std::vector<GuiPoint> points;
+	for(auto &&weak : op_selection_.mesh) {
+		auto mesh = data.find(weak.lock());
+		if(mesh.second) {
+			auto m = getMeshType(*mesh.second);
+			const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
+			for(int i = 0; i < m->size(); ++i) {
+				points.emplace_back(GuiPoint{mesh.first+"/"+names[i], getMeshType(*mesh.second), i});
+			}
+		}
+	}
+	for(auto &&point : op_selection_.point) {
+		auto mesh = data.find(point.first.lock());
+		if(mesh.second) {
+			auto m = getMeshType(*mesh.second);
+			const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
+			for(IndexType i : point.second) {
+				points.emplace_back(GuiPoint{mesh.first+"/"+names[i], getMeshType(*mesh.second), i});
+			}
+		}
+	}
+	
 	using namespace ImGui;
 	if(Begin("UV")) {
-		for(auto &&mesh : data.getMesh()) {
-			if(data.isEditable(mesh.second)) {
-				if(TreeNode(mesh.first.c_str())) {
-					auto m = getMeshType(*mesh.second);
-					const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
-					float v_min[2] = {0,0};
-					float v_max[2] = {1,1};
-					for(int i = 0; i < m->size(); ++i) {
-						DragFloatNAs(names[i], &m->operator[](i).x, 2, v_min, v_max, nullptr, nullptr, {
-							{"px", {
-								{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
-								{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
-							}},
-							{"%", {
-								{glm::vec2{0, 100}, 0.1f, "%.02f%"}
-							}},
-							{"rate", {
-								{glm::vec2{0, 1}, 0.001f, "%.03f%"}
-							}},
-						});
-					}
-					TreePop();
-				}
-			}
-			else {
-				Text("%s", mesh.first.c_str());
-			}
+		for(auto &&p : points) {
+			guiPoint(p.label, p.mesh->operator[](p.index));
 		}
 	}
 	End();

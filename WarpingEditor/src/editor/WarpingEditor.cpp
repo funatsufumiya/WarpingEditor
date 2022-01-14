@@ -140,16 +140,18 @@ void WarpingEditor::update()
 		op_hover_ = OpHover();
 	}
 	Editor::update();
+	auto data = Data::shared();
 	if(mode_ == MODE_DIVISION) {
 		if(mouse_.isFrameNew()) {
 			if(mouse_.isClicked(OF_MOUSE_BUTTON_LEFT)) {
 				auto pos = getIn(mouse_.pos);
-				for(auto weak : op_selection_.quad) {
-					if(auto data = Data::shared().find(weak.lock())) {
-						if(!isEditableMesh(*data)) {
+				for(auto weak : op_selection_.mesh) {
+					auto d = data.find(weak.lock());
+					if(d.second) {
+						if(!data.isEditable(d.second)) {
 							continue;
 						}
-						auto mesh = data->mesh;
+						auto mesh = d.second->mesh;
 						glm::vec2 dst_findex;
 						glm::vec2 result;
 						bool is_row;
@@ -158,11 +160,11 @@ void WarpingEditor::update()
 							int row = dst_findex.y;
 							if(is_row) {
 								mesh->divideCol(col, dst_findex.x - col);
-								data->interpolator->selectPoint(col+1, row);
+								d.second->interpolator->selectPoint(col+1, row);
 							}
 							else {
 								mesh->divideRow(row, dst_findex.y - row);
-								data->interpolator->selectPoint(col, row+1);
+								d.second->interpolator->selectPoint(col, row+1);
 							}
 						}
 						else if(mesh->getIndexOfPoint(pos, dst_findex)) {
@@ -170,18 +172,19 @@ void WarpingEditor::update()
 							int row = dst_findex.y;
 							mesh->divideCol(col, dst_findex.x - col);
 							mesh->divideRow(row, dst_findex.y - row);
-							data->interpolator->selectPoint(col+1, row+1);
+							d.second->interpolator->selectPoint(col+1, row+1);
 						}
 					}
 				}
 				for(auto selection : op_selection_.point) {
-					if(auto data = Data::shared().find(selection.first.lock())) {
-						auto mesh = data->mesh;
+					auto d = data.find(selection.first.lock());
+					if(d.second) {
+						auto mesh = d.second->mesh;
 						for(auto index : selection.second) {
 							if(isCorner(*mesh, index)) {
 								continue;
 							}
-							data->interpolator->togglePoint(index.first, index.second);
+							d.second->interpolator->togglePoint(index.first, index.second);
 						}
 					}
 				}

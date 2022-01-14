@@ -42,11 +42,11 @@ protected:
 		bool is_frame_new_=false, has_new_frame_=false;
 	} mouse_;
 	struct OpHover {
-		std::weak_ptr<MeshType> quad;
+		std::weak_ptr<MeshType> mesh;
 		std::pair<std::weak_ptr<MeshType>, IndexType> point;
 	} op_hover_;
 	struct OpSelection {
-		std::set<std::weak_ptr<MeshType>, std::owner_less<std::weak_ptr<MeshType>>> quad;
+		std::set<std::weak_ptr<MeshType>, std::owner_less<std::weak_ptr<MeshType>>> mesh;
 		std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> point;
 		bool is_grabbing = false;
 	} op_selection_;
@@ -136,21 +136,21 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 			ret.point.insert(std::make_pair(hover.point.first, std::set<IndexType>{hover.point.second}));
 		}
 	}
-	if(hover.quad.expired()) {
-		ret.quad.clear();
+	if(hover.mesh.expired()) {
+		ret.mesh.clear();
 	}
 	else {
 		is_grabbing = true;
-		auto result = ret.quad.insert(hover.quad);
+		auto result = ret.mesh.insert(hover.mesh);
 		bool is_new = result.second;
 		if(!is_new) {
 			if(isOpAlt()) {
-				ret.quad.erase(result.first);
+				ret.mesh.erase(result.first);
 				is_grabbing = false;
 			}
 		}
 		else if(isOpDefault()) {
-			ret.quad = {hover.quad};
+			ret.mesh = {hover.mesh};
 		}
 	}
 	ret.is_grabbing = is_grabbing;
@@ -170,8 +170,8 @@ void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta
 			}
 		}
 	}
-	if(!op_selection_.quad.empty()) {
-		for(auto &&q : op_selection_.quad) {
+	if(!op_selection_.mesh.empty()) {
+		for(auto &&q : op_selection_.mesh) {
 			if(auto ptr = q.lock()) {
 				moveMesh(*ptr, delta);
 			}
@@ -333,9 +333,9 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 				continue;
 			}
 			float distance;
-			auto quad = getIfInside(m.second, mouse_.pos, distance);
-			if(quad && max_distance > distance) {
-				ret.quad = quad;
+			auto mesh = getIfInside(m.second, mouse_.pos, distance);
+			if(mesh && max_distance > distance) {
+				ret.mesh = mesh;
 				max_distance = distance;
 			}
 		}
@@ -346,17 +346,15 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 template<typename MeshType, typename IndexType, typename PointType>
 bool Editor<MeshType, IndexType, PointType>::isEditableMesh(const Data::Mesh &data) const
 {
-	auto d = Data::shared().find(data.mesh);
-	auto &&mesh = Data::shared().getEditableMesh();
-	return any_of(begin(mesh), end(mesh), [d](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
-		return m.second == d;
-	});
+	auto shared = Data::shared();
+	auto d = shared.find(data.mesh);
+	return shared.isEditable(d.second);
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
 bool Editor<MeshType, IndexType, PointType>::isHoveredMesh(const Data::Mesh &data) const
 {
-	return getMeshType(data) == op_hover_.quad.lock();
+	return getMeshType(data) == op_hover_.mesh.lock();
 }
 template<typename MeshType, typename IndexType, typename PointType>
 bool Editor<MeshType, IndexType, PointType>::isHoveredPoint(const Data::Mesh &data, IndexType index) const
@@ -366,7 +364,7 @@ bool Editor<MeshType, IndexType, PointType>::isHoveredPoint(const Data::Mesh &da
 template<typename MeshType, typename IndexType, typename PointType>
 bool Editor<MeshType, IndexType, PointType>::isSelectedMesh(const Data::Mesh &data) const
 {
-	return any_of(begin(op_selection_.quad), end(op_selection_.quad), [&](std::weak_ptr<MeshType> ptr) {
+	return any_of(begin(op_selection_.mesh), end(op_selection_.mesh), [&](std::weak_ptr<MeshType> ptr) {
 		return getMeshType(data) == ptr.lock();
 	});
 }
