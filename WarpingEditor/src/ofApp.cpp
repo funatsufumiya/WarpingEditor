@@ -37,17 +37,22 @@ void ofApp::update(){
 	uv_.setEnableMeshEditByMouse(!gui_focused);
 	warp_.setEnableViewportEditByMouse(!gui_focused);
 	warp_.setEnableMeshEditByMouse(!gui_focused);
-	auto &data = Data::shared();
-	data.update();
+	bool update_mesh = true;
 	switch(state_) {
 		case EDIT_UV:
 			uv_.setRegion(ofGetCurrentViewport());
 			uv_.update();
+			update_mesh = !uv_.isPreventMeshInterpolation();
 			break;
 		case EDIT_WRAP:
 			warp_.setRegion(ofGetCurrentViewport());
 			warp_.update();
+			update_mesh = !warp_.isPreventMeshInterpolation();
 			break;
+	}
+	if(update_mesh) {
+		auto &data = Data::shared();
+		data.update();
 	}
 }
 

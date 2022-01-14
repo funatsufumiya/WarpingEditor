@@ -15,6 +15,10 @@ public:
 	};
 	void update() override;
 	void draw() const override;
+	void gui() override;
+	
+	bool isPreventMeshInterpolation() const override { return mode_==MODE_DIVISION; }
+
 protected:
 	std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const override;
 	void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world=true) const override;

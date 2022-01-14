@@ -15,6 +15,8 @@ public:
 	virtual void draw() const;
 	virtual void gui() {}
 	
+	virtual bool isPreventMeshInterpolation() const { return false; }
+	
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }

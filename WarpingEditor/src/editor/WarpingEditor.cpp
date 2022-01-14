@@ -233,5 +233,8 @@ void WarpingEditor::draw() const
 			popMatrix();
 		}	break;
 	}
+}
 
+void WarpingEditor::gui()
+{
 }
