@@ -11,9 +11,9 @@ std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::stri
 	return std::make_pair(n, m);
 }
 void Data::update() {
-	std::for_each(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
+	for(auto &&m : mesh_) {
 		m.second->update();
-	});
+	}
 }
 bool Data::remove(const std::string &name) {
 	auto found = mesh_.find(name);
@@ -120,6 +120,7 @@ void Data::exportMesh(const std::string &filepath, float resample_min_interval, 
 {
 	ofMesh all;
 	for(auto &&m : mesh_) {
+		m.second->setDirty();	// force clear cache
 		all.append(m.second->getMesh(resample_min_interval, coord_size));
 	}
 	all.save(filepath);

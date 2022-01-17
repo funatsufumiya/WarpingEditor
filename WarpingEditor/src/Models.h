@@ -26,14 +26,18 @@ public:
 		std::shared_ptr<geom::Quad> uv_quad;
 		std::shared_ptr<ofx::mapper::Mesh> mesh;
 		std::shared_ptr<ofx::mapper::Interpolator> interpolator;
-		ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}) const {
-			if(is_dirty_) {
-				cache_ = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval);
+		ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const {
+			if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
+				cache_ = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval, use_area);
 				auto uv = geom::getScaled(*uv_quad, remap_coord);
 				for(auto &t : cache_.getTexCoords()) {
 					t = geom::rescalePosition(uv, t);
 				}
 				is_dirty_ = false;
+				cached_resample_interval_ = resample_min_interval;
+				if(use_area) {
+					cached_valid_viewport_ = *use_area;
+				}
 			}
 			return cache_;
 		}
@@ -54,6 +58,8 @@ public:
 		void setDirty() { is_dirty_ = true; }
 	private:
 		mutable ofMesh cache_;
+		mutable float cached_resample_interval_;
+		mutable ofRectangle cached_valid_viewport_;
 		mutable bool is_dirty_=true;
 	};
 	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data");

@@ -238,6 +238,7 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 	tex_.bind();
 	mesh.draw();
 	tex_.unbind();
+	mesh.drawWireframe();
 }
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::drawWire() const

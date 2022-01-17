@@ -96,7 +96,11 @@ void WarpingEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &
 
 ofMesh WarpingEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) const
 {
-	ofMesh ret = data.getMesh(10, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
+	const float min_interval = 100;
+	float mesh_resample_interval = std::max<float>(min_interval, (getIn({min_interval,0})-getIn({0,0})).x);
+	auto viewport = getRegion();
+	ofRectangle viewport_in{getIn(viewport.getTopLeft()), getIn(viewport.getBottomRight())};
+	ofMesh ret = data.getMesh(mesh_resample_interval, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u}, &viewport_in);
 	auto &colors = ret.getColors();
 	for(auto &&c : colors) {
 		c = c*color;
