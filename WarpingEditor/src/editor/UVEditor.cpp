@@ -113,6 +113,10 @@ ofMesh UVEditor::makeBackground() const
 
 void UVEditor::gui()
 {
+	using namespace ImGui;
+	auto data = Data::shared();
+	const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
+
 	auto guiPoint = [&](const std::string &label, PointType &p) {
 		float v_min[2] = {0,0};
 		float v_max[2] = {1,1};
@@ -130,36 +134,70 @@ void UVEditor::gui()
 		};
 		return DragFloatNAs(label, &p.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 	};
-	auto data = Data::shared();
+	auto guiMesh = [&](const std::string &label, MeshType &mesh) {
+		if(TreeNode(label.c_str())) {
+			for(int i = 0; i < mesh.size(); ++i) {
+				guiPoint(names[i], mesh[i]);
+			}
+			TreePop();
+		}
+	};
+	struct GuiMesh {
+		std::string label;
+		std::shared_ptr<MeshType> mesh;
+	};
 	struct GuiPoint {
 		std::string label;
 		std::shared_ptr<MeshType> mesh;
 		IndexType index;
 	};
+	std::vector<GuiMesh> meshes;
 	std::vector<GuiPoint> points;
-	for(auto &&weak : op_selection_.mesh) {
-		auto mesh = data.find(weak.lock());
-		if(mesh.second) {
-			auto m = getMeshType(*mesh.second);
-			const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
-			for(int i = 0; i < m->size(); ++i) {
-				points.emplace_back(GuiPoint{mesh.first+"/"+names[i], getMeshType(*mesh.second), i});
-			}
-		}
-	}
-	for(auto &&point : op_selection_.point) {
-		auto mesh = data.find(point.first.lock());
-		if(mesh.second) {
-			auto m = getMeshType(*mesh.second);
-			const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
-			for(IndexType i : point.second) {
-				points.emplace_back(GuiPoint{mesh.first+"/"+names[i], getMeshType(*mesh.second), i});
-			}
-		}
-	}
-	
-	using namespace ImGui;
+
 	if(Begin("UV")) {
+		if(BeginTabBar("#tab")) {
+			if(BeginTabItem("selected")) {
+				for(auto &&weak : op_selection_.mesh) {
+					auto mesh = data.find(weak.lock());
+					if(mesh.second) {
+						auto m = getMeshType(*mesh.second);
+						meshes.push_back({mesh.first, m});
+					}
+				}
+				for(auto &&point : op_selection_.point) {
+					auto mesh = data.find(point.first.lock());
+					if(mesh.second) {
+						auto m = getMeshType(*mesh.second);
+						for(IndexType i : point.second) {
+							points.emplace_back(GuiPoint{mesh.first+"/"+names[i], getMeshType(*mesh.second), i});
+						}
+					}
+				}
+				EndTabItem();
+			}
+			if(BeginTabItem("editable")) {
+				for(auto &&mesh : data.getEditableMesh()) {
+					if(mesh.second) {
+						auto m = getMeshType(*mesh.second);
+						meshes.push_back({mesh.first, m});
+					}
+				}
+				EndTabItem();
+			}
+			if(BeginTabItem("all")) {
+				for(auto &&mesh : data.getMesh()) {
+					if(mesh.second) {
+						auto m = getMeshType(*mesh.second);
+						meshes.push_back({mesh.first, m});
+					}
+				}
+				EndTabItem();
+			}
+			EndTabBar();
+		};
+		for(auto &&m : meshes) {
+			guiMesh(m.label, *m.mesh);
+		}
 		for(auto &&p : points) {
 			guiPoint(p.label, p.mesh->operator[](p.index));
 		}

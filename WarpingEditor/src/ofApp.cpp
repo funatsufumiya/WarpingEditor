@@ -12,7 +12,7 @@ void ofApp::setup(){
 	ofDisableArbTex();
 	ofBackground(0);
 	
-	gui_.setup();
+	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
 	Icon::init();
 	
