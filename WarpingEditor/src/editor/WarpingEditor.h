@@ -30,5 +30,6 @@ protected:
 	ofMesh makeWireFromMesh(const DataType &data, const ofColor &color) const override;
 private:
 	int mode_=MODE_MESH;
+	bool is_mesh_div_edited_=false;
 };
 

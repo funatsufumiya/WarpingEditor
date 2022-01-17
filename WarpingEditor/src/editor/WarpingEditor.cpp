@@ -168,6 +168,7 @@ void WarpingEditor::update()
 								mesh->divideRow(row, dst_findex.y - row);
 								d.second->interpolator->selectPoint(col, row+1);
 							}
+							d.second->setDirty();
 						}
 						else if(mesh->getIndexOfPoint(pos, dst_findex)) {
 							int col = dst_findex.x;
@@ -175,6 +176,7 @@ void WarpingEditor::update()
 							mesh->divideCol(col, dst_findex.x - col);
 							mesh->divideRow(row, dst_findex.y - row);
 							d.second->interpolator->selectPoint(col+1, row+1);
+							d.second->setDirty();
 						}
 					}
 				}
@@ -187,6 +189,7 @@ void WarpingEditor::update()
 								continue;
 							}
 							d.second->interpolator->togglePoint(index.first, index.second);
+							d.second->setDirty();
 						}
 					}
 				}
@@ -260,6 +263,7 @@ void WarpingEditor::gui()
 	};
 	struct GuiPoint {
 		std::string label;
+		std::shared_ptr<MeshType> mesh;
 		MeshType::PointRef point;
 	};
 	std::vector<GuiMesh> meshes;
@@ -273,7 +277,7 @@ void WarpingEditor::gui()
 		}
 		if(TreeNode(mesh.label.c_str())) {
 			for(auto &&p : d.second->interpolator->getSelected()) {
-				guiPoint({format("[%d,%d]", p.col, p.row), p});
+				ret |= guiPoint({format("[%d,%d]", p.col, p.row), mesh.mesh, p});
 			}
 			TreePop();
 		}
@@ -294,7 +298,7 @@ void WarpingEditor::gui()
 					if(mesh.second) {
 						auto m = getMeshType(*mesh.second);
 						for(IndexType i : point.second) {
-							points.emplace_back(GuiPoint{format("%s[%d,%d]", mesh.first.c_str(), i.first, i.second),  m->getPoint(i.first, i.second)});
+							points.emplace_back(GuiPoint{format("%s[%d,%d]", mesh.first.c_str(), i.first, i.second), m, m->getPoint(i.first, i.second)});
 						}
 					}
 				}
@@ -371,10 +375,14 @@ void WarpingEditor::gui()
 			EndTabBar();
 		}
 		for(auto &&m : meshes) {
-			guiMesh(m);
+			if(guiMesh(m)) {
+				data.find(m.mesh).second->setDirty();
+			}
 		}
 		for(auto &&p : points) {
-			guiPoint(p);
+			if(guiPoint(p)) {
+				data.find(p.mesh).second->setDirty();
+			}
 		}
 	}
 	End();

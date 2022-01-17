@@ -135,12 +135,14 @@ void UVEditor::gui()
 		return DragFloatNAs(label, &p.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 	};
 	auto guiMesh = [&](const std::string &label, MeshType &mesh) {
+		bool ret = false;
 		if(TreeNode(label.c_str())) {
 			for(int i = 0; i < mesh.size(); ++i) {
-				guiPoint(names[i], mesh[i]);
+				ret |= guiPoint(names[i], mesh[i]);
 			}
 			TreePop();
 		}
+		return ret;
 	};
 	struct GuiMesh {
 		std::string label;
@@ -196,10 +198,14 @@ void UVEditor::gui()
 			EndTabBar();
 		};
 		for(auto &&m : meshes) {
-			guiMesh(m.label, *m.mesh);
+			if(guiMesh(m.label, *m.mesh)) {
+				data.find(m.mesh).second->setDirty();
+			}
 		}
 		for(auto &&p : points) {
-			guiPoint(p.label, p.mesh->operator[](p.index));
+			if(guiPoint(p.label, p.mesh->operator[](p.index))) {
+				data.find(p.mesh).second->setDirty();
+			}
 		}
 	}
 	End();

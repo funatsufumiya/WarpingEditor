@@ -27,12 +27,15 @@ public:
 		std::shared_ptr<ofx::mapper::Mesh> mesh;
 		std::shared_ptr<ofx::mapper::Interpolator> interpolator;
 		ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}) const {
-			ofMesh ret = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval);
-			auto uv = geom::getScaled(*uv_quad, remap_coord);
-			for(auto &t : ret.getTexCoords()) {
-				t = geom::rescalePosition(uv, t);
+			if(is_dirty_) {
+				cache_ = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval);
+				auto uv = geom::getScaled(*uv_quad, remap_coord);
+				for(auto &t : cache_.getTexCoords()) {
+					t = geom::rescalePosition(uv, t);
+				}
+				is_dirty_ = false;
 			}
-			return ret;
+			return cache_;
 		}
 		Mesh() {
 			uv_quad = std::make_shared<geom::Quad>();
@@ -48,6 +51,10 @@ public:
 		}
 		void pack(std::ostream &stream) const;
 		void unpack(std::istream &stream);
+		void setDirty() { is_dirty_ = true; }
+	private:
+		mutable ofMesh cache_;
+		mutable bool is_dirty_=true;
 	};
 	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data");
 	void update();

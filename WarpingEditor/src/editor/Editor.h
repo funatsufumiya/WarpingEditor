@@ -161,12 +161,14 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta)
 {
+	auto &&data = Data::shared();
 	if(!op_selection_.point.empty()) {
 		for(auto &&qp : op_selection_.point) {
 			if(auto ptr = qp.first.lock()) {
 				for(auto i : qp.second) {
 					movePoint(*ptr, i, delta);
 				}
+				data.find(ptr).second->setDirty();
 			}
 		}
 	}
@@ -174,6 +176,7 @@ void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta
 		for(auto &&q : op_selection_.mesh) {
 			if(auto ptr = q.lock()) {
 				moveMesh(*ptr, delta);
+				data.find(ptr).second->setDirty();
 			}
 		}
 	}
