@@ -361,6 +361,8 @@ bool ImGui::SliderFloatNAs(const std::string &label_str, float* v, int component
 	}
 
 	SameLine();
+	const float unit_width = 40;
+	PushItemWidth(unit_width);
 	if(BeginCombo("##type", active.first.c_str())) {
 		for(int i = 0; i < params.size(); ++i) {
 			auto &type_label = params[i].first;
@@ -370,7 +372,8 @@ bool ImGui::SliderFloatNAs(const std::string &label_str, float* v, int component
 		}
 		EndCombo();
 	}
-	
+	PopItemWidth();
+
 	if(is_opened) {
 		PushID("elements");
 		Indent();
@@ -467,6 +470,8 @@ bool ImGui::DragFloatNAs(const std::string &label_str, float *v, int components,
 	}
 
 	SameLine();
+	const float unit_width = 40;
+	PushItemWidth(unit_width);
 	if(BeginCombo("##type", active.first.c_str())) {
 		for(int i = 0; i < params.size(); ++i) {
 			auto &type_label = params[i].first;
@@ -476,7 +481,8 @@ bool ImGui::DragFloatNAs(const std::string &label_str, float *v, int components,
 		}
 		EndCombo();
 	}
-	
+	PopItemWidth();
+
 	if(is_opened) {
 		PushID("elements");
 		Indent();
@@ -498,5 +504,6 @@ bool ImGui::DragFloatNAs(const std::string &label_str, float *v, int components,
 	PopID();
 
 	EndGroup();
-	return value_changed;}
+	return value_changed;
+}
 

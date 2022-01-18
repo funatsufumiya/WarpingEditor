@@ -79,7 +79,7 @@ protected:
 	virtual ofMesh makeMeshFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
 	virtual ofMesh makeWireFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
 	ofMesh makeMeshFromPoint(const PointType &point, const ofColor &color, float point_size) const;
-	ofMesh makeBackground() const { return ofMesh(); }
+	virtual ofMesh makeBackground() const { return ofMesh(); }
 
 	virtual std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
 	virtual std::shared_ptr<MeshType> getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance) { return nullptr; }
@@ -230,15 +230,16 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 		if(isSelectedMesh(*m)) {
 			mesh.append(makeMeshFromMesh(*m, ofColor::white));
 		}
-		if(isHoveredMesh(*m)) {
+		else if(isHoveredMesh(*m)) {
 			mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
 		}
-		mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+		else {
+			mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+		}
 	};
 	tex_.bind();
 	mesh.draw();
 	tex_.unbind();
-	mesh.drawWireframe();
 }
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::drawWire() const

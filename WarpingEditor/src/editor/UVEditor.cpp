@@ -102,7 +102,7 @@ ofMesh UVEditor::makeBackground() const
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
-		ret.addColor(ofColor::white);
+		ret.addColor(ofColor::gray);
 	}
 	for(auto i : {0,2,1,1,2,3}) {
 		ret.addIndex(i);

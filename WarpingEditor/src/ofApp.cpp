@@ -10,11 +10,13 @@ ofTexture t,f;
 //--------------------------------------------------------------
 void ofApp::setup(){
 	ofDisableArbTex();
+	Icon::init();
+	
+	ofEnableArbTex();
 	ofBackground(0);
 	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
-	Icon::init();
 	
 	uv_.setup();
 	warp_.setup();
