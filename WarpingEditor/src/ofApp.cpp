@@ -3,12 +3,8 @@
 #include "GuiFunc.h"
 #include "Icon.h"
 
-namespace {
-ofTexture t,f;
-}
-
 //--------------------------------------------------------------
-void ofApp::setup(){
+void GuiApp::setup(){
 	ofDisableArbTex();
 	Icon::init();
 	
@@ -30,10 +26,12 @@ void ofApp::setup(){
 		auto size = ofGetWindowSize();
 		uv_.scale(glm::min(size.x, size.y), {0,0});
 	}
+	
+	main_app_->setTexture(texture_);
 }
 
 //--------------------------------------------------------------
-void ofApp::update(){
+void GuiApp::update(){
 	bool gui_focused = ImGui::GetIO().WantCaptureMouse;
 	uv_.setEnableViewportEditByMouse(!gui_focused);
 	uv_.setEnableMeshEditByMouse(!gui_focused);
@@ -55,11 +53,13 @@ void ofApp::update(){
 	if(update_mesh) {
 		auto &data = Data::shared();
 		data.update();
+		// update mesh for main window
+		main_app_->setMesh(data.getMeshForExport(100, ofGetUsingArbTex() ? glm::vec2{texture_.getWidth(), texture_.getHeight()} : glm::vec2{1,1}));
 	}
 }
 
 //--------------------------------------------------------------
-void ofApp::draw(){
+void GuiApp::draw(){
 	switch(state_) {
 		case EDIT_UV:
 			uv_.draw();
@@ -94,7 +94,7 @@ void ofApp::draw(){
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key){
+void GuiApp::keyPressed(int key){
 	switch(key) {
 		case OF_KEY_TAB:
 			state_ ^= 1;
@@ -109,51 +109,16 @@ void ofApp::keyPressed(int key){
 }
 
 //--------------------------------------------------------------
-void ofApp::keyReleased(int key){
-
+void MainApp::setup()
+{
+	ofBackground(0);
 }
-
-//--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ){
-
+void MainApp::update()
+{
 }
-
-//--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mousePressed(int x, int y, int button){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::windowResized(int w, int h){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::gotMessage(ofMessage msg){
-
-}
-
-//--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
-
+void MainApp::draw()
+{
+	texture_.bind();
+	mesh_.draw();
+	texture_.unbind();
 }

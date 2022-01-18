@@ -68,7 +68,7 @@ std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<o
 	return *found;
 }
 
-std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh()
+std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh() const
 {
 	std::map<std::string, std::shared_ptr<Data::Mesh>> ret;
 	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
@@ -85,7 +85,7 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh()
 	}
 	return ret;
 }
-std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool include_hidden)
+std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool include_hidden) const
 {
 	std::map<std::string, std::shared_ptr<Data::Mesh>> ret;
 	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
@@ -116,14 +116,19 @@ void readFrom(std::istream& is, T& t) {
 }
 }
 
-void Data::exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size) const
+void Data::exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
-	ofMesh all;
-	for(auto &&m : mesh_) {
+	getMeshForExport(resample_min_interval, coord_size).save(filepath);
+}
+
+ofMesh Data::getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+{
+	ofMesh ret;
+	for(auto &&m : only_visible ? getVisibleMesh() : mesh_) {
 		m.second->setDirty();	// force clear cache
-		all.append(m.second->getMesh(resample_min_interval, coord_size));
+		ret.append(m.second->getMesh(resample_min_interval, coord_size));
 	}
-	all.save(filepath);
+	return ret;
 }
 
 void Data::save(const std::string &filepath) const

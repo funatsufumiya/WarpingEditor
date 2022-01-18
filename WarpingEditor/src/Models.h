@@ -67,8 +67,8 @@ public:
 	bool remove(const std::string &name);
 	bool remove(const std::shared_ptr<Mesh> mesh);
 	std::map<std::string, std::shared_ptr<Mesh>>& getMesh() { return mesh_; }
-	std::map<std::string, std::shared_ptr<Mesh>> getVisibleMesh();
-	std::map<std::string, std::shared_ptr<Mesh>> getEditableMesh(bool include_hidden=false);
+	std::map<std::string, std::shared_ptr<Mesh>> getVisibleMesh() const;
+	std::map<std::string, std::shared_ptr<Mesh>> getEditableMesh(bool include_hidden=false) const;
 	bool isVisible(std::shared_ptr<Mesh> mesh) const;
 	bool isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden=false) const;
 	std::pair<std::string, std::shared_ptr<Data::Mesh>> find(std::shared_ptr<geom::Quad> quad);
@@ -77,7 +77,8 @@ public:
 	void load(const std::string &filepath);
 	void pack(std::ostream &stream) const;
 	void unpack(std::istream &stream);
-	void exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size) const;
+	void exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
+	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 private:
 	std::map<std::string, std::shared_ptr<Mesh>> mesh_;
 	bool add(const std::string &name, std::shared_ptr<Mesh> mesh) {
