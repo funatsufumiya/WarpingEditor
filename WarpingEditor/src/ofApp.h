@@ -16,8 +16,10 @@ public:
 	
 	void keyPressed(int key);
 	void setMainApp(std::shared_ptr<MainApp> app) { main_app_ = app; }
+	void setMainWindow(std::shared_ptr<ofAppBaseWindow> window) { main_window_ = window; }
 private:
 	std::shared_ptr<MainApp> main_app_;
+	std::shared_ptr<ofAppBaseWindow> main_window_;
 	ofxImGui::Gui gui_;
 	ofTexture texture_;
 	WarpingEditor warp_;
@@ -35,6 +37,7 @@ public:
 	void setup();
 	void update();
 	void draw();
+	
 	void setTexture(ofTexture texture) { texture_ = texture; }
 	void setMesh(const ofMesh &mesh) { mesh_ = mesh; }
 private:

@@ -70,6 +70,17 @@ void GuiApp::draw(){
 	}
 	gui_.begin();
 	using namespace ImGui;
+	if(Begin("MainWindow")) {
+		auto position = main_window_->getWindowPosition();
+		if(DragFloat2("position", &position.x, 1, 0, -1, "%0.0f")) {
+			main_window_->setWindowPosition(position.x, position.y);
+		}
+		auto size = main_window_->getWindowSize();
+		if(DragFloat2("size", &size.x, 1, 1, -1, "%0.0f")) {
+			main_window_->setWindowShape(size.x, size.y);
+		}
+	}
+	End();
 	if(Begin("Switch")) {
 		auto &data = Data::shared();
 		for(auto &&m : data.getMesh()) {

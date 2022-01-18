@@ -23,6 +23,7 @@ int main( ){
 
 	shared_ptr<MainApp> mainApp(new MainApp);
 	shared_ptr<GuiApp> guiApp(new GuiApp);
+	guiApp->setMainWindow(mainWindow);
 	guiApp->setMainApp(mainApp);
 	
 	ofRunApp(mainWindow, mainApp);
