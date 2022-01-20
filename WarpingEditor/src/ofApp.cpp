@@ -2,6 +2,7 @@
 #include "Models.h"
 #include "GuiFunc.h"
 #include "Icon.h"
+#include "ImGuiFileDialog.h"
 
 //--------------------------------------------------------------
 void GuiApp::setup(){
@@ -13,7 +14,6 @@ void GuiApp::setup(){
 	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
-	
 	uv_.setup();
 	warp_.setup();
 	ofLoadImage(texture_, "of.png");
@@ -23,11 +23,12 @@ void GuiApp::setup(){
 	warp_.setTexture(texture_);
 	
 	if(!ofGetUsingArbTex()) {
-		auto size = ofGetWindowSize();
-		uv_.scale(glm::min(size.x, size.y), {0,0});
+		uv_.scale(glm::min(texture_.getWidth(), texture_.getHeight()), {0,0});
 	}
 	
 	main_app_->setTexture(texture_);
+	
+	std::filesystem::path p;
 }
 
 //--------------------------------------------------------------
@@ -53,7 +54,6 @@ void GuiApp::update(){
 	if(update_mesh) {
 		auto &data = Data::shared();
 		data.update();
-		// update mesh for main window
 		main_app_->setMesh(data.getMeshForExport(100, ofGetUsingArbTex() ? glm::vec2{texture_.getWidth(), texture_.getHeight()} : glm::vec2{1,1}));
 	}
 }
@@ -70,6 +70,27 @@ void GuiApp::draw(){
 	}
 	gui_.begin();
 	using namespace ImGui;
+	if(BeginMainMenuBar()) {
+		if(BeginMenu("Texture")) {
+			if(MenuItem("Change Texture...")) {
+				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".png", ofToDataPath("."));
+			}
+			EndMenu();
+		}
+		EndMainMenuBar();
+	}
+	if(ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+		if (ImGuiFileDialog::Instance()->IsOk() == true) {
+			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			if(ofLoadImage(texture_, filePathName)) {
+				main_app_->setTexture(texture_);
+				uv_.setTexture(texture_);
+				warp_.setTexture(texture_);
+			}
+		}
+		ImGuiFileDialog::Instance()->Close();
+	}
 	if(Begin("MainWindow")) {
 		auto position = main_window_->getWindowPosition();
 		if(DragFloat2("position", &position.x, 1, 0, -1, "%0.0f")) {
