@@ -54,7 +54,10 @@ bool WarpingEditor::isEditablePoint(const Data::Mesh &data, IndexType index) con
 
 std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance)
 {
-	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
 	auto uv = getScaled(*data->uv_quad, tex_uv);
 	auto p = getIn(pos);
 	auto &mesh = *data->mesh;
@@ -100,7 +103,11 @@ ofMesh WarpingEditor::makeMeshFromMesh(const DataType &data, const ofColor &colo
 	float mesh_resample_interval = std::max<float>(min_interval, (getIn({min_interval,0})-getIn({0,0})).x);
 	auto viewport = getRegion();
 	ofRectangle viewport_in{getIn(viewport.getTopLeft()), getIn(viewport.getBottomRight())};
-	ofMesh ret = data.getMesh(mesh_resample_interval, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u}, &viewport_in);
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
+	ofMesh ret = data.getMesh(mesh_resample_interval, tex_uv, &viewport_in);
 	auto &colors = ret.getColors();
 	for(auto &&c : colors) {
 		c = c*color;

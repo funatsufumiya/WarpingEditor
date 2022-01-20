@@ -16,23 +16,25 @@ void GuiApp::setup(){
 	
 	uv_.setup();
 	warp_.setup();
-	ofLoadImage(texture_, "of.png");
 	auto &data = Data::shared();
 	data.create("mesh");
-	uv_.setTexture(texture_);
-	warp_.setTexture(texture_);
-	
-	if(!ofGetUsingArbTex()) {
-		uv_.scale(glm::min(texture_.getWidth(), texture_.getHeight()), {0,0});
-	}
-	
-	main_app_->setTexture(texture_);
-	
-	std::filesystem::path p;
+
+	texture_source_.loadFromFile("testdata/of.png");
+	auto tex = texture_source_.getTexture();
+	main_app_->setTexture(tex);
+	uv_.setTexture(tex);
+	warp_.setTexture(tex);
 }
 
 //--------------------------------------------------------------
 void GuiApp::update(){
+	texture_source_.update();
+	if(texture_source_.isFrameNew()) {
+		auto tex = texture_source_.getTexture();
+		main_app_->setTexture(tex);
+		uv_.setTexture(tex);
+		warp_.setTexture(tex);
+	}
 	bool gui_focused = ImGui::GetIO().WantCaptureMouse;
 	uv_.setEnableViewportEditByMouse(!gui_focused);
 	uv_.setEnableMeshEditByMouse(!gui_focused);
@@ -54,7 +56,8 @@ void GuiApp::update(){
 	if(update_mesh) {
 		auto &data = Data::shared();
 		data.update();
-		main_app_->setMesh(data.getMeshForExport(100, ofGetUsingArbTex() ? glm::vec2{texture_.getWidth(), texture_.getHeight()} : glm::vec2{1,1}));
+		auto tex = texture_source_.getTexture();
+		main_app_->setMesh(data.getMeshForExport(100, ofGetUsingArbTex() ? glm::vec2{tex.getWidth(), tex.getHeight()} : glm::vec2{1,1}));
 	}
 }
 
@@ -68,12 +71,13 @@ void GuiApp::draw(){
 			warp_.draw();
 			break;
 	}
+	
 	gui_.begin();
 	using namespace ImGui;
 	if(BeginMainMenuBar()) {
 		if(BeginMenu("Texture")) {
 			if(MenuItem("Change Texture...")) {
-				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".png", ofToDataPath("."));
+				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofToDataPath("."));
 			}
 			EndMenu();
 		}
@@ -83,10 +87,11 @@ void GuiApp::draw(){
 		if (ImGuiFileDialog::Instance()->IsOk() == true) {
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			if(ofLoadImage(texture_, filePathName)) {
-				main_app_->setTexture(texture_);
-				uv_.setTexture(texture_);
-				warp_.setTexture(texture_);
+			if(texture_source_.loadFromFile(filePathName)) {
+				auto tex = texture_source_.getTexture();
+				main_app_->setTexture(tex);
+				uv_.setTexture(tex);
+				warp_.setTexture(tex);
 			}
 		}
 		ImGuiFileDialog::Instance()->Close();
@@ -134,8 +139,9 @@ void GuiApp::keyPressed(int key){
 		case 's': Data::shared().save("saved.bin"); break;
 		case 'l': Data::shared().load("saved.bin"); break;
 		case 'e': {
+			auto tex = texture_source_.getTexture();
 			Data::shared().exportMesh("export.ply", 10, {1,1});
-			Data::shared().exportMesh("export_arb.ply", 10, {texture_.getWidth(), texture_.getHeight()});
+			Data::shared().exportMesh("export_arb.ply", 10, {tex.getWidth(), tex.getHeight()});
 		}	break;
 	}
 }

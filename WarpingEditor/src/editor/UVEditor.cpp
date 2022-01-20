@@ -17,7 +17,9 @@ void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const Poi
 {
 	auto mesh = *getMeshType(data);
 	if(scale_for_inner_world) {
-		mesh = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
+		auto tex_data = tex_.getTextureData();
+		glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
+		mesh = getScaled(mesh, tex_size);
 	}
 	for(int i = 0; i < mesh.size(); ++i) {
 		func(mesh[i], i);
@@ -27,8 +29,9 @@ void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const Poi
 
 std::shared_ptr<UVEditor::MeshType> UVEditor::getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance)
 {
-	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
-	auto uv = getScaled(*data->uv_quad, tex_uv);
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
+	auto uv = getScaled(*data->uv_quad, tex_size);
 	auto p = getIn(pos);
 	if(!inside(uv, p)) {
 		return nullptr;
@@ -41,15 +44,17 @@ std::shared_ptr<UVEditor::MeshType> UVEditor::getIfInside(std::shared_ptr<DataTy
 
 void UVEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
 {
-	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
-	auto d = delta/getScale()/tex_uv;
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
+	auto d = delta/getScale()/tex_size;
 	mesh = geom::getTranslated(mesh, d);
 }
 
 void UVEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta)
 {
-	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
-	auto d = delta/getScale()/tex_uv;
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
+	auto d = delta/getScale()/tex_size;
 	mesh[index] += d;
 }
 
@@ -59,8 +64,13 @@ ofMesh UVEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) co
 	auto mesh = *data.uv_quad;
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
-	auto vert = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
-	auto coord = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
+	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
+	auto vert = getScaled(mesh, tex_size);
+	auto coord = getScaled(mesh, tex_uv);
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -78,8 +88,13 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 	auto mesh = *data.uv_quad;
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_LINES);
-	auto vert = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
-	auto coord = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
+	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
+	auto vert = getScaled(mesh, tex_size);
+	auto coord = getScaled(mesh, tex_uv);
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -97,8 +112,13 @@ ofMesh UVEditor::makeBackground() const
 	MeshType mesh{1,1};
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
-	auto vert = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
-	auto coord = getScaled(mesh, {tex_.getTextureData().tex_t, tex_.getTextureData().tex_u});
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
+	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
+	auto vert = getScaled(mesh, tex_size);
+	auto coord = getScaled(mesh, tex_uv);
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));

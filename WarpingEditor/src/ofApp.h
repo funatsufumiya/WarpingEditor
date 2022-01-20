@@ -4,6 +4,7 @@
 #include "ofxImGui.h"
 #include "WarpingEditor.h"
 #include "UVEditor.h"
+#include "ImageSource.h"
 
 class MainApp;
 
@@ -21,7 +22,7 @@ private:
 	std::shared_ptr<MainApp> main_app_;
 	std::shared_ptr<ofAppBaseWindow> main_window_;
 	ofxImGui::Gui gui_;
-	ofTexture texture_;
+	ImageSource texture_source_;
 	WarpingEditor warp_;
 	UVEditor uv_;
 	enum State {
