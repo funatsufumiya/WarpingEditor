@@ -80,7 +80,7 @@ void WarpingEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
 	if(mode_ != MODE_MESH) {
 		return;
 	}
-	glm::vec3 d = {delta/getScale(), 0};
+	glm::vec3 d = {delta, 0};
 	for(int r = 0; r <= mesh.getNumRows(); ++r) {
 		for(int c = 0; c <= mesh.getNumCols(); ++c) {
 			*mesh.getPoint(c, r).v += d;
@@ -93,9 +93,49 @@ void WarpingEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &
 	if(mode_ != MODE_MESH) {
 		return;
 	}
-	glm::vec3 d = {delta/getScale(), 0};
+	glm::vec3 d = {delta, 0};
 	*mesh.getPoint(index.first, index.second).v += d;
 }
+
+void WarpingEditor::moveSelectedCoord(const glm::vec2 &delta)
+{
+	if(mode_ != MODE_MESH) {
+		return;
+	}
+	auto &&data = Data::shared();
+	if(!op_selection_.point.empty()) {
+		for(auto &&qp : op_selection_.point) {
+			if(auto ptr = qp.first.lock()) {
+				for(auto i : qp.second) {
+					movePointCoord(*ptr, i, delta);
+				}
+				data.find(ptr).second->setDirty();
+			}
+		}
+	}
+	if(!op_selection_.mesh.empty()) {
+		for(auto &&q : op_selection_.mesh) {
+			if(auto ptr = q.lock()) {
+				moveMeshCoord(*ptr, delta);
+				data.find(ptr).second->setDirty();
+			}
+		}
+	}
+}
+
+void WarpingEditor::moveMeshCoord(MeshType &mesh, const glm::vec2 &delta)
+{
+	for(int r = 0; r <= mesh.getNumRows(); ++r) {
+		for(int c = 0; c <= mesh.getNumCols(); ++c) {
+			*mesh.getPoint(c, r).t += delta;
+		}
+	}
+}
+void WarpingEditor::movePointCoord(MeshType &mesh, IndexType index, const glm::vec2 &delta)
+{
+	*mesh.getPoint(index.first, index.second).t += delta;
+}
+
 
 ofMesh WarpingEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) const
 {
@@ -394,6 +434,44 @@ void WarpingEditor::gui()
 			if(guiPoint(p)) {
 				data.find(p.mesh).second->setDirty();
 			}
+		}
+	}
+	End();
+	if(Begin("Move Selected Together")) {
+		glm::vec2 v_min{0,0};
+		glm::vec2 v_max{tex_.getWidth(), tex_.getHeight()};
+		std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
+			{"px", {
+				{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
+				{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
+			}},
+			{"%", {
+				{glm::vec2{0, 100}, 0.1f, "%.02f%%"}
+			}},
+			{"rate", {
+				{glm::vec2{0, 1}, 0.001f, "%.03f"}
+			}},
+		};
+		std::function<void(glm::vec2)> func;
+		if(BeginTabBar("#mode")) {
+			if(BeginTabItem("Vertex")) {
+				func = [&](glm::vec2 delta) {
+					moveSelected(delta);
+				};
+				EndTabItem();
+			}
+			if(BeginTabItem("TexCoord")) {
+				v_max = {1,1};
+				func = [&](glm::vec2 delta) {
+					moveSelectedCoord(delta);
+				};
+				EndTabItem();
+			}
+			EndTabBar();
+		}
+		auto result = gui2DPanel("panel", &v_min.x, &v_max.x, params);
+		if(result.first) {
+			func(result.second);
 		}
 	}
 	End();

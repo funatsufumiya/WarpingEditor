@@ -46,7 +46,7 @@ void UVEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
 {
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
-	auto d = delta/getScale()/tex_size;
+	auto d = delta/tex_size;
 	mesh = geom::getTranslated(mesh, d);
 }
 
@@ -54,7 +54,7 @@ void UVEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta
 {
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
-	auto d = delta/getScale()/tex_size;
+	auto d = delta/tex_size;
 	mesh[index] += d;
 }
 
@@ -147,21 +147,22 @@ void UVEditor::gui()
 		IndexType index;
 	};
 
+	float v_min[2] = {0,0};
+	float v_max[2] = {1,1};
+	std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
+		{"px", {
+			{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
+			{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
+		}},
+		{"%", {
+			{glm::vec2{0, 100}, 0.1f, "%.02f%%"}
+		}},
+		{"rate", {
+			{glm::vec2{0, 1}, 0.001f, "%.03f"}
+		}},
+	};
+
 	auto guiPoint = [&](const GuiPoint &point) {
-		float v_min[2] = {0,0};
-		float v_max[2] = {1,1};
-		std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
-			{"px", {
-				{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
-				{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
-			}},
-			{"%", {
-				{glm::vec2{0, 100}, 0.1f, "%.02f%%"}
-			}},
-			{"rate", {
-				{glm::vec2{0, 1}, 0.001f, "%.03f"}
-			}},
-		};
 		auto &p = point.mesh->operator[](point.index);
 		return DragFloatNAs(point.label, &p.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 	};
@@ -228,6 +229,13 @@ void UVEditor::gui()
 			if(guiPoint(p)) {
 				data.find(p.mesh).second->setDirty();
 			}
+		}
+	}
+	End();
+	if(Begin("Move Selected Together")) {
+		auto result = gui2DPanel("panel", v_min, v_max, params);
+		if(result.first) {
+			moveSelected(result.second*glm::vec2{tex_.getWidth(),tex_.getHeight()});
 		}
 	}
 	End();

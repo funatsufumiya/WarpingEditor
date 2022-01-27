@@ -28,6 +28,9 @@ protected:
 	void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta) override;
 	ofMesh makeMeshFromMesh(const DataType &data, const ofColor &color) const override;
 	ofMesh makeWireFromMesh(const DataType &data, const ofColor &color) const override;
+	void moveSelectedCoord(const glm::vec2 &delta);
+	void moveMeshCoord(MeshType &mesh, const glm::vec2 &delta);
+	void movePointCoord(MeshType &mesh, IndexType index, const glm::vec2 &delta);
 private:
 	int mode_=MODE_MESH;
 	bool is_mesh_div_edited_=false;

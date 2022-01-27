@@ -24,7 +24,7 @@ namespace ImGui {
 
 	struct ScalarAsParam {
 		ScalarAsParam() {}
-		ScalarAsParam(const char *format)
+		ScalarAsParam(std::string format)
 		:format(format) {}
 		union Value {
 			char s_8; unsigned char u_8;
@@ -35,7 +35,23 @@ namespace ImGui {
 			double d;
 		};
 		ImGuiDataType type;
-		const char *format;
+		template<typename T> T getValue(Value v) const {
+			switch(type) {
+				case ImGuiDataType_S8: return v.s_8;
+				case ImGuiDataType_U8: return v.u_8;
+				case ImGuiDataType_S16: return v.s_16;
+				case ImGuiDataType_U16: return v.u_16;
+				case ImGuiDataType_S32: return v.s_32;
+				case ImGuiDataType_U32: return v.u_32;
+				case ImGuiDataType_S64: return v.s_64;
+				case ImGuiDataType_U64: return v.u_64;
+				case ImGuiDataType_Float: return v.f;
+				case ImGuiDataType_Double: return v.d;
+				default:
+					assert(false);
+			}
+		}
+		std::string format;
 		private:
 			template<typename T> void setType();
 			template<> void setType<char>() { type = ImGuiDataType_S8; }
@@ -58,6 +74,9 @@ namespace ImGui {
 			memcpy(&this->v_max, &range[1], sizeof(T));
 			setType<T>();
 		}
+		template<typename T> T getMin() const { return ScalarAsParam::getValue<T>(v_min); }
+		template<typename T> T getMax() const { return ScalarAsParam::getValue<T>(v_max); }
+		
 		Value v_min, v_max;
 		float getPosition(ImGui::ScalarAsParam::Value value, float v_min, float v_max);
 		ImGui::ScalarAsParam::Value getValue(float v, float v_min, float v_max);
@@ -77,5 +96,10 @@ namespace ImGui {
 	bool DragFloatAs(const std::string &label, float *v, float v_min, float v_max, bool clamp_min, bool clamp_max, std::vector<std::pair<std::string, DragScalarAsParam>> params, ImGuiSliderFlags flags=0);
 	bool DragFloatAs(const std::string &label, float *v, float v_min, float v_max, bool clamp_min, bool clamp_max, std::pair<std::string, DragScalarAsParam> param, ImGuiSliderFlags flags=0);
 	bool DragFloatNAs(const std::string &label, float *v, int components, const float *v_min, const float *v_max, bool *clamp_min, bool *clamp_max, std::vector<std::pair<std::string, std::vector<DragScalarAsParam>>> params, ImGuiSliderFlags flags=0);
+
+	bool Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &step=ImVec2(1,1), const std::string &value_format="%.1f", const ImVec2& size=ImVec2(0,0));
+	bool Drag2DButton(const std::string &label, ImVec2 &value, float step=1.f, const std::string &value_format="%.1f", const ImVec2& size=ImVec2(0,0));
+	bool Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &step=ImVec2(1,1), const std::vector<std::string> &value_format={"%.1f","%.1f"}, const ImVec2& size=ImVec2(0,0));
+	bool Drag2DButton(const std::string &label, ImVec2 &value, float step=1.f, const std::vector<std::string> &value_format={"%.1f","%.1f"}, const ImVec2& size=ImVec2(0,0));
 
 }

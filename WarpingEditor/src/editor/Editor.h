@@ -4,6 +4,8 @@
 #include "Models.h"
 #include "ofTexture.h"
 #include "GuiFunc.h"
+#include "imgui.h"
+#include "imgui_internal.h"
 
 template<typename MeshType, typename IndexType, typename PointType=glm::vec2>
 class Editor : public ofxEditorFrame
@@ -63,6 +65,9 @@ protected:
 	void moveSelected(const glm::vec2 &delta);
 	virtual void moveMesh(MeshType &mesh, const glm::vec2 &delta) {}
 	virtual void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta){}
+	void moveSelectedOnScreenScale(const glm::vec2 &delta) { moveSelected(delta/getScale()); }
+	void moveMeshOnScreenScale(MeshType &mesh, const glm::vec2 &delta) { moveMesh(mesh, delta/getScale()); }
+	void movePointOnScreenScale(MeshType &mesh, IndexType index, const glm::vec2 &delta) { movePoint(mesh, delta/getScale()); }
 	
 	virtual std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const { return nullptr; }
 	
@@ -83,6 +88,8 @@ protected:
 
 	virtual std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
 	virtual std::shared_ptr<MeshType> getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance) { return nullptr; }
+	
+	std::pair<bool, glm::vec2> gui2DPanel(const std::string &label, const float v_min[2], const float v_max[2], const std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> &params) const;
 };
 
 template<typename MeshType, typename IndexType, typename PointType>
@@ -200,7 +207,7 @@ void Editor<MeshType, IndexType, PointType>::update()
 			}
 			else if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
 				if(op_selection_.is_grabbing) {
-					moveSelected(mouse_.delta);
+					moveSelectedOnScreenScale(mouse_.delta);
 					used = true;
 				}
 			}
@@ -411,4 +418,40 @@ ofMesh Editor<MeshType, IndexType, PointType>::makeMeshFromPoint(const PointType
 		ret.addColor(color);
 	}
 	return ret;
+}
+
+template<typename MeshType, typename IndexType, typename PointType>
+std::pair<bool, glm::vec2> Editor<MeshType, IndexType, PointType>::gui2DPanel(const std::string &label_str, const float v_min[2], const float v_max[2], const std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> &params) const
+{
+	using namespace ImGui;
+	glm::vec2 diff{0,0};
+	bool edited = false;
+	
+	const char *label = label_str.c_str();
+	edited |= DragFloatNAs(label, &diff.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+	
+	// getting data_type declared in DragFloatNAs 
+	PushID(label);
+	auto storage = ImGui::GetStateStorage();
+	ImGuiID type_index_id = ImGui::GetCurrentWindow()->GetID("data_type");
+	PopID();
+	int type_index = storage->GetInt(type_index_id, 0);
+	if(type_index >= params.size()) {
+		type_index = 0;
+	}
+	auto p = params[type_index].second;
+	assert(!p.empty());
+	if(p.size() < 2) {
+		p.push_back(p[0]);
+	}
+
+	ImVec2 diff_drag{0,0};
+	if(Drag2DButton(label_str+"_dragbutton", diff_drag, {p[0].speed, p[1].speed}, {p[0].format, p[1].format})) {
+		for(int i = 0; i < 2; ++i) {
+			diff[i] += ofMap(diff_drag[i], p[i].getMin<float>(), p[i].getMax<float>(), v_min[i], v_max[i]);
+		}
+		edited |= true;
+	}
+
+	return {edited, diff};
 }

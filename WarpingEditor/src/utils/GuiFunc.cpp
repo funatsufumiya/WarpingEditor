@@ -292,7 +292,7 @@ bool ImGui::SliderFloatAs(const std::string &label_str, float* v, float v_min, f
 	auto label = label_str.c_str();
 	auto &param = p.second;
 	ScalarAsParam::Value value = param.getValue(*v, v_min, v_max);
-	bool ret = SliderScalar(label, param.type, &value, &param.v_min, &param.v_max, param.format, flags);
+	bool ret = SliderScalar(label, param.type, &value, &param.v_min, &param.v_max, param.format.c_str(), flags);
 	if(ret) {
 		*v = param.getPosition(value, v_min, v_max);
 	}
@@ -403,7 +403,7 @@ bool ImGui::DragFloatAs(const std::string &label_str, float *v, float v_min, flo
 	auto label = label_str.c_str();
 	auto &param = p.second;
 	ScalarAsParam::Value value = param.getValue(*v, v_min, v_max);
-	bool ret = DragScalar(label, param.type, &value, param.speed, clamp_min ? &param.v_min : nullptr, clamp_max ? &param.v_max : nullptr, param.format, flags);
+	bool ret = DragScalar(label, param.type, &value, param.speed, clamp_min ? &param.v_min : nullptr, clamp_max ? &param.v_max : nullptr, param.format.c_str(), flags);
 	if(ret) {
 		*v = param.getPosition(value, v_min, v_max);
 	}
@@ -507,3 +507,29 @@ bool ImGui::DragFloatNAs(const std::string &label_str, float *v, int components,
 	return value_changed;
 }
 
+
+bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &step, const std::string &value_format, const ImVec2& size) {
+	return Drag2DButton(label, value, step, {value_format, value_format}, size);
+}
+bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, float step, const std::string &value_format, const ImVec2& size) {
+	return Drag2DButton(label, value, ImVec2(step, step), value_format, size);
+}
+
+bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &step, const std::vector<std::string> &value_format, const ImVec2& size) {
+	char format[256] = {};
+	ImFormatString(format, 256, "%s(%s,%s)###%s", "%s", value_format[0].c_str(), value_format[1].c_str(), label.c_str());
+	char buf[256]={};
+	ImFormatString(buf, 256, format, label.c_str(), value.x, value.y);
+	Button(buf, size);
+	auto &io = GetIO();
+	if (IsItemActive()) {
+		ImGui::GetForegroundDrawList()->AddLine(io.MouseClickedPos[0], io.MousePos, ImGui::GetColorU32(ImGuiCol_Button), 4.0f);
+		auto delta = io.MouseDelta;
+		value = value + delta*step;
+		return delta.x != 0 || delta.y != 0;
+	}
+	return false;
+}
+bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, float step, const std::vector<std::string> &value_format, const ImVec2& size) {
+	return Drag2DButton(label, value, ImVec2(step, step), value_format, size);
+}
