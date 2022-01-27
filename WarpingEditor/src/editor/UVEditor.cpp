@@ -137,7 +137,17 @@ void UVEditor::gui()
 	auto data = Data::shared();
 	const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
 
-	auto guiPoint = [&](const std::string &label, PointType &p) {
+	struct GuiMesh {
+		std::string label;
+		std::shared_ptr<MeshType> mesh;
+	};
+	struct GuiPoint {
+		std::string label;
+		std::shared_ptr<MeshType> mesh;
+		IndexType index;
+	};
+
+	auto guiPoint = [&](const GuiPoint &point) {
 		float v_min[2] = {0,0};
 		float v_max[2] = {1,1};
 		std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
@@ -152,26 +162,18 @@ void UVEditor::gui()
 				{glm::vec2{0, 1}, 0.001f, "%.03f"}
 			}},
 		};
-		return DragFloatNAs(label, &p.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+		auto &p = point.mesh->operator[](point.index);
+		return DragFloatNAs(point.label, &p.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 	};
-	auto guiMesh = [&](const std::string &label, MeshType &mesh) {
+	auto guiMesh = [&](const GuiMesh &mesh) {
 		bool ret = false;
-		if(TreeNode(label.c_str())) {
-			for(int i = 0; i < mesh.size(); ++i) {
-				ret |= guiPoint(names[i], mesh[i]);
+		if(TreeNode(mesh.label.c_str())) {
+			for(int i = 0; i < mesh.mesh->size(); ++i) {
+				ret |= guiPoint({names[i], mesh.mesh, i});
 			}
 			TreePop();
 		}
 		return ret;
-	};
-	struct GuiMesh {
-		std::string label;
-		std::shared_ptr<MeshType> mesh;
-	};
-	struct GuiPoint {
-		std::string label;
-		std::shared_ptr<MeshType> mesh;
-		IndexType index;
 	};
 	std::vector<GuiMesh> meshes;
 	std::vector<GuiPoint> points;
@@ -218,12 +220,12 @@ void UVEditor::gui()
 			EndTabBar();
 		};
 		for(auto &&m : meshes) {
-			if(guiMesh(m.label, *m.mesh)) {
+			if(guiMesh(m)) {
 				data.find(m.mesh).second->setDirty();
 			}
 		}
 		for(auto &&p : points) {
-			if(guiPoint(p.label, p.mesh->operator[](p.index))) {
+			if(guiPoint(p)) {
 				data.find(p.mesh).second->setDirty();
 			}
 		}

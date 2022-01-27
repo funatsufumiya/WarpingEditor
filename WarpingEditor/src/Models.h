@@ -62,7 +62,7 @@ public:
 		mutable ofRectangle cached_valid_viewport_;
 		mutable bool is_dirty_=true;
 	};
-	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data");
+	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data", const ofRectangle &rect={0,0,1,1});
 	void update();
 	bool remove(const std::string &name);
 	bool remove(const std::shared_ptr<Mesh> mesh);

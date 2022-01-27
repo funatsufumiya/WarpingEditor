@@ -43,13 +43,20 @@ bool ImageSource::loadFromFile(const std::filesystem::path &filepath)
 	bool is_video = hasExt({"mov","mp4","mpg","wmv"});
 	if(is_image) {
 		auto impl = std::make_shared<ImageFile>();
-		impl_ = impl;
-		return impl->load(filepath);
+		bool ret = impl->load(filepath);
+		if(ret) {
+			impl_ = impl;
+		}
+		return ret;
 	}
 	if(is_video) {
 		auto impl = std::make_shared<VideoFile>();
-		impl_ = impl;
-		return impl->load(filepath);
+		bool ret = impl->load(filepath);
+		if(ret) {
+			impl_ = impl;
+		}
+		return ret;
 	}
 	return false;
 }
+

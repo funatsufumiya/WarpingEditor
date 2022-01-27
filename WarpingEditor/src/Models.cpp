@@ -1,13 +1,13 @@
 #include "Models.h"
 
-std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::string &name) {
+std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::string &name, const ofRectangle &rect) {
 	std::string n = name;
 	int index=0;
 	auto m = std::make_shared<Mesh>();
 	while(!add(n, m)) {
 		n = name+ofToString(index++);
 	}
-	m->init({0,0,640, 480});
+	m->init(rect);
 	return std::make_pair(n, m);
 }
 void Data::update() {

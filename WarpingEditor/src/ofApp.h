@@ -5,6 +5,7 @@
 #include "WarpingEditor.h"
 #include "UVEditor.h"
 #include "ImageSource.h"
+#include "ofxNDIFinder.h"
 
 class MainApp;
 
@@ -30,6 +31,8 @@ private:
 		EDIT_WRAP
 	};
 	int state_=EDIT_UV;
+	
+	ofxNDIFinder ndi_finder_;
 };
 
 class MainApp : public ofBaseApp

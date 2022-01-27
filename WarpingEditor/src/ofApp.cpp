@@ -14,16 +14,19 @@ void GuiApp::setup(){
 	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
+	ndi_finder_.watchSources();
+	
 	uv_.setup();
 	warp_.setup();
-	auto &data = Data::shared();
-	data.create("mesh");
 
 	texture_source_.loadFromFile("testdata/of.png");
 	auto tex = texture_source_.getTexture();
 	main_app_->setTexture(tex);
 	uv_.setTexture(tex);
 	warp_.setTexture(tex);
+
+	auto &data = Data::shared();
+	data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
 }
 
 //--------------------------------------------------------------
@@ -81,6 +84,19 @@ void GuiApp::draw(){
 			}
 			EndMenu();
 		}
+		/*
+		if(BeginMenu("NDI")) {
+			auto source = ndi_finder_.getSources();
+			for(auto &&s : source) {
+				std::stringstream ss;
+				ss << s.p_ndi_name << "(" << s.p_url_address << ")";
+				if(MenuItem(ss.str().c_str())) {
+					texture_source_.setupNDI(s);
+				}
+			}
+			EndMenu();
+		}
+		 */
 		EndMainMenuBar();
 	}
 	if(ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
@@ -117,6 +133,10 @@ void GuiApp::draw(){
 			Selectable(m.first.c_str());
 			PopID();
 		}
+		if(Button("create new")) {
+			auto tex = texture_source_.getTexture();
+			data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
+		}
 	}
 	End();
 	switch(state_) {
@@ -140,8 +160,8 @@ void GuiApp::keyPressed(int key){
 		case 'l': Data::shared().load("saved.bin"); break;
 		case 'e': {
 			auto tex = texture_source_.getTexture();
-			Data::shared().exportMesh("export.ply", 10, {1,1});
-			Data::shared().exportMesh("export_arb.ply", 10, {tex.getWidth(), tex.getHeight()});
+			Data::shared().exportMesh("export.ply", 100, {1,1});
+			Data::shared().exportMesh("export_arb.ply", 100, {tex.getWidth(), tex.getHeight()});
 		}	break;
 	}
 }
