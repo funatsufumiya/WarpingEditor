@@ -428,7 +428,15 @@ std::pair<bool, glm::vec2> Editor<MeshType, IndexType, PointType>::gui2DPanel(co
 	bool edited = false;
 	
 	const char *label = label_str.c_str();
-	edited |= DragFloatNAs(label, &diff.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+	static ImVec2 diff_drag{0,0};
+	auto diff_prev = diff_drag;
+	if(DragFloatNAs(label, &diff_drag.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat)) {
+		diff += diff_drag - diff_prev;
+		edited |= true;
+	}
+	if(!IsItemActive()) {
+		diff_drag = {0,0};
+	}
 	
 	// getting data_type declared in DragFloatNAs 
 	PushID(label);
@@ -444,14 +452,20 @@ std::pair<bool, glm::vec2> Editor<MeshType, IndexType, PointType>::gui2DPanel(co
 	if(p.size() < 2) {
 		p.push_back(p[0]);
 	}
+	for(int i = 0; i < 2; ++i) {
+		ofStringReplace(p[i].format, "%d", "%.0f");
+	}
 
-	ImVec2 diff_drag{0,0};
-	if(Drag2DButton(label_str+"_dragbutton", diff_drag, {p[0].speed, p[1].speed}, {p[0].format, p[1].format})) {
+	static ImVec2 diff_button{0,0};
+	diff_prev = diff_button;
+	if(Drag2DButton(label_str+"_dragbutton", diff_button, {p[0].speed, p[1].speed}, {p[0].format, p[1].format})) {
 		for(int i = 0; i < 2; ++i) {
-			diff[i] += ofMap(diff_drag[i], p[i].getMin<float>(), p[i].getMax<float>(), v_min[i], v_max[i]);
+			diff[i] += ofMap(diff_button[i] - diff_prev[i], p[i].getMin<float>(), p[i].getMax<float>(), v_min[i], v_max[i]);
 		}
 		edited |= true;
 	}
-
+	if(!IsItemActive()) {
+		diff_button = {0,0};
+	}
 	return {edited, diff};
 }

@@ -512,7 +512,7 @@ bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &
 	return Drag2DButton(label, value, step, {value_format, value_format}, size);
 }
 bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, float step, const std::string &value_format, const ImVec2& size) {
-	return Drag2DButton(label, value, ImVec2(step, step), value_format, size);
+	return Drag2DButton(label, value, {step, step}, {value_format,value_format}, size);
 }
 
 bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &step, const std::vector<std::string> &value_format, const ImVec2& size) {
@@ -531,5 +531,5 @@ bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &
 	return false;
 }
 bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, float step, const std::vector<std::string> &value_format, const ImVec2& size) {
-	return Drag2DButton(label, value, ImVec2(step, step), value_format, size);
+	return Drag2DButton(label, value, {step, step}, value_format, size);
 }
