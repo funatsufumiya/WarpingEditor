@@ -152,6 +152,10 @@ void GuiApp::draw(){
 
 //--------------------------------------------------------------
 void GuiApp::keyPressed(int key){
+	if(ImGui::GetIO().WantCaptureKeyboard) {
+		return;
+	}
+	glm::vec2 move{0,0};
 	switch(key) {
 		case OF_KEY_TAB:
 			state_ ^= 1;
@@ -163,6 +167,21 @@ void GuiApp::keyPressed(int key){
 			Data::shared().exportMesh("export.ply", 100, {1,1});
 			Data::shared().exportMesh("export_arb.ply", 100, {tex.getWidth(), tex.getHeight()});
 		}	break;
+		case OF_KEY_LEFT: move.x = -1; break;
+		case OF_KEY_RIGHT: move.x = 1; break;
+		case OF_KEY_UP: move.y = -1; break;
+		case OF_KEY_DOWN: move.y = 1; break;
+	}
+	if(ImGui::IsModKeyDown(ImGuiKeyModFlags_Shift)) {
+		move *= 10;
+	}
+	switch(state_) {
+		case EDIT_UV:
+			uv_.moveSelectedOnScreenScale(move);
+			break;
+		case EDIT_WRAP:
+			warp_.moveSelectedOnScreenScale(move);
+			break;
 	}
 }
 

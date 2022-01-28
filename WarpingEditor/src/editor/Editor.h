@@ -23,6 +23,8 @@ public:
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }
 	void setEnableMeshEditByMouse(bool enable) { is_mesh_editable_by_mouse_ = enable; }
+
+	void moveSelectedOnScreenScale(const glm::vec2 &delta) { moveSelected(delta/getScale()); }
 protected:
 	ofTexture tex_;
 	bool is_enabled_hovering_uneditable_point_=false;
@@ -65,7 +67,6 @@ protected:
 	void moveSelected(const glm::vec2 &delta);
 	virtual void moveMesh(MeshType &mesh, const glm::vec2 &delta) {}
 	virtual void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta){}
-	void moveSelectedOnScreenScale(const glm::vec2 &delta) { moveSelected(delta/getScale()); }
 	void moveMeshOnScreenScale(MeshType &mesh, const glm::vec2 &delta) { moveMesh(mesh, delta/getScale()); }
 	void movePointOnScreenScale(MeshType &mesh, IndexType index, const glm::vec2 &delta) { movePoint(mesh, delta/getScale()); }
 	
