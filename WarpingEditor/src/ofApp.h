@@ -6,6 +6,8 @@
 #include "UVEditor.h"
 #include "ImageSource.h"
 #include "ofxNDIFinder.h"
+#include "WorkFolder.h"
+#include "ProjectFolder.h"
 
 class MainApp;
 
@@ -23,7 +25,7 @@ private:
 	std::shared_ptr<MainApp> main_app_;
 	std::shared_ptr<ofAppBaseWindow> main_window_;
 	ofxImGui::Gui gui_;
-	ImageSource texture_source_;
+	std::shared_ptr<ImageSource> texture_source_;
 	WarpingEditor warp_;
 	UVEditor uv_;
 	enum State {
@@ -33,6 +35,9 @@ private:
 	int state_=EDIT_UV;
 	
 	ofxNDIFinder ndi_finder_;
+	
+	WorkFolder work_;
+	ProjectFolder proj_;
 };
 
 class MainApp : public ofBaseApp

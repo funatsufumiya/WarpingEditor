@@ -35,6 +35,33 @@ namespace {
 class NDIGrabber : public ImageSourceImpl, public ofxNDIVideoGrabber
 {
 public:
+	template<typename T>
+	bool setup(T &&t) {
+		return ofxNDIVideoGrabber::setup(std::forward<T>(t));
+	}
+	template<>
+	bool setup(const std::string &name_or_url) {
+		auto findSource = [](const std::string &name_or_url) -> std::pair<ofxNDI::Source, bool> {
+			auto sources = ofxNDI::listSources();
+			if(name_or_url == "") {
+				return {ofxNDI::Source(), false};
+			}
+			auto found = find_if(begin(sources), end(sources), [name_or_url](const ofxNDI::Source &s) {
+				return ofIsStringInString(s.ndi_name, name_or_url) || ofIsStringInString(s.url_address, name_or_url);
+			});
+			if(found == end(sources)) {
+				ofLogWarning("ofxNDI") << "no NDI source found by string:" << name_or_url;
+				return {ofxNDI::Source(), false};
+			}
+			return {*found, true};
+		};
+
+		auto result = findSource(name_or_url);
+		if(result.second) {
+			ofxNDIVideoGrabber::setup(result.first);
+		}
+		return result.second;
+	}
 	void update() override { ofxNDIVideoGrabber::update(); }
 	bool isFrameNew() const override { return ofxNDIVideoGrabber::isFrameNew(); }
 	ofTexture& getTexture() override { return ofVideoGrabber::getTexture(); }

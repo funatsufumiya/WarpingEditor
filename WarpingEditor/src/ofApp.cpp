@@ -11,6 +11,9 @@ void GuiApp::setup(){
 	
 	ofEnableArbTex();
 	ofBackground(0);
+
+	work_.loadJson("project_folder.json");
+	proj_.setup(work_);
 	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
@@ -19,21 +22,22 @@ void GuiApp::setup(){
 	uv_.setup();
 	warp_.setup();
 
-	texture_source_.loadFromFile("testdata/of.png");
-	auto tex = texture_source_.getTexture();
-	main_app_->setTexture(tex);
-	uv_.setTexture(tex);
-	warp_.setTexture(tex);
+	if((texture_source_ = proj_.buildTextureSource())) {
+		auto tex = texture_source_->getTexture();
+		main_app_->setTexture(tex);
+		uv_.setTexture(tex);
+		warp_.setTexture(tex);
+	}
 
-	auto &data = Data::shared();
-	data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
+//	auto &data = Data::shared();
+//	data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
 }
 
 //--------------------------------------------------------------
 void GuiApp::update(){
-	texture_source_.update();
-	if(texture_source_.isFrameNew()) {
-		auto tex = texture_source_.getTexture();
+	texture_source_->update();
+	if(texture_source_->isFrameNew()) {
+		auto tex = texture_source_->getTexture();
 		main_app_->setTexture(tex);
 		uv_.setTexture(tex);
 		warp_.setTexture(tex);
@@ -59,7 +63,7 @@ void GuiApp::update(){
 	if(update_mesh) {
 		auto &data = Data::shared();
 		data.update();
-		auto tex = texture_source_.getTexture();
+		auto tex = texture_source_->getTexture();
 		auto tex_data = tex.getTextureData();
 		glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
 		glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
@@ -85,7 +89,7 @@ void GuiApp::draw(){
 	if(BeginMainMenuBar()) {
 		if(BeginMenu("Texture")) {
 			if(MenuItem("Change Texture...")) {
-				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofToDataPath("."));
+				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(work_.getAbsolute().string()));
 			}
 			EndMenu();
 		}
@@ -93,9 +97,10 @@ void GuiApp::draw(){
 			auto source = ndi_finder_.getSources();
 			for(auto &&s : source) {
 				std::stringstream ss;
-				ss << s.p_ndi_name << "(" << s.p_url_address << ")";
+				ss << s.ndi_name << "(" << s.url_address << ")";
 				if(MenuItem(ss.str().c_str())) {
-					texture_source_.setupNDI(s);
+					proj_.setTextureSource("NDI", s.ndi_name);
+					texture_source_ = proj_.buildTextureSource();
 				}
 			}
 			EndMenu();
@@ -106,8 +111,9 @@ void GuiApp::draw(){
 		if (ImGuiFileDialog::Instance()->IsOk() == true) {
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			if(texture_source_.loadFromFile(filePathName)) {
-				auto tex = texture_source_.getTexture();
+			proj_.setTextureSource("File", filePathName);
+			if((texture_source_ = proj_.buildTextureSource())) {
+				auto tex = texture_source_->getTexture();
 				main_app_->setTexture(tex);
 				uv_.setTexture(tex);
 				warp_.setTexture(tex);
@@ -137,7 +143,7 @@ void GuiApp::draw(){
 			PopID();
 		}
 		if(Button("create new")) {
-			auto tex = texture_source_.getTexture();
+			auto tex = texture_source_->getTexture();
 			data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
 		}
 	}
@@ -166,7 +172,7 @@ void GuiApp::keyPressed(int key){
 		case 's': Data::shared().save("saved.bin"); break;
 		case 'l': Data::shared().load("saved.bin"); break;
 		case 'e': {
-			auto tex = texture_source_.getTexture();
+			auto tex = texture_source_->getTexture();
 			Data::shared().exportMesh("export.ply", 100, {1,1});
 			Data::shared().exportMesh("export_arb.ply", 100, {tex.getWidth(), tex.getHeight()});
 		}	break;
