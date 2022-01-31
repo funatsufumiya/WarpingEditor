@@ -60,7 +60,12 @@ void GuiApp::update(){
 		auto &data = Data::shared();
 		data.update();
 		auto tex = texture_source_.getTexture();
-		main_app_->setMesh(data.getMeshForExport(100, ofGetUsingArbTex() ? glm::vec2{tex.getWidth(), tex.getHeight()} : glm::vec2{1,1}));
+		auto tex_data = tex.getTextureData();
+		glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
+		glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+		? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+		: glm::vec2{tex_data.tex_t, tex_data.tex_u};
+		main_app_->setMesh(data.getMeshForExport(100, tex_uv));
 	}
 }
 
@@ -84,7 +89,6 @@ void GuiApp::draw(){
 			}
 			EndMenu();
 		}
-		/*
 		if(BeginMenu("NDI")) {
 			auto source = ndi_finder_.getSources();
 			for(auto &&s : source) {
@@ -96,7 +100,6 @@ void GuiApp::draw(){
 			}
 			EndMenu();
 		}
-		 */
 		EndMainMenuBar();
 	}
 	if(ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {

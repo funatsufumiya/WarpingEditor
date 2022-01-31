@@ -35,7 +35,8 @@ namespace {
 class NDIGrabber : public ImageSourceImpl, public ofxNDIVideoGrabber
 {
 public:
-	using ofxNDIVideoGrabber::update;
+	void update() override { ofxNDIVideoGrabber::update(); }
+	bool isFrameNew() const override { return ofxNDIVideoGrabber::isFrameNew(); }
 	ofTexture& getTexture() override { return ofVideoGrabber::getTexture(); }
 	const ofTexture& getTexture() const override { return ofVideoGrabber::getTexture(); };
 };
