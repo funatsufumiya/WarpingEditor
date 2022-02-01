@@ -3,20 +3,24 @@
 #include "WorkFolder.h"
 #include "ImageSource.h"
 
-class ProjectFolder
+class ProjectFolder : public WorkFolder
 {
 public:
-	void setup(WorkFolder work) {
-		if(work.isValid()) {
-			settings_ = ofLoadJson(work.getAbsolute("project.json"));
+	void setup() {
+		if(isValid()) {
+			load();
 		}
 		else {
-			work.setRelative("");
+			setRelative("");
 		}
-		work_ = work;
+	}
+	void load() {
+		settings_ = ofLoadJson(getAbsolute("project.json"));
+		Data::shared().load(getAbsolute("data.bin"));
 	}
 	void save() const {
-		ofSavePrettyJson(work_.getAbsolute("project.json"), settings_);
+		Data::shared().save(getAbsolute("data.bin"));
+		ofSavePrettyJson(getAbsolute("project.json"), settings_);
 	}
 	std::shared_ptr<ImageSource> buildTextureSource() const {
 		return buildTextureSource(settings_["texture"]["type"].get<std::string>(), settings_["texture"]["arg"].get<std::string>());
@@ -28,7 +32,7 @@ public:
 	void setTextureSource(const std::string &type, const std::string &arg) {
 		settings_["texture"]["type"] = type;
 		if(type == "File") {
-			settings_["texture"]["arg"] = work_.getRelative(arg).string();
+			settings_["texture"]["arg"] = getRelative(arg).string();
 		}
 		else {
 			settings_["texture"]["arg"] = arg;
@@ -49,7 +53,6 @@ public:
 		settings_["export"]["max_mesh_size"] = interval;
 	}
 private:
-	WorkFolder work_;
 	ofJson settings_={
 		{"texture", {
 			{ "type", "File" },
@@ -76,7 +79,7 @@ private:
 		std::shared_ptr<ImageSource> ret = std::make_shared<ImageSource>();
 		auto upper_type = ofToUpper(type);
 		if(upper_type == "FILE") {
-			if(ret->loadFromFile(work_.getAbsolute(arg))) {
+			if(ret->loadFromFile(getAbsolute(arg))) {
 				return ret;
 			}
 		}

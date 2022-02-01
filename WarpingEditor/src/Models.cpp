@@ -131,13 +131,13 @@ ofMesh Data::getMeshForExport(float resample_min_interval, const glm::vec2 &coor
 	return ret;
 }
 
-void Data::save(const std::string &filepath) const
+void Data::save(const std::filesystem::path &filepath) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
 	pack(file);
 	file.close();
 }
-void Data::load(const std::string &filepath)
+void Data::load(const std::filesystem::path &filepath)
 {
 	mesh_.clear();
 	ofFile file(filepath);

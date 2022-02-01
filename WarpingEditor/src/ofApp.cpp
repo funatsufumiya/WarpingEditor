@@ -12,40 +12,14 @@ void GuiApp::setup(){
 	ofEnableArbTex();
 	ofBackground(0);
 
-	work_.loadJson("project_folder.json");
-	proj_.setup(work_);
-	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
 	ndi_finder_.watchSources();
 	
 	uv_.setup();
 	warp_.setup();
-
-	if((texture_source_ = proj_.buildTextureSource())) {
-		auto tex = texture_source_->getTexture();
-		main_app_->setTexture(tex);
-		uv_.setTexture(tex);
-		warp_.setTexture(tex);
-	}
-	{
-		auto view = proj_.getMainViewport();
-		main_window_->setWindowPosition(view.x, view.y);
-		main_window_->setWindowShape(view.width, view.height);
-	}
-	{
-		auto view = proj_.getUVView();
-		uv_.translate(view.first);
-		uv_.scale(view.second, view.first);
-	}
-	{
-		auto view = proj_.getWarpView();
-		warp_.translate(view.first);
-		warp_.scale(view.second, view.first);
-	}
-
-//	auto &data = Data::shared();
-//	data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
+	
+	load();
 }
 
 //--------------------------------------------------------------
@@ -104,7 +78,7 @@ void GuiApp::draw(){
 	if(BeginMainMenuBar()) {
 		if(BeginMenu("Texture")) {
 			if(MenuItem("Change Texture...")) {
-				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(work_.getAbsolute().string()));
+				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(proj_.getAbsolute().string()));
 			}
 			EndMenu();
 		}
@@ -184,8 +158,8 @@ void GuiApp::keyPressed(int key){
 		case OF_KEY_TAB:
 			state_ ^= 1;
 			break;
-		case 's': Data::shared().save("saved.bin"); break;
-		case 'l': Data::shared().load("saved.bin"); break;
+		case 's': save(); break;
+		case 'l': load(); break;
 		case 'e': {
 			auto tex = texture_source_->getTexture();
 			Data::shared().exportMesh("export.ply", 100, {1,1});
@@ -207,6 +181,49 @@ void GuiApp::keyPressed(int key){
 			warp_.moveSelectedOnScreenScale(move);
 			break;
 	}
+}
+
+void GuiApp::save() const
+{
+	{
+		auto pos = main_window_->getWindowPosition();
+		auto size = main_window_->getWindowSize();
+		proj_.setMainViewport({pos.x,pos.y,size.x,size.y});
+	}
+	proj_.setUVView(-uv_.getTranslate(), uv_.getScale());
+	proj_.setWarpView(-warp_.getTranslate(), warp_.getScale());
+	proj_.save();
+}
+
+void GuiApp::load()
+{
+	proj_.WorkFolder::loadJson("project_folder.json");
+	proj_.setup();
+
+	if((texture_source_ = proj_.buildTextureSource())) {
+		auto tex = texture_source_->getTexture();
+		main_app_->setTexture(tex);
+		uv_.setTexture(tex);
+		warp_.setTexture(tex);
+	}
+	{
+		auto view = proj_.getMainViewport();
+		main_window_->setWindowPosition(view.x, view.y);
+		main_window_->setWindowShape(view.width, view.height);
+	}
+	{
+		auto view = proj_.getUVView();
+		uv_.resetMatrix();
+		uv_.translate(view.first);
+		uv_.scale(view.second, {0,0});
+	}
+	{
+		auto view = proj_.getWarpView();
+		warp_.resetMatrix();
+		warp_.translate(view.first);
+		warp_.scale(view.second, {0,0});
+	}
+	proj_.load();
 }
 
 //--------------------------------------------------------------

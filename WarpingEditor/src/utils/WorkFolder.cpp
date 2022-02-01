@@ -37,11 +37,15 @@ bool WorkFolder::setAbsolute(const std::filesystem::path &path, bool create_if_n
 }
 std::filesystem::path WorkFolder::getAbsolute(const std::filesystem::path &path) const
 {
-	return path == "" ? abs_ : ofFilePath::join(abs_, path);
+	return path == "" ? abs_
+	: ofFilePath::isAbsolute(path) ? path
+	: ofFilePath::join(abs_, path);
 }
 std::filesystem::path WorkFolder::getRelative(const std::filesystem::path &path) const
 {
-	return path == "" ? rel_ : ofFilePath::join(rel_, path);
+	return path == "" ? rel_
+	: ofFilePath::isAbsolute(path) ? ofFilePath::makeRelative(abs_, path)
+	: ofFilePath::join(rel_, path);
 }
 
 bool WorkFolder::isValid() const

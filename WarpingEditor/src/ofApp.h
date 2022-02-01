@@ -18,6 +18,9 @@ public:
 	void update();
 	void draw();
 	
+	void save() const;
+	void load();
+	
 	void keyPressed(int key);
 	void setMainApp(std::shared_ptr<MainApp> app) { main_app_ = app; }
 	void setMainWindow(std::shared_ptr<ofAppBaseWindow> window) { main_window_ = window; }
@@ -36,8 +39,7 @@ private:
 	
 	ofxNDIFinder ndi_finder_;
 	
-	WorkFolder work_;
-	ProjectFolder proj_;
+	mutable ProjectFolder proj_;
 };
 
 class MainApp : public ofBaseApp
