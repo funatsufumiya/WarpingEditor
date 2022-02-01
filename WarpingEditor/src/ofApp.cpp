@@ -12,7 +12,7 @@ void GuiApp::setup(){
 	ofEnableArbTex();
 	ofBackground(0);
 
-	//work_.loadJson("project_folder.json");
+	work_.loadJson("project_folder.json");
 	proj_.setup(work_);
 	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
@@ -27,6 +27,21 @@ void GuiApp::setup(){
 		main_app_->setTexture(tex);
 		uv_.setTexture(tex);
 		warp_.setTexture(tex);
+	}
+	{
+		auto view = proj_.getMainViewport();
+		main_window_->setWindowPosition(view.x, view.y);
+		main_window_->setWindowShape(view.width, view.height);
+	}
+	{
+		auto view = proj_.getUVView();
+		uv_.translate(view.first);
+		uv_.scale(view.second, view.first);
+	}
+	{
+		auto view = proj_.getWarpView();
+		warp_.translate(view.first);
+		warp_.scale(view.second, view.first);
 	}
 
 //	auto &data = Data::shared();

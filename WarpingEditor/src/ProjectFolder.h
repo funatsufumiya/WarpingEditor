@@ -7,7 +7,7 @@ class ProjectFolder
 {
 public:
 	void setup(WorkFolder work) {
-		if(work_.isValid()) {
+		if(work.isValid()) {
 			settings_ = ofLoadJson(work.getAbsolute("project.json"));
 		}
 		else {
