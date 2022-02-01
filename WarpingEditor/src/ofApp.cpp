@@ -12,7 +12,7 @@ void GuiApp::setup(){
 	ofEnableArbTex();
 	ofBackground(0);
 
-	work_.loadJson("project_folder.json");
+	//work_.loadJson("project_folder.json");
 	proj_.setup(work_);
 	
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);

@@ -7,7 +7,12 @@ class ProjectFolder
 {
 public:
 	void setup(WorkFolder work) {
-		settings_ = ofLoadJson(work.getAbsolute("project.json"));
+		if(work_.isValid()) {
+			settings_ = ofLoadJson(work.getAbsolute("project.json"));
+		}
+		else {
+			work.setRelative("");
+		}
 		work_ = work;
 	}
 	void save() const {
@@ -45,7 +50,26 @@ public:
 	}
 private:
 	WorkFolder work_;
-	ofJson settings_;
+	ofJson settings_={
+		{"texture", {
+			{ "type", "File" },
+			{ "arg", "test.png" }
+		}},
+		{"viewport", {
+			{"main", {0,0,1920,1080}},
+			{"uv_editor", {
+				{"pos", {0,0}},
+				{"scale", 1}
+			}},
+			{"warp_editor", {
+				{"pos", {0,0}},
+				{"scale", 1}
+			}}
+		}},
+		{"export", {
+			{"max_mesh_size", 100}
+		}}
+	};
 
 private:
 	std::shared_ptr<ImageSource> buildTextureSource(const std::string &type, const std::string &arg) const {

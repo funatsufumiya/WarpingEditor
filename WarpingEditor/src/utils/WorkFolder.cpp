@@ -43,3 +43,8 @@ std::filesystem::path WorkFolder::getRelative(const std::filesystem::path &path)
 {
 	return path == "" ? rel_ : ofFilePath::join(rel_, path);
 }
+
+bool WorkFolder::isValid() const
+{
+	return ofDirectory::doesDirectoryExist(abs_, false);
+}
