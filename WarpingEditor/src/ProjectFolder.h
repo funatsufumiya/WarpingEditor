@@ -22,6 +22,25 @@ public:
 		Data::shared().save(getAbsolute("data.bin"));
 		ofSavePrettyJson(getAbsolute("project.json"), settings_);
 	}
+	void backup() const {
+		auto bu = settings_["backup"];
+		if(!bu["enabled"].get<bool>()) {
+			return;
+		}
+		ofDirectory folder(getRelative(bu["folder"].get<std::string>()));
+		if(!folder.exists()) {
+			folder.create();
+		}
+		std::string filename = ofGetTimestampString("%Y%m%d_%H%M%S") + ".bin";
+		ofFile(getAbsolute("data.bin")).copyTo(ofFilePath::join(folder.path(), filename));
+		int num = bu["limit"];
+		if(num > 0) {
+			folder.sortByDate();
+			for(int i = 0; i < folder.size() - num; ++i) {
+				folder.getFile(i).remove();
+			}
+		}
+	}
 	std::shared_ptr<ImageSource> buildTextureSource() const {
 		return buildTextureSource(settings_["texture"]["type"].get<std::string>(), settings_["texture"]["arg"].get<std::string>());
 	}
@@ -71,6 +90,11 @@ private:
 		}},
 		{"export", {
 			{"max_mesh_size", 100}
+		}},
+		{"backup", {
+			{"enabled", true},
+			{"folder", "backup"},
+			{"limit", 0}
 		}}
 	};
 

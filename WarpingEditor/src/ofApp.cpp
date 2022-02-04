@@ -183,7 +183,7 @@ void GuiApp::keyPressed(int key){
 	}
 }
 
-void GuiApp::save() const
+void GuiApp::save(bool do_backup) const
 {
 	{
 		auto pos = main_window_->getWindowPosition();
@@ -193,6 +193,10 @@ void GuiApp::save() const
 	proj_.setUVView(-uv_.getTranslate(), uv_.getScale());
 	proj_.setWarpView(-warp_.getTranslate(), warp_.getScale());
 	proj_.save();
+	
+	if(do_backup) {
+		proj_.backup();
+	}
 }
 
 void GuiApp::load()

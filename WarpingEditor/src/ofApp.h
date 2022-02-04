@@ -18,7 +18,7 @@ public:
 	void update();
 	void draw();
 	
-	void save() const;
+	void save(bool do_backup=true) const;
 	void load();
 	
 	void keyPressed(int key);
@@ -36,6 +36,8 @@ private:
 		EDIT_WRAP
 	};
 	int state_=EDIT_UV;
+	
+	void backup();
 	
 	ofxNDIFinder ndi_finder_;
 	
