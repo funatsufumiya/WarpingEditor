@@ -1,16 +1,8 @@
 {
     "recent": [
         {
-            "abs": "/Users/nariakiiwatani/Works/of0.11.0/apps/Maaaaap/WarpingEditor/bin/data/testdata2",
-            "rel": "testdata2"
-        },
-        {
             "abs": "/Users/nariakiiwatani/Works/of0.11.0/apps/Maaaaap/WarpingEditor/bin/data/testdata",
             "rel": "testdata"
-        },
-        {
-            "abs": "/Users/nariakiiwatani/Works/of0.11.0/apps/Maaaaap/WarpingEditor/bin/data/savetest",
-            "rel": "savetest"
         }
     ]
 }

@@ -116,7 +116,7 @@ void readFrom(std::istream& is, T& t) {
 }
 }
 
-void Data::exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+void Data::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
 	getMeshForExport(resample_min_interval, coord_size).save(filepath);
 }

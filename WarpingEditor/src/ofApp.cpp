@@ -83,9 +83,10 @@ void GuiApp::draw(){
 	
 	gui_.begin();
 	using namespace ImGui;
+	bool is_open_export_dialog_trigger_=false;
 	if(BeginMainMenuBar()) {
 		if(BeginMenu("Project")) {
-			if(MenuItem("Open file...")) {
+			if(MenuItem("Open file...", "Ctrl+O")) {
 				ImGuiFileDialog::Instance()->OpenDialog("ChooseProjDlgKey", "Choose Project Folder", nullptr, ofToDataPath(""));
 			}
 			Separator();
@@ -100,10 +101,10 @@ void GuiApp::draw(){
 				EndMenu();
 			}
 			Separator();
-			if(MenuItem("Save")) {
+			if(MenuItem("Save", "Ctrl+S")) {
 				save();
 			}
-			if(MenuItem("Save as...")) {
+			if(MenuItem("Save as...", "Ctrl+Shift+S")) {
 				ImGuiFileDialog::Instance()->OpenDialog("SaveProjDlgKey", "Save Project Folder", nullptr, ofToDataPath(""));
 			}
 			EndMenu();
@@ -141,9 +142,60 @@ void GuiApp::draw(){
 			}
 			EndMenu();
 		}
+		if(BeginMenu("Export")) {
+			if(MenuItem("export by recent settings", "Ctrl+E")) {
+				exportMesh(proj_);
+			}
+			if(MenuItem("export...")) {
+				is_open_export_dialog_trigger_ = true;
+			}
+			EndMenu();
+		}
 		EndMainMenuBar();
 	}
 
+	if(ImGuiFileDialog::Instance()->Display("SelectFolderDlgKey")) {
+		if (ImGuiFileDialog::Instance()->IsOk() == true) {
+			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			proj_.setExportFolder(filePathName);
+			is_open_export_dialog_trigger_ = true;
+		}
+		ImGuiFileDialog::Instance()->Close();
+	}
+	if(is_open_export_dialog_trigger_) {
+		OpenPopup("is_open_export_dialog_trigger_");
+	}
+	if(BeginPopup("is_open_export_dialog_trigger_")) {
+		std::string folder = proj_.getExportFolder();
+		float resample_min_interval = proj_.getExportMeshMinInterval();
+		bool is_arb = proj_.getIsExportMeshArb();
+		std::string filename = proj_.getExportFileName();
+		if(InputFloat("resample_min_interval", &resample_min_interval)) {
+			proj_.setExportMeshMinInterval(resample_min_interval);
+		}
+		if(Checkbox("arb", &is_arb)) {
+			proj_.setIsExportMeshArb(is_arb);
+		}
+		if(EditText("export folder", folder, 1024)) {
+			proj_.setExportFolder(folder);
+		}
+		SameLine();
+		if(Button("...")) {
+			ImGuiFileDialog::Instance()->OpenDialog("SelectFolderDlgKey", "Choose Export Folder", nullptr, folder);
+		}
+		if(EditText("filename", filename)) {
+			proj_.setExportFileName(filename);
+		}
+		if(Button("export")) {
+			exportMesh(proj_);
+			CloseCurrentPopup();
+		} SameLine();
+		if(Button("cancel")) {
+			CloseCurrentPopup();
+		}
+		EndPopup();
+	}
 	if(ImGuiFileDialog::Instance()->Display("ChooseProjDlgKey")) {
 		if (ImGuiFileDialog::Instance()->IsOk() == true) {
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
@@ -215,6 +267,22 @@ void GuiApp::draw(){
 	gui_.end();
 }
 
+void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
+{
+	auto tex = texture_source_->getTexture();
+	glm::vec2 coord_size = is_arb?glm::vec2{tex.getWidth(), tex.getHeight()}:glm::vec2{1,1};
+	Data::shared().exportMesh(filepath, resample_min_interval, coord_size);
+}
+void GuiApp::exportMesh(const ProjectFolder &proj) const
+{
+	std::string folder = proj_.getExportFolder();
+	float resample_min_interval = proj_.getExportMeshMinInterval();
+	bool is_arb = proj_.getIsExportMeshArb();
+	std::string filename = proj_.getExportFileName();
+	exportMesh(resample_min_interval, ofFilePath::join(folder, filename), is_arb);
+}
+
+
 //--------------------------------------------------------------
 void GuiApp::keyPressed(int key){
 	if(ImGui::GetIO().WantCaptureKeyboard) {
@@ -225,13 +293,6 @@ void GuiApp::keyPressed(int key){
 		case OF_KEY_TAB:
 			state_ ^= 1;
 			break;
-		case 's': save(); break;
-		case 'l': openRecent(); break;
-		case 'e': {
-			auto tex = texture_source_->getTexture();
-			Data::shared().exportMesh("export.ply", 100, {1,1});
-			Data::shared().exportMesh("export_arb.ply", 100, {tex.getWidth(), tex.getHeight()});
-		}	break;
 		case OF_KEY_LEFT: move.x = -1; break;
 		case OF_KEY_RIGHT: move.x = 1; break;
 		case OF_KEY_UP: move.y = -1; break;

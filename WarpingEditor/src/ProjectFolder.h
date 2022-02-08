@@ -46,10 +46,16 @@ public:
 	std::shared_ptr<ImageSource> buildTextureSource() const {
 		return buildTextureSource(settings_["texture"]["type"].get<std::string>(), settings_["texture"]["arg"].get<std::string>());
 	}
+	
 	ofRectangle getMainViewport() const { return ofRectangle{settings_["viewport"]["main"][0],settings_["viewport"]["main"][1],settings_["viewport"]["main"][2],settings_["viewport"]["main"][3]}; }
 	std::pair<glm::vec2, float> getUVView() const { return {{settings_["viewport"]["uv_editor"]["pos"][0],settings_["viewport"]["uv_editor"]["pos"][1]}, settings_["viewport"]["uv_editor"]["scale"]}; }
 	std::pair<glm::vec2, float> getWarpView() const { return {{settings_["viewport"]["warp_editor"]["pos"][0], settings_["viewport"]["warp_editor"]["pos"][1]}, settings_["viewport"]["warp_editor"]["scale"]}; }
+	
 	float getExportMeshMinInterval() const { return settings_["export"]["max_mesh_size"]; }
+	std::string getExportFolder() const { return settings_["export"]["folder"]; }
+	std::string getExportFileName() const { return settings_["export"]["filename"]; }
+	bool getIsExportMeshArb() const { return settings_["export"]["is_arb"]; }
+	
 	void setTextureSource(const std::string &type, const std::string &arg) {
 		settings_["texture"]["type"] = type;
 		if(type == "File") {
@@ -59,6 +65,7 @@ public:
 			settings_["texture"]["arg"] = arg;
 		}
 	}
+	
 	void setMainViewport(const ofRectangle &viewport) {
 		settings_["viewport"]["main"] = std::vector<float>{viewport.x,viewport.y,viewport.width,viewport.height};
 	}
@@ -70,9 +77,12 @@ public:
 		settings_["viewport"]["warp_editor"]["pos"] = std::vector<float>{pos.x, pos.y};
 		settings_["viewport"]["warp_editor"]["scale"] = scale;
 	}
-	void setExportMeshMinInterval(float interval) {
-		settings_["export"]["max_mesh_size"] = interval;
-	}
+	
+	void setExportMeshMinInterval(float interval) { settings_["export"]["max_mesh_size"] = interval; }
+	void setExportFolder(const std::string &folder) { settings_["export"]["folder"] = folder; }
+	void setExportFileName(const std::string &filename) { settings_["export"]["filename"] = filename; }
+	void setIsExportMeshArb(bool is_arb) { settings_["export"]["is_arb"] = is_arb; }
+	
 	void setFileName(const std::string &filename) {
 		settings_["filename"] = filename;
 	}
@@ -94,7 +104,10 @@ private:
 			}}
 		}},
 		{"export", {
-			{"max_mesh_size", 100}
+			{"folder", ""},
+			{"filename", "mesh.ply"},
+			{"max_mesh_size", 100},
+			{"is_arb", false}
 		}},
 		{"backup", {
 			{"enabled", true},

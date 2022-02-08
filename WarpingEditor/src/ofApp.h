@@ -43,6 +43,10 @@ private:
 	void updateRecent(const ProjectFolder &proj);
 	std::deque<WorkFolder> recent_;
 	
+	void exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb=false) const;
+	void exportMesh(const ProjectFolder &proj) const;
+
+	
 	ofxNDIFinder ndi_finder_;
 	
 	mutable ProjectFolder proj_;

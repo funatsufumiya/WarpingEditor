@@ -77,7 +77,7 @@ public:
 	void load(const std::filesystem::path &filepath);
 	void pack(std::ostream &stream) const;
 	void unpack(std::istream &stream);
-	void exportMesh(const std::string &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
+	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 private:
 	std::map<std::string, std::shared_ptr<Mesh>> mesh_;
