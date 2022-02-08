@@ -15,12 +15,12 @@ public:
 		}
 	}
 	void load() {
-		settings_ = ofLoadJson(getAbsolute("project.json"));
+		settings_ = ofLoadJson(getAbsolute(getProjFileName()));
 		Data::shared().load(getAbsolute(getFileName()+".bin"));
 	}
 	void save() const {
 		Data::shared().save(getAbsolute(getFileName()+".bin"));
-		ofSavePrettyJson(getAbsolute("project.json"), settings_);
+		ofSavePrettyJson(getAbsolute(getProjFileName()), settings_);
 	}
 	void backup() const {
 		auto bu = settings_["backup"];
@@ -42,6 +42,7 @@ public:
 		}
 	}
 	std::string getFileName() const { return settings_["filename"]; }
+	std::string getProjFileName() const { return "project.json"; }
 	std::shared_ptr<ImageSource> buildTextureSource() const {
 		return buildTextureSource(settings_["texture"]["type"].get<std::string>(), settings_["texture"]["arg"].get<std::string>());
 	}

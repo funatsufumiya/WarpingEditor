@@ -9,11 +9,14 @@ bool WorkFolder::loadJson(const std::filesystem::path &json_path)
 }
 void WorkFolder::saveJson(const std::filesystem::path &json_path) const
 {
-	ofJson json{
+	ofSavePrettyJson(json_path, toJson());
+}
+ofJson WorkFolder::toJson() const
+{
+	return {
 		{"rel", rel_.string()},
 		{"abs", abs_.string()}
 	};
-	ofSavePrettyJson(json_path, json);
 }
 
 bool WorkFolder::setRelative(const std::filesystem::path &path, bool create_if_not_exist)

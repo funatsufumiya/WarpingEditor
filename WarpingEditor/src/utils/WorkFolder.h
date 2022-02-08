@@ -1,12 +1,14 @@
 #pragma once
 
 #include "ofFileUtils.h"
+#include "ofJson.h"
 
 class WorkFolder
 {
 public:
 	bool loadJson(const std::filesystem::path &json_path);
 	void saveJson(const std::filesystem::path &json_path) const;
+	ofJson toJson() const;
 	bool setRelative(const std::filesystem::path &path, bool create_if_not_exist=false);
 	bool setAbsolute(const std::filesystem::path &path, bool create_if_not_exist=false);
 	std::filesystem::path getAbsolute(const std::filesystem::path &path="") const;

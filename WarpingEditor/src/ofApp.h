@@ -19,7 +19,8 @@ public:
 	void draw();
 	
 	void save(bool do_backup=true) const;
-	void load();
+	void openRecent(int index=0);
+	void openProject(const std::filesystem::path &proj_path);
 	
 	void keyPressed(int key);
 	void setMainApp(std::shared_ptr<MainApp> app) { main_app_ = app; }
@@ -38,6 +39,9 @@ private:
 	int state_=EDIT_UV;
 	
 	void backup();
+	void loadRecent();
+	void updateRecent(const ProjectFolder &proj);
+	std::deque<WorkFolder> recent_;
 	
 	ofxNDIFinder ndi_finder_;
 	

@@ -4,6 +4,13 @@
 #include "Icon.h"
 #include "ImGuiFileDialog.h"
 
+namespace {
+template<typename T>
+auto getJsonValue(const ofJson &json, const std::string &key, T default_value={}) -> T {
+	return json.contains(key) ? json[key].get<T>() : default_value;
+}
+}
+
 //--------------------------------------------------------------
 void GuiApp::setup(){
 	ofDisableArbTex();
@@ -19,7 +26,8 @@ void GuiApp::setup(){
 	uv_.setup();
 	warp_.setup();
 	
-	load();
+	loadRecent();
+	openRecent();
 }
 
 //--------------------------------------------------------------
@@ -76,25 +84,84 @@ void GuiApp::draw(){
 	gui_.begin();
 	using namespace ImGui;
 	if(BeginMainMenuBar()) {
-		if(BeginMenu("Texture")) {
-			if(MenuItem("Change Texture...")) {
-				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(proj_.getAbsolute().string()));
+		if(BeginMenu("Project")) {
+			if(MenuItem("Open file...")) {
+				ImGuiFileDialog::Instance()->OpenDialog("ChooseProjDlgKey", "Choose Project Folder", nullptr, ofToDataPath(""));
+			}
+			Separator();
+			if(BeginMenu("recent")) {
+				for(auto &&r : recent_) {
+					std::stringstream ss;
+					ss << r.getRelative() << "(" << r.getAbsolute() << ")";
+					if(MenuItem(ss.str().c_str())) {
+						openProject(r.getAbsolute());
+					}
+				}
+				EndMenu();
+			}
+			Separator();
+			if(MenuItem("Save")) {
+				save();
+			}
+			if(MenuItem("Save as...")) {
+				ImGuiFileDialog::Instance()->OpenDialog("SaveProjDlgKey", "Save Project Folder", nullptr, ofToDataPath(""));
 			}
 			EndMenu();
 		}
-		if(BeginMenu("NDI")) {
-			auto source = ndi_finder_.getSources();
-			for(auto &&s : source) {
-				std::stringstream ss;
-				ss << s.ndi_name << "(" << s.url_address << ")";
-				if(MenuItem(ss.str().c_str())) {
-					proj_.setTextureSource("NDI", s.ndi_name);
-					texture_source_ = proj_.buildTextureSource();
+		if(BeginMenu("Texture")) {
+			if(BeginMenu("Image File")) {
+				if(MenuItem("Load from file...")) {
+					ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(proj_.getAbsolute().string()));
 				}
+				Separator();
+				std::string filepath;
+				if(SelectFileMenu(proj_.getRelative().string(), filepath, true, {"png","gif","jpg","jpeg","mov","mp4"})) {
+					filepath = ofToDataPath(filepath, true);
+					proj_.setTextureSource("File", filepath);
+					if((texture_source_ = proj_.buildTextureSource())) {
+						auto tex = texture_source_->getTexture();
+						main_app_->setTexture(tex);
+						uv_.setTexture(tex);
+						warp_.setTexture(tex);
+					}
+				}
+				EndMenu();
+			}
+			if(BeginMenu("NDI")) {
+				auto source = ndi_finder_.getSources();
+				for(auto &&s : source) {
+					std::stringstream ss;
+					ss << s.ndi_name << "(" << s.url_address << ")";
+					if(MenuItem(ss.str().c_str())) {
+						proj_.setTextureSource("NDI", s.ndi_name);
+						texture_source_ = proj_.buildTextureSource();
+					}
+				}
+				EndMenu();
 			}
 			EndMenu();
 		}
 		EndMainMenuBar();
+	}
+
+	if(ImGuiFileDialog::Instance()->Display("ChooseProjDlgKey")) {
+		if (ImGuiFileDialog::Instance()->IsOk() == true) {
+			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			openProject(filePathName);
+		}
+		ImGuiFileDialog::Instance()->Close();
+	}
+	if(ImGuiFileDialog::Instance()->Display("SaveProjDlgKey")) {
+		if (ImGuiFileDialog::Instance()->IsOk() == true) {
+			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			proj_.WorkFolder::setRelative(filePathName);
+			save();
+			proj_.setup();
+			updateRecent(proj_);
+		}
+		ImGuiFileDialog::Instance()->Close();
 	}
 	if(ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
 		if (ImGuiFileDialog::Instance()->IsOk() == true) {
@@ -159,7 +226,7 @@ void GuiApp::keyPressed(int key){
 			state_ ^= 1;
 			break;
 		case 's': save(); break;
-		case 'l': load(); break;
+		case 'l': openRecent(); break;
 		case 'e': {
 			auto tex = texture_source_->getTexture();
 			Data::shared().exportMesh("export.ply", 100, {1,1});
@@ -199,9 +266,9 @@ void GuiApp::save(bool do_backup) const
 	}
 }
 
-void GuiApp::load()
+void GuiApp::openProject(const std::filesystem::path &proj_path)
 {
-	proj_.WorkFolder::loadJson("project_folder.json");
+	proj_.WorkFolder::setRelative(proj_path);
 	proj_.setup();
 
 	if((texture_source_ = proj_.buildTextureSource())) {
@@ -228,6 +295,44 @@ void GuiApp::load()
 		warp_.scale(view.second, {0,0});
 	}
 	proj_.load();
+	
+	updateRecent(proj_);
+}
+
+void GuiApp::openRecent(int index)
+{
+	auto json = ofLoadJson("project_folder.json");
+	auto most_recent = getJsonValue<std::vector<ofJson>>(json, "recent");
+	if(index >= 0 && most_recent.size() > index) {
+		auto proj_path = getJsonValue<std::string>(most_recent[index], "abs");
+		openProject(proj_path);
+	}
+}
+
+void GuiApp::loadRecent()
+{
+	auto recent = getJsonValue<ofJson>(ofLoadJson("project_folder.json"), "recent");
+	recent_ = accumulate(begin(recent), end(recent), decltype(recent_){}, [](decltype(recent_) acc, const ofJson &json) {
+		WorkFolder w;
+		w.setAbsolute(json["abs"].get<std::string>());
+		acc.push_back(w);
+		return acc;
+	});
+}
+void GuiApp::updateRecent(const ProjectFolder &proj)
+{
+	auto found = find_if(begin(recent_), end(recent_), [proj](const WorkFolder &w) {
+		return w.toJson() == proj.toJson();
+	});
+	if(found != end(recent_)) {
+		recent_.erase(found);
+	}
+	recent_.push_front(proj);
+	auto recent = accumulate(begin(recent_), end(recent_), std::vector<ofJson>{}, [](std::vector<ofJson> acc, const WorkFolder &w) {
+		acc.push_back(w.toJson());
+		return acc;
+	});
+	ofSavePrettyJson("project_folder.json", {{"recent", recent}});
 }
 
 //--------------------------------------------------------------
