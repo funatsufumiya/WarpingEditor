@@ -16,10 +16,10 @@ public:
 	}
 	void load() {
 		settings_ = ofLoadJson(getAbsolute("project.json"));
-		Data::shared().load(getAbsolute("data.bin"));
+		Data::shared().load(getAbsolute(getFileName()+".bin"));
 	}
 	void save() const {
-		Data::shared().save(getAbsolute("data.bin"));
+		Data::shared().save(getAbsolute(getFileName()+".bin"));
 		ofSavePrettyJson(getAbsolute("project.json"), settings_);
 	}
 	void backup() const {
@@ -31,8 +31,8 @@ public:
 		if(!folder.exists()) {
 			folder.create();
 		}
-		std::string filename = ofGetTimestampString("%Y%m%d_%H%M%S") + ".bin";
-		ofFile(getAbsolute("data.bin")).copyTo(ofFilePath::join(folder.path(), filename));
+		std::string filename = getFileName()+"_"+ofGetTimestampString("%Y%m%d_%H%M%S") + ".bin";
+		ofFile(getAbsolute(getFileName()+".bin")).copyTo(ofFilePath::join(folder.path(), filename));
 		int num = bu["limit"];
 		if(num > 0) {
 			folder.sortByDate();
@@ -41,6 +41,7 @@ public:
 			}
 		}
 	}
+	std::string getFileName() const { return settings_["filename"]; }
 	std::shared_ptr<ImageSource> buildTextureSource() const {
 		return buildTextureSource(settings_["texture"]["type"].get<std::string>(), settings_["texture"]["arg"].get<std::string>());
 	}
@@ -71,6 +72,9 @@ public:
 	void setExportMeshMinInterval(float interval) {
 		settings_["export"]["max_mesh_size"] = interval;
 	}
+	void setFileName(const std::string &filename) {
+		settings_["filename"] = filename;
+	}
 private:
 	ofJson settings_={
 		{"texture", {
@@ -95,7 +99,8 @@ private:
 			{"enabled", true},
 			{"folder", "backup"},
 			{"limit", 0}
-		}}
+		}},
+		{"filename", "data"}
 	};
 
 private:
