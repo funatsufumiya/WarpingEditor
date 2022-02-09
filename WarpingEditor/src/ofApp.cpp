@@ -139,7 +139,7 @@ void GuiApp::draw(){
 				std::string filepath;
 				if(SelectFileMenu(proj_.getRelative().string(), filepath, true, {"png","gif","jpg","jpeg","mov","mp4"})) {
 					filepath = ofToDataPath(filepath, true);
-					proj_.setTextureSource("File", filepath);
+					proj_.setTextureSourceFile(filepath);
 					if((texture_source_ = proj_.buildTextureSource())) {
 						auto tex = texture_source_->getTexture();
 						main_app_->setTexture(tex);
@@ -155,7 +155,7 @@ void GuiApp::draw(){
 					std::stringstream ss;
 					ss << s.ndi_name << "(" << s.url_address << ")";
 					if(MenuItem(ss.str().c_str())) {
-						proj_.setTextureSource("NDI", s.ndi_name);
+						proj_.setTextureSourceNDI(s.ndi_name);
 						texture_source_ = proj_.buildTextureSource();
 					}
 				}
@@ -240,7 +240,7 @@ void GuiApp::draw(){
 		if (ImGuiFileDialog::Instance()->IsOk() == true) {
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			proj_.setTextureSource("File", filePathName);
+			proj_.setTextureSourceFile(filePathName);
 			if((texture_source_ = proj_.buildTextureSource())) {
 				auto tex = texture_source_->getTexture();
 				main_app_->setTexture(tex);
@@ -360,8 +360,8 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	}
 	{
 		auto view = proj_.getMainViewport();
-		main_window_->setWindowPosition(view.x, view.y);
-		main_window_->setWindowShape(view.width, view.height);
+		main_window_->setWindowPosition(view[0], view[1]);
+		main_window_->setWindowShape(view[2], view[3]);
 	}
 	{
 		auto view = proj_.getUVView();
@@ -403,7 +403,7 @@ void GuiApp::loadRecent()
 void GuiApp::updateRecent(const ProjectFolder &proj)
 {
 	auto found = find_if(begin(recent_), end(recent_), [proj](const WorkFolder &w) {
-		return w.toJson() == proj.toJson();
+		return w.toJson() == proj.WorkFolder::toJson();
 	});
 	if(found != end(recent_)) {
 		recent_.erase(found);
