@@ -1,7 +1,6 @@
 #pragma once
 
 #include "WorkFolder.h"
-#include "ImageSource.h"
 
 class ProjectFolder : public WorkFolder
 {
@@ -11,9 +10,13 @@ public:
 	void save() const;
 	void backup() const;
 	
+	std::filesystem::path getDataPath() const { return getAbsolute(getFileName()+".bin"); }
 	std::string getFileName() const { return filename_; }
 	std::string getProjFileName() const { return "project.json"; }
-	std::shared_ptr<ImageSource> buildTextureSource() const;
+	
+	int getTextureType() const { return texture_.type; }
+	std::filesystem::path getTextureFilePath() const { return getAbsolute(texture_.file); }
+	const std::string& getTextureNDIName() const { return texture_.ndi; }
 	
 	glm::vec4 getMainViewport() const { return viewport_.main; }
 	std::pair<glm::vec2, float> getUVView() const { return viewport_.uv; }

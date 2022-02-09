@@ -9,8 +9,23 @@ template<typename T>
 auto getJsonValue(const ofJson &json, const std::string &key, T default_value={}) -> T {
 	return json.contains(key) ? json[key].get<T>() : default_value;
 }
+std::shared_ptr<ImageSource> buildTextureSource(const ProjectFolder &proj) {
+	std::shared_ptr<ImageSource> ret = std::make_shared<ImageSource>();
+	switch(proj.getTextureType()) {
+		case ProjectFolder::Texture::FILE:
+			if(ret->loadFromFile(proj.getTextureFilePath())) {
+				return ret;
+			}
+			break;
+		case ProjectFolder::Texture::NDI:
+			if(ret->setupNDI(proj.getTextureNDIName())) {
+				return ret;
+			}
+			break;
+	}
+	return nullptr;
 }
-
+}
 //--------------------------------------------------------------
 void GuiApp::setup(){
 	ofDisableArbTex();
@@ -136,7 +151,7 @@ void GuiApp::draw(){
 				if(SelectFileMenu(proj_.getRelative().string(), filepath, true, {"png","gif","jpg","jpeg","mov","mp4"})) {
 					filepath = ofToDataPath(filepath, true);
 					proj_.setTextureSourceFile(filepath);
-					if((texture_source_ = proj_.buildTextureSource())) {
+					if((texture_source_ = buildTextureSource(proj_))) {
 						auto tex = texture_source_->getTexture();
 						main_app_->setTexture(tex);
 						auto editor = editor_[state_];
@@ -154,7 +169,7 @@ void GuiApp::draw(){
 					ss << s.ndi_name << "(" << s.url_address << ")";
 					if(MenuItem(ss.str().c_str())) {
 						proj_.setTextureSourceNDI(s.ndi_name);
-						texture_source_ = proj_.buildTextureSource();
+						texture_source_ = buildTextureSource(proj_);
 					}
 				}
 				EndMenu();
@@ -239,7 +254,7 @@ void GuiApp::draw(){
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 			proj_.setTextureSourceFile(filePathName);
-			if((texture_source_ = proj_.buildTextureSource())) {
+			if((texture_source_ = buildTextureSource(proj_))) {
 				auto tex = texture_source_->getTexture();
 				main_app_->setTexture(tex);
 				auto editor = editor_[state_];
@@ -332,6 +347,8 @@ void GuiApp::save(bool do_backup) const
 	proj_.setUVView(-uv_.getTranslate(), uv_.getScale());
 	proj_.setWarpView(-warp_.getTranslate(), warp_.getScale());
 	proj_.save();
+
+	Data::shared().save(proj_.getDataPath());
 	
 	if(do_backup) {
 		proj_.backup();
@@ -343,7 +360,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	proj_.WorkFolder::setRelative(proj_path);
 	proj_.setup();
 
-	if((texture_source_ = proj_.buildTextureSource())) {
+	if((texture_source_ = buildTextureSource(proj_))) {
 		auto tex = texture_source_->getTexture();
 		main_app_->setTexture(tex);
 		for(auto &&e : editor_) {
@@ -368,7 +385,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		warp_.scale(view.second, {0,0});
 	}
 	proj_.load();
-	
+	Data::shared().load(proj_.getDataPath());
 	updateRecent(proj_);
 }
 

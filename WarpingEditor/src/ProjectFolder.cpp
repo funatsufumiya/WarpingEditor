@@ -1,5 +1,4 @@
 #include "ProjectFolder.h"
-#include "Models.h"
 
 namespace {
 template<typename T>
@@ -142,10 +141,8 @@ void ProjectFolder::setup() {
 }
 void ProjectFolder::load() {
 	loadJson(ofLoadJson(getAbsolute(getProjFileName())));
-	Data::shared().load(getAbsolute(getFileName()+".bin"));
 }
 void ProjectFolder::save() const {
-	Data::shared().save(getAbsolute(getFileName()+".bin"));
 	ofSavePrettyJson(getAbsolute(getProjFileName()), toJson());
 }
 void ProjectFolder::backup() const {
@@ -178,21 +175,3 @@ void ProjectFolder::setTextureSourceNDI(const std::string &ndi_name)
 	texture_.type = Texture::NDI;
 	texture_.ndi = ndi_name;
 }
-
-std::shared_ptr<ImageSource> ProjectFolder::buildTextureSource() const {
-	std::shared_ptr<ImageSource> ret = std::make_shared<ImageSource>();
-	switch(texture_.type) {
-		case Texture::FILE:
-			if(ret->loadFromFile(getAbsolute(texture_.file))) {
-				return ret;
-			}
-			break;
-		case Texture::NDI:
-			if(ret->setupNDI(texture_.ndi)) {
-				return ret;
-			}
-			break;
-	}
-	return nullptr;
-}
-
