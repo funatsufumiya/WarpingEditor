@@ -17,6 +17,7 @@ public:
 	void setup();
 	void update();
 	void draw();
+	void dragEvent(ofDragInfo dragInfo) override;
 	
 	void save(bool do_backup=true) const;
 	void openRecent(int index=0);

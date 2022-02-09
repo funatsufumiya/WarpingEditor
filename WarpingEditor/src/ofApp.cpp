@@ -439,6 +439,16 @@ void GuiApp::updateRecent(const ProjectFolder &proj)
 	ofSavePrettyJson("project_folder.json", {{"recent", recent}});
 }
 
+void GuiApp::dragEvent(ofDragInfo dragInfo)
+{
+	if(dragInfo.files.empty()) return;
+	auto filepath = dragInfo.files[0];
+	auto ext = ofFilePath::getFileExt(filepath);
+	if(ext == "maap") {
+		Data::shared().load(filepath);
+	}
+}
+
 //--------------------------------------------------------------
 void MainApp::setup()
 {
