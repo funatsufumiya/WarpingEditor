@@ -83,11 +83,32 @@ void GuiApp::draw(){
 	
 	gui_.begin();
 	using namespace ImGui;
-	bool is_open_export_dialog_trigger_=false;
+	Shortcut sc_save{[&]{save();}, 'S'};
+	Shortcut sc_save_as{[&]{ImGuiFileDialog::Instance()->OpenModal("SaveProjDlgKey", "Save Project Folder", nullptr, ofToDataPath(""));}, 'S', Shortcut::MOD_FLAG_DEFAULT|ImGuiKeyModFlags_Shift};
+	Shortcut sc_open{[&]{ImGuiFileDialog::Instance()->OpenModal("ChooseProjDlgKey", "Choose Project Folder", nullptr, ofToDataPath(""));}, 'O'};
+	Shortcut sc_export{[&]{exportMesh(proj_);}, 'E'};
+	bool is_open_export_dialog_trigger=false;
+	Shortcut sc_export_to{[&]{is_open_export_dialog_trigger = true;}, 'E', Shortcut::MOD_FLAG_DEFAULT|ImGuiKeyModFlags_Shift};
+	for(auto &&s : std::vector<Shortcut>{sc_save,sc_save_as,sc_open,sc_export,sc_export_to}) {
+		if(s.check()) {
+			s();
+		}
+	}
+	/*
+	auto &&io = ImGui::GetIO();
+	std::cout << "mod1:" << (Shortcut::MOD_FLAG_DEFAULT|ImGuiKeyModFlags_Shift) << std::endl;
+	std::cout << "mod2:" << io.KeyMods << std::endl;
+	for(int i = 0; i < 512; ++i) {
+		if(io.KeysDown[i]) {
+			std::cout << "keys:" << i << std::endl;
+		}
+	}
+	 */
+	std::vector<std::string> shortcut_triggers;
 	if(BeginMainMenuBar()) {
 		if(BeginMenu("Project")) {
-			if(MenuItem("Open file...", "Ctrl+O")) {
-				ImGuiFileDialog::Instance()->OpenDialog("ChooseProjDlgKey", "Choose Project Folder", nullptr, ofToDataPath(""));
+			if(MenuItem("Open file...", sc_open.keyStr().c_str())) {
+				sc_open();
 			}
 			Separator();
 			if(BeginMenu("recent")) {
@@ -101,18 +122,18 @@ void GuiApp::draw(){
 				EndMenu();
 			}
 			Separator();
-			if(MenuItem("Save", "Ctrl+S")) {
-				save();
+			if(MenuItem("Save", sc_save.keyStr().c_str())) {
+				sc_save();
 			}
-			if(MenuItem("Save as...", "Ctrl+Shift+S")) {
-				ImGuiFileDialog::Instance()->OpenDialog("SaveProjDlgKey", "Save Project Folder", nullptr, ofToDataPath(""));
+			if(MenuItem("Save as...", sc_save_as.keyStr().c_str())) {
+				sc_save_as();
 			}
 			EndMenu();
 		}
 		if(BeginMenu("Texture")) {
 			if(BeginMenu("Image File")) {
 				if(MenuItem("Load from file...")) {
-					ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(proj_.getAbsolute().string()));
+					ImGuiFileDialog::Instance()->OpenModal("ChooseFileDlgKey", "Choose File", "{.png,.gif,.jpg,.jpeg,.mov,.mp4}", ofFilePath::addTrailingSlash(proj_.getAbsolute().string()));
 				}
 				Separator();
 				std::string filepath;
@@ -143,11 +164,11 @@ void GuiApp::draw(){
 			EndMenu();
 		}
 		if(BeginMenu("Export")) {
-			if(MenuItem("export by recent settings", "Ctrl+E")) {
-				exportMesh(proj_);
+			if(MenuItem("export by recent settings", sc_export.keyStr().c_str())) {
+				sc_export();
 			}
-			if(MenuItem("export...")) {
-				is_open_export_dialog_trigger_ = true;
+			if(MenuItem("export...", sc_export_to.keyStr().c_str())) {
+				sc_export_to();
 			}
 			EndMenu();
 		}
@@ -159,14 +180,14 @@ void GuiApp::draw(){
 			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
 			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 			proj_.setExportFolder(filePathName);
-			is_open_export_dialog_trigger_ = true;
+			is_open_export_dialog_trigger = true;
 		}
 		ImGuiFileDialog::Instance()->Close();
 	}
-	if(is_open_export_dialog_trigger_) {
-		OpenPopup("is_open_export_dialog_trigger_");
+	if(is_open_export_dialog_trigger) {
+		OpenPopup("is_open_export_dialog_trigger");
 	}
-	if(BeginPopup("is_open_export_dialog_trigger_")) {
+	if(BeginPopupModal("is_open_export_dialog_trigger")) {
 		std::string folder = proj_.getExportFolder();
 		float resample_min_interval = proj_.getExportMeshMinInterval();
 		bool is_arb = proj_.getIsExportMeshArb();
@@ -182,7 +203,7 @@ void GuiApp::draw(){
 		}
 		SameLine();
 		if(Button("...")) {
-			ImGuiFileDialog::Instance()->OpenDialog("SelectFolderDlgKey", "Choose Export Folder", nullptr, folder);
+			ImGuiFileDialog::Instance()->OpenModal("SelectFolderDlgKey", "Choose Export Folder", nullptr, folder);
 		}
 		if(EditText("filename", filename)) {
 			proj_.setExportFileName(filename);
@@ -264,7 +285,6 @@ void GuiApp::draw(){
 			warp_.gui();
 			break;
 	}
-	gui_.end();
 }
 
 void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const

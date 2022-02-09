@@ -227,6 +227,10 @@ bool ImGui::IsKeyDown(int key_index, ImGuiKeyModFlags mod)
 	auto &&io = ImGui::GetIO();
 	return io.KeysDown[key_index] && IsModKeyDown(mod);
 }
+bool ImGui::IsKeyPressed(int key_index, ImGuiKeyModFlags mod)
+{
+	return IsKeyPressed(key_index, false) && IsModKeyDown(mod);
+}
 bool ImGui::IsKeyDownMac(int key_index, ImGuiKeyModFlags mod)
 {
 #ifdef TARGET_OSX
@@ -532,4 +536,46 @@ bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &
 }
 bool ImGui::Drag2DButton(const std::string &label, ImVec2 &value, float step, const std::vector<std::string> &value_format, const ImVec2& size) {
 	return Drag2DButton(label, value, {step, step}, value_format, size);
+}
+
+ImGui::Shortcut::Shortcut(std::function<void()> func, int key, ImGuiKeyModFlags mod)
+:mod(mod),key(key),func(func)
+{
+}
+bool ImGui::Shortcut::check() const {
+	return IsKeyPressed(key, mod);
+}
+namespace {
+std::vector<std::string> getModKeyNames(ImGuiKeyModFlags f) {
+	std::vector<std::string> ss;
+	if((f&ImGuiKeyModFlags_Super)!=0) {
+#ifdef TARGET_OSX
+		ss.push_back("Command");
+#elif TARGET_WIN32
+		ss.push_back("Win");
+#else
+		ss.push_back("Super");
+#endif
+	}
+	if((f&ImGuiKeyModFlags_Ctrl)!=0) {
+		ss.push_back("Ctrl");
+	}
+	if((f&ImGuiKeyModFlags_Alt)!=0) {
+#ifdef TARGET_OSX
+		ss.push_back("Option");
+#else
+		ss.push_back("Alt");
+#endif
+	}
+	if((f&ImGuiKeyModFlags_Shift)!=0) {
+		ss.push_back("Shift");
+	}
+	return ss;
+}
+}
+std::string ImGui::Shortcut::keyStr() const {
+	auto strs = getModKeyNames(mod);
+	std::vector<char> k = {(char)key,0};
+	strs.push_back(k.data());
+	return ofJoinString(strs, "+");
 }

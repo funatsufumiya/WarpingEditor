@@ -17,6 +17,7 @@ namespace ImGui {
 	void ImageRotated(ImTextureID tex_id, ImVec2 center, ImVec2 size, float angle);
 	bool SpinnerInt(const std::string &gui_id, int &value, int min=std::numeric_limits<int>::min(), int max=std::numeric_limits<int>::max(), int step=1);
 	bool IsModKeyDown(ImGuiKeyModFlags mod);
+	bool IsKeyPressed(int key_index, ImGuiKeyModFlags mod);
 	bool IsKeyDown(int key_index, ImGuiKeyModFlags mod);
 	bool IsKeyDownMac(int key_index, ImGuiKeyModFlags mod);
 	bool IsKeyDownWin(int key_index, ImGuiKeyModFlags mod);
@@ -102,4 +103,22 @@ namespace ImGui {
 	bool Drag2DButton(const std::string &label, ImVec2 &value, const ImVec2 &step=ImVec2(1,1), const std::vector<std::string> &value_format={"%.1f","%.1f"}, const ImVec2& size=ImVec2(0,0));
 	bool Drag2DButton(const std::string &label, ImVec2 &value, float step=1.f, const std::vector<std::string> &value_format={"%.1f","%.1f"}, const ImVec2& size=ImVec2(0,0));
 
+
+	struct Shortcut {
+		static const int MOD_FLAG_DEFAULT = 
+#ifdef TARGET_OSX
+			 ImGuiKeyModFlags_Super;
+#elif TARGET_WIN32
+			 ImGuiKeyModFlags_Ctrl;
+#else
+			 ImGuiKeyModFlags_Super;
+#endif
+		Shortcut(std::function<void()> func, int key, ImGuiKeyModFlags mod=MOD_FLAG_DEFAULT);
+		void operator()() const { func(); }
+		bool check() const;
+		std::string keyStr() const;
+		std::function<void()> func;
+		ImGuiKeyModFlags mod;
+		int key;
+	};
 }
