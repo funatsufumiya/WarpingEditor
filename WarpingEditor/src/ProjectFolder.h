@@ -10,7 +10,7 @@ public:
 	void save() const;
 	void backup() const;
 	
-	std::filesystem::path getDataFilePath() const { return getAbsolute(getDataFileName()+".bin"); }
+	std::filesystem::path getDataFilePath() const { return getAbsolute(getDataFileName()+".maap"); }
 	std::string getDataFileName() const { return filename_; }
 	std::string getProjFileName() const { return "project.json"; }
 	

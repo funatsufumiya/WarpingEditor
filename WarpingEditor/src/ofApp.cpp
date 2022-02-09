@@ -360,6 +360,7 @@ void GuiApp::save(bool do_backup) const
 		ofFile(filepath).copyTo(backup_path);
 		int num = proj_.getBackupNumLimit();
 		if(num > 0) {
+			folder.allowExt(ofFilePath::getFileExt(backup_path));
 			folder.sortByDate();
 			for(int i = 0; i < folder.size() - num; ++i) {
 				folder.getFile(i).remove();
