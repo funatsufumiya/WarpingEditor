@@ -7,30 +7,30 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-template<typename MeshType, typename IndexType, typename PointType=glm::vec2>
-class Editor : public ofxEditorFrame
+class EditorBase : public ofxEditorFrame
 {
 public:
 	void setup();
 	virtual void update();
-	void setTexture(ofTexture tex) { tex_ = tex; }
-	virtual void draw() const;
+	virtual void draw() const{}
 	virtual void gui() {}
-	
-	virtual bool isPreventMeshInterpolation() const { return false; }
-	
+
+	void setTexture(ofTexture tex) { tex_ = tex; }
+
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
-	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }
 	void setEnableMeshEditByMouse(bool enable) { is_mesh_editable_by_mouse_ = enable; }
+	
+	virtual bool isPreventMeshInterpolation() const { return false; }
 
-	void moveSelectedOnScreenScale(const glm::vec2 &delta) { moveSelected(delta/getScale()); }
+	virtual void moveSelectedOnScreenScale(const glm::vec2 &delta){}
+
 protected:
 	ofTexture tex_;
-	bool is_enabled_hovering_uneditable_point_=false;
+
 	bool is_viewport_editable_by_mouse_=true;
 	bool is_mesh_editable_by_mouse_=true;
-	float mouse_near_distance_ = 10;
+
 	class MouseEvent : public ofxEditorFrame::MouseEventArg {
 	public:
 		bool isFrameNew() const { return is_frame_new_; }
@@ -45,6 +45,23 @@ protected:
 	private:
 		bool is_frame_new_=false, has_new_frame_=false;
 	} mouse_;
+	virtual void procNewMouseEvent(const MouseEvent &mouse){}
+};
+
+template<typename MeshType, typename IndexType, typename PointType=glm::vec2>
+class Editor : public EditorBase
+{
+public:
+	virtual void draw() const override;
+	
+	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
+	void moveSelectedOnScreenScale(const glm::vec2 &delta) override { moveSelected(delta/getScale()); }
+
+protected:
+	void procNewMouseEvent(const MouseEvent &mouse) override;
+
+	bool is_enabled_hovering_uneditable_point_=false;
+	float mouse_near_distance_ = 10;
 	struct OpHover {
 		std::weak_ptr<MeshType> mesh;
 		std::pair<std::weak_ptr<MeshType>, IndexType> point;
@@ -113,12 +130,6 @@ inline bool Editor<MeshType, IndexType, PointType>::isOpDefault() const
 	return !(isOpAdd() || isOpAlt());
 }
 
-template<typename MeshType, typename IndexType, typename PointType>
-inline void Editor<MeshType, IndexType, PointType>::setup()
-{
-	ofAddListener(on_mouse_event_, this, &Editor::handleMouse);
-	ofxEditorFrame::setup();
-}
 
 template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, IndexType, PointType>::updateSelection(const OpSelection &selection, const OpHover &hover)
@@ -191,37 +202,33 @@ void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-void Editor<MeshType, IndexType, PointType>::update()
+void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent &mouse)
 {
-	ofxEditorFrame::update();
-	mouse_.update();
-	if(mouse_.isFrameNew()) {
-		bool used = false;
-		if(!used && is_mesh_editable_by_mouse_) {
-			if(mouse_.isPressed(OF_MOUSE_BUTTON_LEFT)) {
-				op_selection_ = updateSelection(op_selection_, op_hover_);
-				op_hover_ = OpHover();
+	bool used = false;
+	if(!used && is_mesh_editable_by_mouse_) {
+		if(mouse.isPressed(OF_MOUSE_BUTTON_LEFT)) {
+			op_selection_ = updateSelection(op_selection_, op_hover_);
+			op_hover_ = OpHover();
+			used = true;
+		}
+		else if(!mouse.isPressing(OF_MOUSE_BUTTON_LEFT)) {
+			op_hover_ = getHover(mouse.pos, !is_enabled_hovering_uneditable_point_);
+		}
+		else if(mouse.isDragged(OF_MOUSE_BUTTON_LEFT)) {
+			if(op_selection_.is_grabbing) {
+				moveSelectedOnScreenScale(mouse.delta);
 				used = true;
-			}
-			else if(!mouse_.isPressing(OF_MOUSE_BUTTON_LEFT)) {
-				op_hover_ = getHover(mouse_.pos, !is_enabled_hovering_uneditable_point_);
-			}
-			else if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
-				if(op_selection_.is_grabbing) {
-					moveSelectedOnScreenScale(mouse_.delta);
-					used = true;
-				}
 			}
 		}
-		if(!used && is_viewport_editable_by_mouse_) {
-			if(mouse_.isDragged(OF_MOUSE_BUTTON_LEFT)) {
-				translate(mouse_.delta);
-				used = true;
-			}
-			if(mouse_.isScrolledY()) {
-				scale(pow(2, mouse_.scroll.y/10.f), mouse_.pos);
-				used = true;
-			}
+	}
+	if(!used && is_viewport_editable_by_mouse_) {
+		if(mouse.isDragged(OF_MOUSE_BUTTON_LEFT)) {
+			translate(mouse.delta);
+			used = true;
+		}
+		if(mouse.isScrolledY()) {
+			scale(pow(2, mouse.scroll.y/10.f), mouse.pos);
+			used = true;
 		}
 	}
 }

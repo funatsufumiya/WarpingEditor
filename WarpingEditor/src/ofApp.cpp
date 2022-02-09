@@ -26,6 +26,9 @@ void GuiApp::setup(){
 	uv_.setup();
 	warp_.setup();
 	
+	editor_.push_back(&uv_);
+	editor_.push_back(&warp_);
+	
 	loadRecent();
 	openRecent();
 }
@@ -36,27 +39,24 @@ void GuiApp::update(){
 	if(texture_source_->isFrameNew()) {
 		auto tex = texture_source_->getTexture();
 		main_app_->setTexture(tex);
-		uv_.setTexture(tex);
-		warp_.setTexture(tex);
+		for(auto &&e : editor_) {
+			e->setTexture(tex);
+		}
 	}
 	bool gui_focused = ImGui::GetIO().WantCaptureMouse;
-	uv_.setEnableViewportEditByMouse(!gui_focused);
-	uv_.setEnableMeshEditByMouse(!gui_focused);
-	warp_.setEnableViewportEditByMouse(!gui_focused);
-	warp_.setEnableMeshEditByMouse(!gui_focused);
-	bool update_mesh = true;
-	switch(state_) {
-		case EDIT_UV:
-			uv_.setRegion(ofGetCurrentViewport());
-			uv_.update();
-			update_mesh = !uv_.isPreventMeshInterpolation();
-			break;
-		case EDIT_WRAP:
-			warp_.setRegion(ofGetCurrentViewport());
-			warp_.update();
-			update_mesh = !warp_.isPreventMeshInterpolation();
-			break;
+	for(auto &&e : editor_) {
+		e->setEnableViewportEditByMouse(!gui_focused);
+		e->setEnableMeshEditByMouse(!gui_focused);
 	}
+
+	bool update_mesh = true;
+	auto editor = editor_[state_];
+	if(editor) {
+		editor->setRegion(ofGetCurrentViewport());
+		editor->update();
+		update_mesh = !editor->isPreventMeshInterpolation();
+	}
+
 	if(update_mesh) {
 		auto &data = Data::shared();
 		data.update();
@@ -72,13 +72,9 @@ void GuiApp::update(){
 
 //--------------------------------------------------------------
 void GuiApp::draw(){
-	switch(state_) {
-		case EDIT_UV:
-			uv_.draw();
-			break;
-		case EDIT_WRAP:
-			warp_.draw();
-			break;
+	auto editor = editor_[state_];
+	if(editor) {
+		editor->draw();
 	}
 	
 	gui_.begin();
@@ -143,8 +139,10 @@ void GuiApp::draw(){
 					if((texture_source_ = proj_.buildTextureSource())) {
 						auto tex = texture_source_->getTexture();
 						main_app_->setTexture(tex);
-						uv_.setTexture(tex);
-						warp_.setTexture(tex);
+						auto editor = editor_[state_];
+						if(editor) {
+							editor->setTexture(tex);
+						}
 					}
 				}
 				EndMenu();
@@ -244,8 +242,10 @@ void GuiApp::draw(){
 			if((texture_source_ = proj_.buildTextureSource())) {
 				auto tex = texture_source_->getTexture();
 				main_app_->setTexture(tex);
-				uv_.setTexture(tex);
-				warp_.setTexture(tex);
+				auto editor = editor_[state_];
+				if(editor) {
+					editor->setTexture(tex);
+				}
 			}
 		}
 		ImGuiFileDialog::Instance()->Close();
@@ -277,13 +277,8 @@ void GuiApp::draw(){
 		}
 	}
 	End();
-	switch(state_) {
-		case EDIT_UV:
-			uv_.gui();
-			break;
-		case EDIT_WRAP:
-			warp_.gui();
-			break;
+	if(editor) {
+		editor->gui();
 	}
 }
 
@@ -321,13 +316,9 @@ void GuiApp::keyPressed(int key){
 	if(ImGui::IsModKeyDown(ImGuiKeyModFlags_Shift)) {
 		move *= 10;
 	}
-	switch(state_) {
-		case EDIT_UV:
-			uv_.moveSelectedOnScreenScale(move);
-			break;
-		case EDIT_WRAP:
-			warp_.moveSelectedOnScreenScale(move);
-			break;
+	auto editor = editor_[state_];
+	if(editor) {
+		editor->moveSelectedOnScreenScale(move);
 	}
 }
 
@@ -355,8 +346,9 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	if((texture_source_ = proj_.buildTextureSource())) {
 		auto tex = texture_source_->getTexture();
 		main_app_->setTexture(tex);
-		uv_.setTexture(tex);
-		warp_.setTexture(tex);
+		for(auto &&e : editor_) {
+			e->setTexture(tex);
+		}
 	}
 	{
 		auto view = proj_.getMainViewport();

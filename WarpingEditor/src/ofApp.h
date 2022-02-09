@@ -37,6 +37,7 @@ private:
 		EDIT_WRAP
 	};
 	int state_=EDIT_UV;
+	std::vector<EditorBase*> editor_;
 	
 	void backup();
 	void loadRecent();
