@@ -10,8 +10,8 @@ public:
 	void save() const;
 	void backup() const;
 	
-	std::filesystem::path getDataPath() const { return getAbsolute(getFileName()+".bin"); }
-	std::string getFileName() const { return filename_; }
+	std::filesystem::path getDataFilePath() const { return getAbsolute(getDataFileName()+".bin"); }
+	std::string getDataFileName() const { return filename_; }
 	std::string getProjFileName() const { return "project.json"; }
 	
 	int getTextureType() const { return texture_.type; }
@@ -26,6 +26,11 @@ public:
 	std::string getExportFolder() const { return export_.folder; }
 	std::string getExportFileName() const { return export_.filename; }
 	bool getIsExportMeshArb() const { return export_.is_arb; }
+	
+	bool isBackupEnabled() const { return backup_.enabled; }
+	std::filesystem::path getBackupFolder() const { return getRelative(backup_.folder); }
+	std::filesystem::path getBackupFilePath() const;
+	int getBackupNumLimit() const { return backup_.limit; }
 	
 	void setTextureSourceFile(const std::string &file_name);
 	void setTextureSourceNDI(const std::string &ndi_name);

@@ -348,10 +348,23 @@ void GuiApp::save(bool do_backup) const
 	proj_.setWarpView(-warp_.getTranslate(), warp_.getScale());
 	proj_.save();
 
-	Data::shared().save(proj_.getDataPath());
+	auto filepath = proj_.getDataFilePath();
+	Data::shared().save(filepath);
 	
-	if(do_backup) {
-		proj_.backup();
+	if(do_backup && proj_.isBackupEnabled()) {
+		auto backup_path = proj_.getBackupFilePath();
+		ofDirectory folder(ofFilePath::getEnclosingDirectory(backup_path));
+		if(!folder.exists()) {
+			folder.create();
+		}
+		ofFile(filepath).copyTo(backup_path);
+		int num = proj_.getBackupNumLimit();
+		if(num > 0) {
+			folder.sortByDate();
+			for(int i = 0; i < folder.size() - num; ++i) {
+				folder.getFile(i).remove();
+			}
+		}
 	}
 }
 
@@ -385,7 +398,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		warp_.scale(view.second, {0,0});
 	}
 	proj_.load();
-	Data::shared().load(proj_.getDataPath());
+	Data::shared().load(proj_.getDataFilePath());
 	updateRecent(proj_);
 }
 

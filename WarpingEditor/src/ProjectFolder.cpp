@@ -145,24 +145,14 @@ void ProjectFolder::load() {
 void ProjectFolder::save() const {
 	ofSavePrettyJson(getAbsolute(getProjFileName()), toJson());
 }
-void ProjectFolder::backup() const {
-	auto bu = backup_;
-	if(!bu.enabled) {
-		return;
-	}
-	ofDirectory folder(getRelative(bu.folder));
-	if(!folder.exists()) {
-		folder.create();
-	}
-	std::string filename = getFileName()+"_"+ofGetTimestampString("%Y%m%d_%H%M%S") + ".bin";
-	ofFile(getAbsolute(getFileName()+".bin")).copyTo(ofFilePath::join(folder.path(), filename));
-	int num = bu.limit;
-	if(num > 0) {
-		folder.sortByDate();
-		for(int i = 0; i < folder.size() - num; ++i) {
-			folder.getFile(i).remove();
-		}
-	}
+
+std::filesystem::path ProjectFolder::getBackupFilePath() const
+{
+	auto path = getDataFilePath();
+	auto folder = ofFilePath::join(ofFilePath::getEnclosingDirectory(path), backup_.folder);
+	auto basename = ofFilePath::getBaseName(path);
+	auto ext = ofFilePath::getFileExt(path);
+	return ofFilePath::join(folder, basename+"_"+ofGetTimestampString("%Y%m%d_%H%M%S"))+"."+ext;
 }
 
 void ProjectFolder::setTextureSourceFile(const std::string &file_name)
