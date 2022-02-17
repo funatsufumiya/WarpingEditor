@@ -50,12 +50,14 @@ void GuiApp::setup(){
 
 //--------------------------------------------------------------
 void GuiApp::update(){
-	texture_source_->update();
-	if(texture_source_->isFrameNew()) {
-		auto tex = texture_source_->getTexture();
-		main_app_->setTexture(tex);
-		for(auto &&e : editor_) {
-			e->setTexture(tex);
+	if(texture_source_) {
+		texture_source_->update();
+		if(texture_source_->isFrameNew()) {
+			auto tex = texture_source_->getTexture();
+			main_app_->setTexture(tex);
+			for(auto &&e : editor_) {
+				e->setTexture(tex);
+			}
 		}
 	}
 	bool gui_focused = ImGui::GetIO().WantCaptureMouse;
@@ -75,13 +77,17 @@ void GuiApp::update(){
 	if(update_mesh) {
 		auto &data = Data::shared();
 		data.update();
-		auto tex = texture_source_->getTexture();
-		auto tex_data = tex.getTextureData();
-		glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
-		glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-		? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-		: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-		main_app_->setMesh(data.getMeshForExport(100, tex_uv));
+		if(texture_source_) {
+			auto tex = texture_source_->getTexture();
+			if(tex.isAllocated()) {
+				auto tex_data = tex.getTextureData();
+				glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
+				glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+				? glm::vec2{tex_data.tex_w, tex_data.tex_h}
+				: glm::vec2{tex_data.tex_t, tex_data.tex_u};
+				main_app_->setMesh(data.getMeshForExport(100, tex_uv));
+			}
+		}
 	}
 }
 
@@ -153,10 +159,12 @@ void GuiApp::draw(){
 					proj_.setTextureSourceFile(filepath);
 					if((texture_source_ = buildTextureSource(proj_))) {
 						auto tex = texture_source_->getTexture();
-						main_app_->setTexture(tex);
-						auto editor = editor_[state_];
-						if(editor) {
-							editor->setTexture(tex);
+						if(tex.isAllocated()) {
+							main_app_->setTexture(tex);
+							auto editor = editor_[state_];
+							if(editor) {
+								editor->setTexture(tex);
+							}
 						}
 					}
 				}
@@ -256,10 +264,12 @@ void GuiApp::draw(){
 			proj_.setTextureSourceFile(filePathName);
 			if((texture_source_ = buildTextureSource(proj_))) {
 				auto tex = texture_source_->getTexture();
-				main_app_->setTexture(tex);
-				auto editor = editor_[state_];
-				if(editor) {
-					editor->setTexture(tex);
+				if(tex.isAllocated()) {
+					main_app_->setTexture(tex);
+					auto editor = editor_[state_];
+					if(editor) {
+						editor->setTexture(tex);
+					}
 				}
 			}
 		}
@@ -288,7 +298,9 @@ void GuiApp::draw(){
 		}
 		if(Button("create new")) {
 			auto tex = texture_source_->getTexture();
-			data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
+			if(tex.isAllocated()) {
+				data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
+			}
 		}
 	}
 	End();
@@ -300,7 +312,7 @@ void GuiApp::draw(){
 void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
 {
 	auto tex = texture_source_->getTexture();
-	glm::vec2 coord_size = is_arb?glm::vec2{tex.getWidth(), tex.getHeight()}:glm::vec2{1,1};
+	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{tex.getWidth(), tex.getHeight()}:glm::vec2{1,1};
 	Data::shared().exportMesh(filepath, resample_min_interval, coord_size);
 }
 void GuiApp::exportMesh(const ProjectFolder &proj) const
@@ -376,9 +388,11 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 
 	if((texture_source_ = buildTextureSource(proj_))) {
 		auto tex = texture_source_->getTexture();
-		main_app_->setTexture(tex);
-		for(auto &&e : editor_) {
-			e->setTexture(tex);
+		if(tex.isAllocated()) {
+			main_app_->setTexture(tex);
+			for(auto &&e : editor_) {
+				e->setTexture(tex);
+			}
 		}
 	}
 	{
