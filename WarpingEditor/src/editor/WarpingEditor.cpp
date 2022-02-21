@@ -183,14 +183,17 @@ void WarpingEditor::update()
 	if(ofGetKeyPressed('d')) {
 		mode_ = MODE_DIVISION;
 		setEnabledHoveringUneditablePoint(true);
+		setEnabledRectSelection(false);
 	}
 	if(ofGetKeyPressed('m')) {
 		mode_ = MODE_MESH;
 		setEnabledHoveringUneditablePoint(false);
+		setEnabledRectSelection(true);
 	}
 	if(mode_ != mode_prev) {
 		op_selection_ = OpSelection();
 		op_hover_ = OpHover();
+		op_rect_ = OpRect();
 	}
 	Editor::update();
 	auto data = Data::shared();
