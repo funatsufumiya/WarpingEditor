@@ -26,8 +26,6 @@ public:
 	virtual bool isPreventMeshInterpolation() const { return false; }
 
 	virtual void moveSelectedOnScreenScale(const glm::vec2 &delta){}
-	
-	glm::vec2 getMouseDrag() const { return mouse_.drag; }
 
 protected:
 	ofTexture tex_;
@@ -70,6 +68,9 @@ protected:
 	struct OpHover {
 		std::weak_ptr<MeshType> mesh;
 		std::pair<std::weak_ptr<MeshType>, IndexType> point;
+		bool isEmpty() const {
+			return !mesh.lock() && !point.first.lock();
+		}
 	} op_hover_;
 	struct OpRect {
 		std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> point;
@@ -77,8 +78,17 @@ protected:
 	struct OpSelection {
 		std::set<std::weak_ptr<MeshType>, std::owner_less<std::weak_ptr<MeshType>>> mesh;
 		std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> point;
-		bool is_grabbing = false;
+		bool contains(std::weak_ptr<MeshType> m) const {
+			return mesh.find(m) != end(mesh);
+		}
+		bool contains(std::pair<std::weak_ptr<MeshType>, IndexType> p) const {
+			auto found = point.find(p.first);
+			if(found == end(point)) return false;
+			auto indices = found->second;
+			return find(begin(indices), end(indices), p.second) != end(indices);
+		}
 	} op_selection_;
+	bool is_grabbing_by_mouse_=false;
 	bool isOpAdd() const;
 	bool isOpAlt() const;
 	bool isOpDefault() const;
@@ -131,7 +141,11 @@ inline bool Editor<MeshType, IndexType, PointType>::isOpAdd() const
 template<typename MeshType, typename IndexType, typename PointType>
 inline bool Editor<MeshType, IndexType, PointType>::isOpAlt() const
 {
-	return ImGui::IsModKeyDown(ImGuiKeyModFlags_Alt);
+#ifdef TARGET_OSX
+	return ImGui::IsModKeyDown(ImGuiKeyModFlags_Super);
+#else
+	return ImGui::IsModKeyDown(ImGuiKeyModFlags_Ctrl);
+#endif
 }
 template<typename MeshType, typename IndexType, typename PointType>
 inline bool Editor<MeshType, IndexType, PointType>::isOpDefault() const
@@ -144,19 +158,16 @@ template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, IndexType, PointType>::updateSelection(const OpSelection &selection, const OpHover &hover)
 {
 	OpSelection ret = selection;
-	bool is_grabbing = false;
 	if(hover.point.first.expired()) {
 		ret.point.clear();
 	}
 	else {
-		is_grabbing = true;
 		auto &point = ret.point[hover.point.first];
 		auto result = point.insert(hover.point.second);
 		bool is_new = result.second;
 		if(!is_new) {
 			if(isOpAlt()) {
 				point.erase(result.first);
-				is_grabbing = false;
 			}
 		}
 		else if(isOpDefault()) {
@@ -168,20 +179,17 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 		ret.mesh.clear();
 	}
 	else {
-		is_grabbing = true;
 		auto result = ret.mesh.insert(hover.mesh);
 		bool is_new = result.second;
 		if(!is_new) {
 			if(isOpAlt()) {
 				ret.mesh.erase(result.first);
-				is_grabbing = false;
 			}
 		}
 		else if(isOpDefault()) {
 			ret.mesh = {hover.mesh};
 		}
 	}
-	ret.is_grabbing = is_grabbing;
 	return ret;
 }
 
@@ -241,28 +249,42 @@ void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent 
 {
 	bool used = false;
 	if(!used && is_mesh_editable_by_mouse_) {
-		if(mouse.isPressed(OF_MOUSE_BUTTON_LEFT)) {
-			op_selection_ = updateSelection(op_selection_, op_hover_);
-			op_hover_ = OpHover();
-			used = true;
-		}
-		else if(!mouse.isPressing(OF_MOUSE_BUTTON_LEFT)) {
-			op_hover_ = getHover(mouse.pos, !is_enabled_hovering_uneditable_point_);
-		}
-		else if(mouse.isDragged(OF_MOUSE_BUTTON_LEFT)) {
-			if(op_selection_.is_grabbing) {
+		if(mouse.isDragged(OF_MOUSE_BUTTON_LEFT)) {
+			if(is_grabbing_by_mouse_) {
 				moveSelectedOnScreenScale(mouse.delta);
 				used = true;
 			}
 		}
+		if(mouse.isPressed(OF_MOUSE_BUTTON_LEFT)) {
+			if(!op_hover_.isEmpty()) {
+				op_selection_ = updateSelection(op_selection_, op_hover_);
+				is_grabbing_by_mouse_ = op_selection_.contains(op_hover_.mesh) || op_selection_.contains(op_hover_.point);
+				op_hover_ = OpHover();
+				used = true;
+			}
+		}
+		if(mouse.isClicked(OF_MOUSE_BUTTON_LEFT) && !is_grabbing_by_mouse_) {
+			op_selection_ = updateSelection(op_selection_, op_hover_);
+			op_hover_ = OpHover();
+			used = true;
+		}
+		if(mouse.isReleased(OF_MOUSE_BUTTON_LEFT)) {
+			is_grabbing_by_mouse_ = false;
+		}
 		if(is_enabled_rect_selection_) {
 			if(mouse.isPressing(OF_MOUSE_BUTTON_RIGHT)) {
 				op_rect_ = getRectHover(mouse.getDragRect(), !is_enabled_hovering_uneditable_point_);
+				used = true;
 			}
 			else if(mouse.isReleased(OF_MOUSE_BUTTON_RIGHT)) {
 				op_selection_ = updateSelection(op_selection_, op_rect_);
 				op_rect_ = OpRect();
+				used = true;
 			}
+		}
+		if(!mouse.isPressingAny()) {
+			op_hover_ = getHover(mouse.pos, !is_enabled_hovering_uneditable_point_);
+			used = true;
 		}
 	} 
 	if(!used && is_viewport_editable_by_mouse_) {
