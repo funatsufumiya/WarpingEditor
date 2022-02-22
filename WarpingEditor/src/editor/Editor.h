@@ -294,7 +294,6 @@ void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent 
 		}
 		if(!mouse.isPressingAny()) {
 			op_hover_ = getHover(mouse.pos, !is_enabled_hovering_uneditable_point_);
-			used = true;
 		}
 	} 
 	if(!used && is_viewport_editable_by_mouse_) {

@@ -10,6 +10,13 @@ std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::stri
 	m->init(rect);
 	return std::make_pair(n, m);
 }
+std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::createCopy(const std::string &name, std::shared_ptr<Mesh> src)
+{
+	auto ret = create(name);
+	*ret.second = *src;
+	return ret;
+}
+
 void Data::update() {
 	for(auto &&m : mesh_) {
 		m.second->update();

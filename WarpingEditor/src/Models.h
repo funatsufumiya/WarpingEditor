@@ -47,6 +47,13 @@ public:
 			interpolator = std::make_shared<ofx::mapper::Interpolator>();
 			interpolator->setMesh(mesh);
 		}
+		Mesh& operator=(const Mesh &src) {
+			*uv_quad = *src.uv_quad;
+			*mesh = *src.mesh;
+			*interpolator = *src.interpolator;
+			interpolator->setMesh(mesh);
+			return *this;
+		}
 		void init(const ofRectangle &rect) {
 			mesh->init({1,1}, rect);
 		}
@@ -63,6 +70,7 @@ public:
 		mutable bool is_dirty_=true;
 	};
 	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data", const ofRectangle &rect={0,0,1,1});
+	std::pair<std::string, std::shared_ptr<Mesh>> createCopy(const std::string &name, std::shared_ptr<Mesh> src);
 	void update();
 	bool remove(const std::string &name);
 	bool remove(const std::shared_ptr<Mesh> mesh);

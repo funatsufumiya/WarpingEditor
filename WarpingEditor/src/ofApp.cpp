@@ -293,6 +293,8 @@ void GuiApp::draw(){
 		static bool need_keyboard_focus=false;
 		bool update_mesh_name = false;
 		std::weak_ptr<Data::Mesh> mesh_delete;
+		
+		std::map<std::string, std::shared_ptr<Data::Mesh>> selected_meshes;
 		auto &meshes = data.getMesh();
 		for(auto &&m : meshes) {
 			PushID(m.first.c_str());
@@ -313,6 +315,9 @@ void GuiApp::draw(){
 					editor == &uv_ ? selected ? uv_.selectMesh(*m.second) : uv_.deselectMesh(*m.second)
 					: editor == &warp_ ? selected ? warp_.selectMesh(*m.second) : warp_.deselectMesh(*m.second)
 					: false;
+				}
+				if(selected) {
+					selected_meshes.insert(m);
 				}
 				if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
 					mesh_edit.second.reset();
@@ -345,6 +350,14 @@ void GuiApp::draw(){
 			auto tex = texture_source_->getTexture();
 			if(tex.isAllocated()) {
 				data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
+			}
+		}
+		if(mesh_edit.second.expired() && !selected_meshes.empty()) {
+			SameLine();
+			if(Button("duplicate selected")) {
+				for(auto &&s : selected_meshes) {
+					data.createCopy(s.first, s.second);
+				}
 			}
 		}
 	}
