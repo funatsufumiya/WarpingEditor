@@ -288,13 +288,50 @@ void GuiApp::draw(){
 	End();
 	if(Begin("Mesh")) {
 		auto &data = Data::shared();
-		for(auto &&m : data.getMesh()) {
+		static std::pair<std::string, std::weak_ptr<Data::Mesh>> mesh_edit;
+		static std::string mesh_name_buf;
+		static bool need_keyboard_focus=false;
+		bool update_mesh_name = false;
+		std::weak_ptr<Data::Mesh> mesh_delete;
+		auto &meshes = data.getMesh();
+		for(auto &&m : meshes) {
 			PushID(m.first.c_str());
 			ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
 			ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
 			ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
-			Selectable(m.first.c_str());
+			if(mesh_edit.second.lock() == m.second) {
+				if(need_keyboard_focus) SetKeyboardFocusHere();
+				need_keyboard_focus = false;
+				update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
+			}
+			else {
+				Selectable(m.first.c_str());
+				if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
+					mesh_edit.second.reset();
+				}
+				else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
+						|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
+					) {
+					mesh_delete = m.second;
+				}
+				else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
+					mesh_name_buf = m.first;
+					mesh_edit = m;
+					need_keyboard_focus = true;
+				}
+			}
 			PopID();
+		}
+		if(update_mesh_name) {
+			auto found = meshes.find(mesh_edit.first);
+			assert(found != end(meshes));
+			if(mesh_name_buf != "" && meshes.insert({mesh_name_buf, found->second}).second) {
+				meshes.erase(found);
+			}
+			mesh_edit.second.reset();
+		}
+		if(auto mesh_to_delete = mesh_delete.lock()) {
+			data.remove(mesh_to_delete);
 		}
 		if(Button("create new")) {
 			auto tex = texture_source_->getTexture();
