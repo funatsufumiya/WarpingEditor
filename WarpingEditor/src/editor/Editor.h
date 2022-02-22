@@ -60,6 +60,11 @@ public:
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void moveSelectedOnScreenScale(const glm::vec2 &delta) override { moveSelected(delta/getScale()); }
 
+	virtual bool isSelectedMesh(const Data::Mesh &data) const;
+	virtual bool selectMesh(const Data::Mesh &data);
+	virtual bool deselectMesh(const Data::Mesh &data);
+	virtual bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
+
 protected:
 	void procNewMouseEvent(const MouseEvent &mouse) override;
 
@@ -115,8 +120,6 @@ protected:
 	virtual bool isHoveredMesh(const Data::Mesh &data) const;
 	virtual bool isHoveredPoint(const Data::Mesh &data, IndexType index) const;
 	virtual bool isRectHoveredPoint(const Data::Mesh &data, IndexType index) const;
-	virtual bool isSelectedMesh(const Data::Mesh &data) const;
-	virtual bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
 	
 	virtual void forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const;
 	virtual void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world=true) const {}
@@ -526,6 +529,25 @@ bool Editor<MeshType, IndexType, PointType>::isSelectedPoint(const Data::Mesh &d
 	return any_of(begin(op_selection_.point), end(op_selection_.point), [&](std::pair<std::weak_ptr<MeshType>, std::set<IndexType>> ptr) {
 		return getMeshType(data) == ptr.first.lock() && ptr.second.find(index) != ptr.second.end();
 	});
+}
+
+template<typename MeshType, typename IndexType, typename PointType>
+bool Editor<MeshType, IndexType, PointType>::selectMesh(const Data::Mesh &data)
+{
+	std::weak_ptr<MeshType> ptr = getMeshType(data);
+	return op_selection_.mesh.insert(ptr).second;
+}
+template<typename MeshType, typename IndexType, typename PointType>
+bool Editor<MeshType, IndexType, PointType>::deselectMesh(const Data::Mesh &data)
+{
+	auto found = find_if(begin(op_selection_.mesh), end(op_selection_.mesh), [&](std::weak_ptr<MeshType> ptr) {
+		return getMeshType(data) == ptr.lock();
+	});
+	if(found == end(op_selection_.mesh)) {
+		return false;
+	}
+	op_selection_.mesh.erase(found);
+	return true;
 }
 
 template<typename MeshType, typename IndexType, typename PointType>

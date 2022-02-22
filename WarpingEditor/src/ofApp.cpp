@@ -305,7 +305,15 @@ void GuiApp::draw(){
 				update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
 			}
 			else {
-				Selectable(m.first.c_str());
+				bool selected
+				= editor == &uv_ ? selected = uv_.isSelectedMesh(*m.second)
+				: editor == &warp_ ? selected = warp_.isSelectedMesh(*m.second)
+				: false;
+				if(Selectable(m.first.c_str(), &selected)) {
+					editor == &uv_ ? selected ? uv_.selectMesh(*m.second) : uv_.deselectMesh(*m.second)
+					: editor == &warp_ ? selected ? warp_.selectMesh(*m.second) : warp_.deselectMesh(*m.second)
+					: false;
+				}
 				if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
 					mesh_edit.second.reset();
 				}
