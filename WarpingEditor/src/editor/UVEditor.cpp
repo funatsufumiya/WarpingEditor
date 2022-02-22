@@ -6,6 +6,10 @@ std::shared_ptr<UVEditor::MeshType> UVEditor::getMeshType(const Data::Mesh &data
 	return data.uv_quad;
 }
 
+UVEditor::PointType UVEditor::getPoint(const MeshType &mesh, const IndexType &index) const
+{
+	return mesh[index];
+}
 
 bool UVEditor::isEditablePoint(const Data::Mesh &data, IndexType index) const
 {

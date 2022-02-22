@@ -10,6 +10,7 @@ public:
 	using IndexType = int;
 	using PointType = glm::vec2;
 	std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const override;
+	PointType getPoint(const MeshType &mesh, const IndexType &index) const override;
 	bool isEditablePoint(const Data::Mesh &data, IndexType index) const override;
 	void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world) const override;
 	std::shared_ptr<MeshType> getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance) override;

@@ -286,7 +286,7 @@ void GuiApp::draw(){
 		}
 	}
 	End();
-	if(Begin("Mesh")) {
+	if(Begin("MeshList")) {
 		auto &data = Data::shared();
 		static std::pair<std::string, std::weak_ptr<Data::Mesh>> mesh_edit;
 		static std::string mesh_name_buf;

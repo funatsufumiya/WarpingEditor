@@ -37,6 +37,11 @@ std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getMeshType(const Data::
 	return data.mesh;
 }
 
+WarpingEditor::PointType WarpingEditor::getPoint(const MeshType &mesh, const IndexType &index) const
+{
+	return *mesh.getPoint(index.first, index.second).v;
+}
+
 void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world) const
 {
 	auto &mesh = *data.mesh;

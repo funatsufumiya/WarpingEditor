@@ -64,6 +64,14 @@ public:
 	virtual bool selectMesh(const Data::Mesh &data);
 	virtual bool deselectMesh(const Data::Mesh &data);
 	virtual bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
+	
+	void setSnapGrid(const ofRectangle &grid) {
+		snap_grid_ = grid;
+		is_snap_enabled_ = true;
+	}
+	void disableSnapToGrid() { is_snap_enabled_ = false; }
+	bool calcSnapToGrid(const PointType &point, const ofRectangle &grid, float snap_distance, glm::vec2 &diff) const;
+	virtual PointType getPoint(const MeshType &mesh, const IndexType &index) const = 0;
 
 protected:
 	void procNewMouseEvent(const MouseEvent &mouse) override;
@@ -93,11 +101,15 @@ protected:
 			return find(begin(indices), end(indices), p.second) != end(indices);
 		}
 	} op_selection_, op_selection_pressed_;
+	
 	bool is_grabbing_by_mouse_=false;
 	bool isOpAdd() const;
 	bool isOpAlt() const;
 	bool isOpDefault() const;
 	
+	glm::vec2 snap_diff_={0,0};
+	ofRectangle snap_grid_;
+	bool is_snap_enabled_=false;
 	void drawMesh() const;
 	void drawWire() const;
 	void drawPoint(bool only_editable_point) const;
@@ -255,31 +267,60 @@ void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
+bool Editor<MeshType, IndexType, PointType>::calcSnapToGrid(const PointType &point, const ofRectangle &grid, float snap_distance, glm::vec2 &diff) const
+{
+	PointType p;
+	p.x = ofWrap(point.x, grid.getLeft(), grid.getRight());
+	p.y = ofWrap(point.y, grid.getTop(), grid.getBottom());
+	auto nearSide = [](float x, float a, float b) {
+		float da = a-x, db = b-x;
+		return std::abs(da) < std::abs(db) ? da : db;
+	};
+	diff.x = nearSide(p.x, grid.getLeft(), grid.getRight());
+	diff.y = nearSide(p.y, grid.getTop(), grid.getBottom());
+	if(std::abs(diff.x) > snap_distance) diff.x = 0;
+	if(std::abs(diff.y) > snap_distance) diff.y = 0;
+	return diff.x != 0 || diff.y != 0;
+}
+
+template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent &mouse)
 {
 	bool used = false;
 	if(!used && is_mesh_editable_by_mouse_) {
 		if(mouse.isDragged(OF_MOUSE_BUTTON_LEFT)) {
 			if(is_grabbing_by_mouse_) {
-				moveSelectedOnScreenScale(mouse.delta);
+				moveSelected(mouse.delta/getScale()-snap_diff_);
+				snap_diff_ = {0,0};
+				if(is_snap_enabled_ && op_selection_.contains(op_hover_.point)) {
+					glm::vec2 snap_diff;
+					if(calcSnapToGrid(getPoint(*op_hover_.point.first.lock(), op_hover_.point.second), snap_grid_, mouse_near_distance_/getScale(), snap_diff)) {
+						moveSelected(snap_diff);
+						snap_diff_ = snap_diff;
+					}
+				}
 				used = true;
 			}
 		}
 		if(mouse.isPressed(OF_MOUSE_BUTTON_LEFT)) {
-			if(!op_hover_.isEmpty()) {
+			if(op_hover_.isEmpty()) {
+				op_selection_pressed_ = OpSelection();
+			}
+			else {
 				op_selection_pressed_ = updateSelection(op_selection_, op_hover_, false);
 				op_selection_ = updateSelection(op_selection_, op_hover_, true);
 				is_grabbing_by_mouse_ = op_selection_.contains(op_hover_.mesh) || op_selection_.contains(op_hover_.point);
-				op_hover_ = OpHover();
 				used = true;
 			}
 		}
 		if(mouse.isClicked(OF_MOUSE_BUTTON_LEFT)) {
 			op_selection_ = op_selection_pressed_;
+			op_hover_ = OpHover();
 			used = true;
 		}
 		if(mouse.isReleased(OF_MOUSE_BUTTON_LEFT)) {
 			is_grabbing_by_mouse_ = false;
+			snap_diff_ = {0,0};
 		}
 		if(is_enabled_rect_selection_) {
 			if(mouse.isPressing(OF_MOUSE_BUTTON_RIGHT)) {
