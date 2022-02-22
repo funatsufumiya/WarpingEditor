@@ -87,7 +87,7 @@ protected:
 			auto indices = found->second;
 			return find(begin(indices), end(indices), p.second) != end(indices);
 		}
-	} op_selection_;
+	} op_selection_, op_selection_pressed_;
 	bool is_grabbing_by_mouse_=false;
 	bool isOpAdd() const;
 	bool isOpAlt() const;
@@ -100,7 +100,7 @@ protected:
 	
 	OpHover getHover(const glm::vec2 &screen_pos, bool only_editable_point);
 	OpRect getRectHover(const ofRectangle &screen_rect, bool only_editable_point);
-	OpSelection updateSelection(const OpSelection &selection, const OpHover &hover);
+	OpSelection updateSelection(const OpSelection &selection, const OpHover &hover, bool for_grabbing);
 	OpSelection updateSelection(const OpSelection &selection, const OpRect &rect);
 	void moveSelected(const glm::vec2 &delta);
 	virtual void moveMesh(MeshType &mesh, const glm::vec2 &delta) {}
@@ -155,13 +155,17 @@ inline bool Editor<MeshType, IndexType, PointType>::isOpDefault() const
 
 
 template<typename MeshType, typename IndexType, typename PointType>
-typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, IndexType, PointType>::updateSelection(const OpSelection &selection, const OpHover &hover)
+typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, IndexType, PointType>::updateSelection(const OpSelection &selection, const OpHover &hover, bool for_grabbing)
 {
 	OpSelection ret = selection;
-	if(hover.point.first.expired()) {
-		ret.point.clear();
+	if(isOpDefault()) {
+		if(!(selection.contains(hover.mesh) || selection.contains(hover.point)) || !for_grabbing) {
+			ret.mesh.clear();
+			ret.point.clear();
+		}
 	}
-	else {
+	
+	if(hover.point.first.lock()) {
 		auto &point = ret.point[hover.point.first];
 		auto result = point.insert(hover.point.second);
 		bool is_new = result.second;
@@ -175,10 +179,7 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 			ret.point.insert(std::make_pair(hover.point.first, std::set<IndexType>{hover.point.second}));
 		}
 	}
-	if(hover.mesh.expired()) {
-		ret.mesh.clear();
-	}
-	else {
+	if(hover.mesh.lock()) {
 		auto result = ret.mesh.insert(hover.mesh);
 		bool is_new = result.second;
 		if(!is_new) {
@@ -190,6 +191,7 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 			ret.mesh = {hover.mesh};
 		}
 	}
+
 	return ret;
 }
 
@@ -224,20 +226,25 @@ template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta)
 {
 	auto &&data = Data::shared();
-	if(!op_selection_.point.empty()) {
-		for(auto &&qp : op_selection_.point) {
-			if(auto ptr = qp.first.lock()) {
-				for(auto i : qp.second) {
-					movePoint(*ptr, i, delta);
-				}
-				data.find(ptr).second->setDirty();
-			}
-		}
-	}
+	auto points = op_selection_.point;
 	if(!op_selection_.mesh.empty()) {
 		for(auto &&q : op_selection_.mesh) {
 			if(auto ptr = q.lock()) {
 				moveMesh(*ptr, delta);
+				data.find(ptr).second->setDirty();
+			}
+			auto points_of_mesh = points.find(q);
+			if(points_of_mesh != end(points)) {
+				points.erase(points_of_mesh);
+			}
+		}
+	}
+	if(!points.empty()) {
+		for(auto &&qp : points) {
+			if(auto ptr = qp.first.lock()) {
+				for(auto i : qp.second) {
+					movePoint(*ptr, i, delta);
+				}
 				data.find(ptr).second->setDirty();
 			}
 		}
@@ -257,15 +264,15 @@ void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent 
 		}
 		if(mouse.isPressed(OF_MOUSE_BUTTON_LEFT)) {
 			if(!op_hover_.isEmpty()) {
-				op_selection_ = updateSelection(op_selection_, op_hover_);
+				op_selection_pressed_ = updateSelection(op_selection_, op_hover_, false);
+				op_selection_ = updateSelection(op_selection_, op_hover_, true);
 				is_grabbing_by_mouse_ = op_selection_.contains(op_hover_.mesh) || op_selection_.contains(op_hover_.point);
 				op_hover_ = OpHover();
 				used = true;
 			}
 		}
-		if(mouse.isClicked(OF_MOUSE_BUTTON_LEFT) && !is_grabbing_by_mouse_) {
-			op_selection_ = updateSelection(op_selection_, op_hover_);
-			op_hover_ = OpHover();
+		if(mouse.isClicked(OF_MOUSE_BUTTON_LEFT)) {
+			op_selection_ = op_selection_pressed_;
 			used = true;
 		}
 		if(mouse.isReleased(OF_MOUSE_BUTTON_LEFT)) {

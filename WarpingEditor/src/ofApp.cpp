@@ -286,7 +286,7 @@ void GuiApp::draw(){
 		}
 	}
 	End();
-	if(Begin("Switch")) {
+	if(Begin("Mesh")) {
 		auto &data = Data::shared();
 		for(auto &&m : data.getMesh()) {
 			PushID(m.first.c_str());
