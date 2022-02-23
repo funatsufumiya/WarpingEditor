@@ -219,14 +219,10 @@ void UVEditor::gui()
 	}
 	End();
 	if(Begin("Grid")) {
-		Checkbox("show", &is_show_grid_);
-		Checkbox("snap", &is_snap_enabled_);
-		DragFloatNAs("offset", &snap_grid_.position.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
-		glm::vec2 size{snap_grid_.width, snap_grid_.height};
-		if(DragFloatNAs("size", &size.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat)) {
-			snap_grid_.width = size.x;
-			snap_grid_.height = size.y;
-		}
+		Checkbox("show", &grid_.is_show);
+		Checkbox("snap", &grid_.enabled_snap);
+		DragFloatNAs("offset", &grid_.offset.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+		DragFloatNAs("size", &grid_.size.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 	}
 	End();
 }

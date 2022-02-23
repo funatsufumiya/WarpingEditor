@@ -422,7 +422,9 @@ void GuiApp::save(bool do_backup) const
 		proj_.setMainViewport({pos.x,pos.y,size.x,size.y});
 	}
 	proj_.setUVView(-uv_.getTranslate(), uv_.getScale());
+	proj_.setUVGridData(uv_.getGridData());
 	proj_.setWarpView(-warp_.getTranslate(), warp_.getScale());
+	proj_.setWarpGridData(warp_.getGridData());
 	proj_.save();
 
 	auto filepath = proj_.getDataFilePath();
@@ -462,12 +464,14 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		uv_.resetMatrix();
 		uv_.translate(view.first);
 		uv_.scale(view.second, {0,0});
+		uv_.setGridData(proj_.getUVGridData());
 	}
 	{
 		auto view = proj_.getWarpView();
 		warp_.resetMatrix();
 		warp_.translate(view.first);
 		warp_.scale(view.second, {0,0});
+		warp_.setGridData(proj_.getWarpGridData());
 	}
 	updateRecent(proj_);
 

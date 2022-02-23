@@ -31,6 +31,23 @@ struct adl_serializer<glm::tvec2<T>> {
 	}
 };
 template<>
+struct adl_serializer<EditorBase::GridData> {
+	static void to_json(ofJson &j, const EditorBase::GridData &v) {
+		j = {
+			{"show", v.is_show},
+			{"snap", v.enabled_snap},
+			{"offset", v.offset},
+			{"size", v.size}
+		};
+	}
+	static void from_json(const ofJson &j, EditorBase::GridData &v) {
+		updateByJsonValue(v.is_show, j, "show");
+		updateByJsonValue(v.enabled_snap, j, "snap");
+		updateByJsonValue(v.offset, j, "offset");
+		updateByJsonValue(v.size, j, "size");
+	}
+};
+template<>
 struct adl_serializer<ProjectFolder::Texture> {
 	static void to_json(ofJson &j, const ProjectFolder::Texture &v) {
 		switch(v.type) {
@@ -112,6 +129,19 @@ struct adl_serializer<ProjectFolder::Backup> {
 		updateByJsonValue(v.limit, j, "limit");
 	}
 };
+template<>
+struct adl_serializer<ProjectFolder::Grid> {
+	static void to_json(ofJson &j, const ProjectFolder::Grid &v) {
+		j = {
+			{"uv", v.uv},
+			{"warp", v.warp}
+		};
+	}
+	static void from_json(const ofJson &j, ProjectFolder::Grid &v) {
+		updateByJsonValue(v.uv, j, "uv");
+		updateByJsonValue(v.warp, j, "warp");
+	}
+};
 }
 
 ofJson ProjectFolder::toJson() const
@@ -121,6 +151,7 @@ ofJson ProjectFolder::toJson() const
 		{"viewport", viewport_},
 		{"export", export_},
 		{"backup", backup_},
+		{"grid", grid_},
 		{"filename", filename_}
 	};
 }
@@ -130,6 +161,7 @@ void ProjectFolder::loadJson(const ofJson &json)
 	updateByJsonValue(viewport_, json, "viewport");
 	updateByJsonValue(export_, json, "export");
 	updateByJsonValue(backup_, json, "backup");
+	updateByJsonValue(grid_, json, "grid");
 	updateByJsonValue(filename_, json, "filename");
 }
 

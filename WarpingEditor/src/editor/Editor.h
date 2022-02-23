@@ -28,8 +28,18 @@ public:
 
 	virtual void moveSelectedOnScreenScale(const glm::vec2 &delta){}
 
+	struct GridData {
+		bool is_show=true;
+		bool enabled_snap=true;
+		glm::vec2 offset, size;
+	};
+
+	const GridData& getGridData() const { return grid_; }
+	void setGridData(const GridData &data) { grid_ = data; }
+
 protected:
 	ofTexture tex_;
+	GridData grid_;
 
 	bool is_viewport_editable_by_mouse_=true;
 	bool is_enabled_rect_selection_=true;
@@ -66,11 +76,6 @@ public:
 	virtual bool deselectMesh(const Data::Mesh &data);
 	virtual bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
 	
-	void setSnapGrid(const ofRectangle &grid) {
-		snap_grid_ = grid;
-		is_snap_enabled_ = true;
-	}
-	void disableSnapToGrid() { is_snap_enabled_ = false; }
 	bool calcSnapToGrid(const PointType &point, const ofRectangle &grid, float snap_distance, glm::vec2 &diff) const;
 	virtual PointType getPoint(const MeshType &mesh, const IndexType &index) const = 0;
 
@@ -109,9 +114,7 @@ protected:
 	bool isOpDefault() const;
 	
 	glm::vec2 snap_diff_={0,0};
-	ofRectangle snap_grid_;
-	bool is_snap_enabled_=false;
-	bool is_show_grid_=false;
+	
 	void drawMesh() const;
 	void drawWire() const;
 	void drawPoint(bool only_editable_point) const;
@@ -295,9 +298,9 @@ void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent 
 			if(is_grabbing_by_mouse_) {
 				moveSelected(mouse.delta/getScale()-snap_diff_);
 				snap_diff_ = {0,0};
-				if(is_snap_enabled_ && op_selection_.contains(op_hover_.point)) {
+				if(grid_.enabled_snap && op_selection_.contains(op_hover_.point)) {
 					glm::vec2 snap_diff;
-					if(calcSnapToGrid(getPoint(*op_hover_.point.first.lock(), op_hover_.point.second), snap_grid_, mouse_near_distance_/getScale(), snap_diff)) {
+					if(calcSnapToGrid(getPoint(*op_hover_.point.first.lock(), op_hover_.point.second), {grid_.offset, grid_.offset+grid_.size}, mouse_near_distance_/getScale(), snap_diff)) {
 						moveSelected(snap_diff);
 						snap_diff_ = snap_diff;
 					}
@@ -428,10 +431,9 @@ void Editor<MeshType, IndexType, PointType>::drawDragRect() const
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::drawGrid() const
 {
-	glm::vec2 grid_lt = snap_grid_.getTopLeft(), grid_rb = snap_grid_.getBottomRight();
+	auto offset = grid_.offset;
+	auto size = grid_.size;
 	glm::vec2 region_lt = region_.getTopLeft(), region_rb = region_.getBottomRight();
-	auto offset = grid_lt;
-	auto size = grid_rb - offset;
 	region_lt = getIn(region_lt);
 	region_rb = getIn(region_rb);
 	auto calcRange = [](float offset, float width, float l, float r) {
@@ -460,7 +462,7 @@ void Editor<MeshType, IndexType, PointType>::draw() const
 {
 	pushScissor();
 	pushMatrix();
-	if(is_show_grid_) {
+	if(grid_.is_show) {
 		drawGrid();
 	}
 	drawMesh();

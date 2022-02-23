@@ -1,6 +1,7 @@
 #pragma once
 
 #include "WorkFolder.h"
+#include "Editor.h"
 
 class ProjectFolder : public WorkFolder
 {
@@ -33,6 +34,9 @@ public:
 	std::filesystem::path getBackupFilePath() const;
 	int getBackupNumLimit() const { return backup_.limit; }
 	
+	EditorBase::GridData getUVGridData() const { return grid_.uv; }
+	EditorBase::GridData getWarpGridData() const { return grid_.warp; }
+	
 	void setTextureSourceFile(const std::string &file_name);
 	void setTextureSourceNDI(const std::string &ndi_name);
 	void setTextureSizeCache(const glm::vec2 size) { texture_.size_cache = size; }
@@ -45,6 +49,9 @@ public:
 	void setExportFolder(const std::string &folder) { export_.folder = folder; }
 	void setExportFileName(const std::string &filename) { export_.filename = filename; }
 	void setIsExportMeshArb(bool is_arb) { export_.is_arb = is_arb; }
+
+	void setUVGridData(const EditorBase::GridData &data) { grid_.uv = data; }
+	void setWarpGridData(const EditorBase::GridData &data) { grid_.warp = data; }
 	
 	void setFileName(const std::string &filename) { filename_ = filename; }
 	
@@ -71,11 +78,15 @@ public:
 		std::string folder;
 		int limit=0;
 	};
+	struct Grid {
+		EditorBase::GridData uv, warp;
+	};
 private:
 	Texture texture_;
 	Viewport viewport_;
 	Export export_;
 	Backup backup_;
+	Grid grid_;
 	std::string filename_;
 	
 	ofJson toJson() const;
