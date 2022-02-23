@@ -189,6 +189,7 @@ void WarpingEditor::update()
 		mode_ = MODE_DIVISION;
 		setEnabledHoveringUneditablePoint(true);
 		setEnabledRectSelection(false);
+		is_div_point_valid_ = false;
 	}
 	if(ofGetKeyPressed('m')) {
 		mode_ = MODE_MESH;
@@ -204,41 +205,56 @@ void WarpingEditor::update()
 	auto data = Data::shared();
 	if(mode_ == MODE_DIVISION) {
 		if(mouse_.isFrameNew()) {
-			if(mouse_.isClicked(OF_MOUSE_BUTTON_LEFT)) {
-				auto pos = getIn(mouse_.pos);
-				for(auto weak : op_selection_.mesh) {
-					auto d = data.find(weak.lock());
-					if(d.second) {
-						if(!data.isEditable(d.second)) {
-							continue;
-						}
-						auto mesh = d.second->mesh;
-						glm::vec2 dst_findex;
-						glm::vec2 result;
-						bool is_row;
-						if(mesh->getNearestPointOnLine(pos, dst_findex, result, is_row, mouse_near_distance_/getScale())) {
-							int col = dst_findex.x;
-							int row = dst_findex.y;
-							if(is_row) {
-								mesh->divideCol(col, dst_findex.x - col);
-								d.second->interpolator->selectPoint(col+1, row);
-							}
-							else {
-								mesh->divideRow(row, dst_findex.y - row);
-								d.second->interpolator->selectPoint(col, row+1);
-							}
-							d.second->setDirty();
-						}
-						else if(mesh->getIndexOfPoint(pos, dst_findex)) {
-							int col = dst_findex.x;
-							int row = dst_findex.y;
-							mesh->divideCol(col, dst_findex.x - col);
-							mesh->divideRow(row, dst_findex.y - row);
-							d.second->interpolator->selectPoint(col+1, row+1);
-							d.second->setDirty();
-						}
+			is_div_point_valid_ = false;
+			glm::vec2 dst_findex;
+			bool is_row=false, is_col=false;
+			std::shared_ptr<Data::Mesh> div_mesh;
+			if(op_hover_.point.first.expired()) {
+				div_point_ = getIn(mouse_.pos);
+				if(grid_.enabled_snap) {
+					glm::vec2 diff;
+					if(calcSnapToGrid(div_point_, {grid_.offset, grid_.offset+grid_.size}, mouse_near_distance_/getScale(), diff)) {
+						div_point_ += diff;
 					}
 				}
+				op_hover_ = getHover(getOut(div_point_), true);
+				div_mesh = data.find(op_hover_.mesh.lock()).second;
+
+				if(div_mesh && data.isEditable(div_mesh)) {
+					is_div_point_valid_ = true;
+					auto mesh = getMeshType(*div_mesh);
+					glm::vec2 result;
+					if(mesh->getNearestPointOnLine(div_point_, dst_findex, result, is_row, mouse_near_distance_/getScale())) {
+						div_point_ = result;
+						is_col = !is_row;
+					}
+					else if(mesh->getIndexOfPoint(div_point_, dst_findex)) {
+						is_row = is_col = true;
+					}
+				}
+			}
+			if(mouse_.isClicked(OF_MOUSE_BUTTON_LEFT)) {
+				if(is_div_point_valid_) {
+					auto mesh = getMeshType(*div_mesh);
+					int col = dst_findex.x;
+					int row = dst_findex.y;
+					if(is_row && is_col) {
+						mesh->divideCol(col, dst_findex.x - col);
+						mesh->divideRow(row, dst_findex.y - row);
+						div_mesh->interpolator->selectPoint(col+1, row+1);
+					}
+					else if(is_row) {
+						mesh->divideCol(col, dst_findex.x - col);
+						div_mesh->interpolator->selectPoint(col+1, row);
+					}
+					else if(is_col) {
+						mesh->divideRow(row, dst_findex.y - row);
+						div_mesh->interpolator->selectPoint(col, row+1);
+					}
+					div_mesh->setDirty();
+					is_div_point_valid_ = false;
+				}
+
 				for(auto selection : op_selection_.point) {
 					auto d = data.find(selection.first.lock());
 					if(d.second) {
@@ -269,6 +285,9 @@ void WarpingEditor::draw() const
 		case MODE_DIVISION: {
 			pushMatrix();
 			pushScissor();
+			if(grid_.is_show) {
+				drawGrid();
+			}
 			drawMesh();
 			drawWire();
 			float point_size = mouse_near_distance_/getScale();
@@ -295,6 +314,9 @@ void WarpingEditor::draw() const
 					}
 				});
 			});
+			if(is_div_point_valid_) {
+				mesh.append(makeCross(div_point_, ofColor::green, cross_size, cross_width, 0));
+			}
 			mesh.draw();
 			popScissor();
 			popMatrix();

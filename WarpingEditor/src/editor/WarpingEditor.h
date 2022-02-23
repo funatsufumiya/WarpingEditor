@@ -32,8 +32,13 @@ protected:
 	void moveSelectedCoord(const glm::vec2 &delta);
 	void moveMeshCoord(MeshType &mesh, const glm::vec2 &delta);
 	void movePointCoord(MeshType &mesh, IndexType index, const glm::vec2 &delta);
+	
+	
 private:
 	int mode_=MODE_MESH;
 	bool is_mesh_div_edited_=false;
+	
+	bool is_div_point_valid_=false;
+	glm::vec2 div_point_;
 };
 
