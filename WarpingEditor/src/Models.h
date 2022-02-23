@@ -60,8 +60,8 @@ public:
 		void update() {
 			interpolator->update();
 		}
-		void pack(std::ostream &stream) const;
-		void unpack(std::istream &stream);
+		void pack(std::ostream &stream, glm::vec2 scale) const;
+		void unpack(std::istream &stream, glm::vec2 scale);
 		void setDirty() { is_dirty_ = true; }
 	private:
 		mutable ofMesh cache_;
@@ -81,10 +81,12 @@ public:
 	bool isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden=false) const;
 	std::pair<std::string, std::shared_ptr<Data::Mesh>> find(std::shared_ptr<geom::Quad> quad);
 	std::pair<std::string, std::shared_ptr<Data::Mesh>> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
-	void save(const std::filesystem::path &filepath) const;
-	void load(const std::filesystem::path &filepath);
-	void pack(std::ostream &stream) const;
-	void unpack(std::istream &stream);
+
+	void uvRescale(const glm::vec2 &scale);
+	void save(const std::filesystem::path &filepath, glm::vec2 scale) const;
+	void load(const std::filesystem::path &filepath, glm::vec2 scale);
+	void pack(std::ostream &stream, glm::vec2 scale) const;
+	void unpack(std::istream &stream, glm::vec2 scale);
 	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 private:

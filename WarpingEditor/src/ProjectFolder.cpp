@@ -12,6 +12,24 @@ void updateByJsonValue(T &t, const ofJson &json, const std::string &key) {
 }
 
 namespace nlohmann {
+template<typename T>
+struct adl_serializer<glm::tvec4<T>> {
+	static void to_json(ofJson &j, const glm::tvec4<T> &v) {
+		j = {v[0],v[1],v[2],v[3]};
+	}
+	static void from_json(const ofJson &j, glm::tvec4<T> &v) {
+		v = {j[0],j[1],j[2],j[3]};
+	}
+};
+template<typename T>
+struct adl_serializer<glm::tvec2<T>> {
+	static void to_json(ofJson &j, const glm::tvec2<T> &v) {
+		j = {v[0],v[1]};
+	}
+	static void from_json(const ofJson &j, glm::tvec2<T> &v) {
+		v = {j[0],j[1]};
+	}
+};
 template<>
 struct adl_serializer<ProjectFolder::Texture> {
 	static void to_json(ofJson &j, const ProjectFolder::Texture &v) {
@@ -25,6 +43,7 @@ struct adl_serializer<ProjectFolder::Texture> {
 				j["arg"] = v.ndi;
 				break;
 		}
+		j["size_cache"] = v.size_cache;
 	}
 	static void from_json(const ofJson &j, ProjectFolder::Texture &v) {
 		auto upper_type = ofToUpper(getJsonValue<std::string>(j, "type", "File"));
@@ -34,24 +53,7 @@ struct adl_serializer<ProjectFolder::Texture> {
 		else if(upper_type == "NDI") {
 			updateByJsonValue(v.ndi, j, "arg");
 		}
-	}
-};
-template<>
-struct adl_serializer<glm::vec4> {
-	static void to_json(ofJson &j, const glm::vec4 &v) {
-		j = {v[0],v[1],v[2],v[3]};
-	}
-	static void from_json(const ofJson &j, glm::vec4 &v) {
-		v = {j[0],j[1],j[2],j[3]};
-	}
-};
-template<>
-struct adl_serializer<glm::vec2> {
-	static void to_json(ofJson &j, const glm::vec2 &v) {
-		j = {v[0],v[1]};
-	}
-	static void from_json(const ofJson &j, glm::vec2 &v) {
-		v = {j[0],j[1]};
+		updateByJsonValue(v.size_cache, j, "size_cache");
 	}
 };
 template<>

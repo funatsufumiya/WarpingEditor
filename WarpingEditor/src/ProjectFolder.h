@@ -17,7 +17,8 @@ public:
 	int getTextureType() const { return texture_.type; }
 	std::filesystem::path getTextureFilePath() const { return getAbsolute(texture_.file); }
 	const std::string& getTextureNDIName() const { return texture_.ndi; }
-	
+	glm::vec2 getTextureSizeCache() const { return texture_.size_cache; }
+
 	glm::vec4 getMainViewport() const { return viewport_.main; }
 	std::pair<glm::vec2, float> getUVView() const { return viewport_.uv; }
 	std::pair<glm::vec2, float> getWarpView() const { return viewport_.warp; }
@@ -34,6 +35,7 @@ public:
 	
 	void setTextureSourceFile(const std::string &file_name);
 	void setTextureSourceNDI(const std::string &ndi_name);
+	void setTextureSizeCache(const glm::vec2 size) { texture_.size_cache = size; }
 	
 	void setMainViewport(const glm::vec4 &viewport) { viewport_.main = viewport; }
 	void setUVView(const glm::vec2 &pos, float scale) { viewport_.uv = {pos, scale}; }
@@ -53,6 +55,7 @@ public:
 		int type = FILE;
 		std::string file;
 		std::string ndi;
+		glm::ivec2 size_cache;
 	};
 	struct Viewport {
 		glm::vec4 main;

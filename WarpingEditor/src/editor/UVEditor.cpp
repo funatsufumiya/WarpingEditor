@@ -17,14 +17,9 @@ bool UVEditor::isEditablePoint(const Data::Mesh &data, IndexType index) const
 }
 
 
-void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world) const
+void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
 {
 	auto mesh = *getMeshType(data);
-	if(scale_for_inner_world) {
-		auto tex_data = tex_.getTextureData();
-		glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
-		mesh = getScaled(mesh, tex_size);
-	}
 	for(int i = 0; i < mesh.size(); ++i) {
 		func(mesh[i], i);
 	}
@@ -33,9 +28,7 @@ void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const Poi
 
 std::shared_ptr<UVEditor::MeshType> UVEditor::getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance)
 {
-	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
-	auto uv = getScaled(*data->uv_quad, tex_size);
+	auto uv = *data->uv_quad;
 	auto p = getIn(pos);
 	if(!inside(uv, p)) {
 		return nullptr;
@@ -48,18 +41,12 @@ std::shared_ptr<UVEditor::MeshType> UVEditor::getIfInside(std::shared_ptr<DataTy
 
 void UVEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
 {
-	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
-	auto d = delta/tex_size;
-	mesh = geom::getTranslated(mesh, d);
+	mesh = geom::getTranslated(mesh, delta);
 }
 
 void UVEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta)
 {
-	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_size = {tex_data.tex_w, tex_data.tex_h};
-	auto d = delta/tex_size;
-	mesh[index] += d;
+	mesh[index] += delta;
 }
 
 
@@ -68,13 +55,9 @@ ofMesh UVEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) co
 	auto mesh = *data.uv_quad;
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
+	auto vert = mesh;
 	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
-	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-	auto vert = getScaled(mesh, tex_size);
-	auto coord = getScaled(mesh, tex_uv);
+	auto coord = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB ? mesh : getScaled(mesh, {1/tex_data.tex_w, 1/tex_data.tex_h});
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -92,13 +75,9 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 	auto mesh = *data.uv_quad;
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_LINES);
+	auto vert = mesh;
 	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
-	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-	auto vert = getScaled(mesh, tex_size);
-	auto coord = getScaled(mesh, tex_uv);
+	auto coord = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB ? mesh : getScaled(mesh, {1/tex_data.tex_w, 1/tex_data.tex_h});
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -113,16 +92,12 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 
 ofMesh UVEditor::makeBackground() const
 {
-	MeshType mesh{1,1};
+	MeshType mesh{tex_.getWidth(),tex_.getHeight()};
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
+	auto vert = mesh;
 	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
-	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-	auto vert = getScaled(mesh, tex_size);
-	auto coord = getScaled(mesh, tex_uv);
+	auto coord = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB ? mesh : getScaled(mesh, {1/tex_data.tex_w, 1/tex_data.tex_h});
 	for(int i = 0; i < mesh.size(); ++i) {
 		ret.addTexCoord(coord[i]);
 		ret.addVertex(glm::vec3(vert[i],0));
@@ -152,7 +127,7 @@ void UVEditor::gui()
 	};
 
 	float v_min[2] = {0,0};
-	float v_max[2] = {1,1};
+	float v_max[2] = {tex_.getWidth(),tex_.getHeight()};
 	std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
 		{"px", {
 			{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
@@ -239,7 +214,7 @@ void UVEditor::gui()
 	if(Begin("Move Selected Together")) {
 		auto result = gui2DPanel("panel", v_min, v_max, params);
 		if(result.first) {
-			moveSelected(result.second*glm::vec2{tex_.getWidth(),tex_.getHeight()});
+			moveSelected(result.second);
 		}
 	}
 	End();

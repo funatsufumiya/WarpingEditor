@@ -137,7 +137,7 @@ protected:
 	virtual bool isRectHoveredPoint(const Data::Mesh &data, IndexType index) const;
 	
 	virtual void forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const;
-	virtual void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world=true) const {}
+	virtual void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const {}
 	
 	virtual ofMesh makeMeshFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
 	virtual ofMesh makeWireFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }

@@ -50,13 +50,22 @@ void GuiApp::setup(){
 
 //--------------------------------------------------------------
 void GuiApp::update(){
+	auto &data = Data::shared();
 	if(texture_source_) {
+		auto tex = texture_source_->getTexture();
 		texture_source_->update();
 		if(texture_source_->isFrameNew()) {
-			auto tex = texture_source_->getTexture();
 			main_app_->setTexture(tex);
 			for(auto &&e : editor_) {
 				e->setTexture(tex);
+			}
+		}
+		if(tex.isAllocated()) {
+			glm::vec2 tex_size{tex.getWidth(), tex.getHeight()};
+			glm::vec2 tex_size_cache = proj_.getTextureSizeCache();
+			if(tex_size_cache != tex_size) {
+				data.uvRescale(tex_size/tex_size_cache);
+				proj_.setTextureSizeCache(tex_size);
 			}
 		}
 	}
@@ -75,17 +84,15 @@ void GuiApp::update(){
 	}
 
 	if(update_mesh) {
-		auto &data = Data::shared();
 		data.update();
 		if(texture_source_) {
 			auto tex = texture_source_->getTexture();
 			if(tex.isAllocated()) {
 				auto tex_data = tex.getTextureData();
-				glm::vec2 tex_size{tex_data.tex_w, tex_data.tex_h};
-				glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-				? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-				: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-				main_app_->setMesh(data.getMeshForExport(100, tex_uv));
+				glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+				? glm::vec2{1,1}
+				: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
+				main_app_->setMesh(data.getMeshForExport(100, tex_scale));
 			}
 		}
 	}
@@ -370,7 +377,7 @@ void GuiApp::draw(){
 void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
 {
 	auto tex = texture_source_->getTexture();
-	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{tex.getWidth(), tex.getHeight()}:glm::vec2{1,1};
+	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
 	Data::shared().exportMesh(filepath, resample_min_interval, coord_size);
 }
 void GuiApp::exportMesh(const ProjectFolder &proj) const
@@ -419,7 +426,8 @@ void GuiApp::save(bool do_backup) const
 	proj_.save();
 
 	auto filepath = proj_.getDataFilePath();
-	Data::shared().save(filepath);
+	auto tex_size = proj_.getTextureSizeCache();
+	Data::shared().save(filepath, {1/tex_size.x, 1/tex_size.y});
 	
 	if(do_backup && proj_.isBackupEnabled()) {
 		auto backup_path = proj_.getBackupFilePath();
@@ -444,15 +452,6 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	proj_.WorkFolder::setRelative(proj_path);
 	proj_.setup();
 
-	if((texture_source_ = buildTextureSource(proj_))) {
-		auto tex = texture_source_->getTexture();
-		if(tex.isAllocated()) {
-			main_app_->setTexture(tex);
-			for(auto &&e : editor_) {
-				e->setTexture(tex);
-			}
-		}
-	}
 	{
 		auto view = proj_.getMainViewport();
 		main_window_->setWindowPosition(view[0], view[1]);
@@ -470,9 +469,18 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		warp_.translate(view.first);
 		warp_.scale(view.second, {0,0});
 	}
-	proj_.load();
-	Data::shared().load(proj_.getDataFilePath());
 	updateRecent(proj_);
+
+	if((texture_source_ = buildTextureSource(proj_))) {
+		auto tex = texture_source_->getTexture();
+		if(tex.isAllocated()) {
+			main_app_->setTexture(tex);
+			for(auto &&e : editor_) {
+				e->setTexture(tex);
+			}
+		}
+	}
+	Data::shared().load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
 }
 
 void GuiApp::openRecent(int index)
@@ -517,7 +525,7 @@ void GuiApp::dragEvent(ofDragInfo dragInfo)
 	auto filepath = dragInfo.files[0];
 	auto ext = ofFilePath::getFileExt(filepath);
 	if(ext == "maap") {
-		Data::shared().load(filepath);
+		Data::shared().load(filepath, proj_.getTextureSizeCache());
 	}
 }
 

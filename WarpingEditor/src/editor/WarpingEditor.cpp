@@ -42,7 +42,7 @@ WarpingEditor::PointType WarpingEditor::getPoint(const MeshType &mesh, const Ind
 	return *mesh.getPoint(index.first, index.second).v;
 }
 
-void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func, bool scale_for_inner_world) const
+void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
 {
 	auto &mesh = *data.mesh;
 	for(int r = 0; r <= mesh.getNumRows(); ++r) {
@@ -149,10 +149,10 @@ ofMesh WarpingEditor::makeMeshFromMesh(const DataType &data, const ofColor &colo
 	auto viewport = getRegion();
 	ofRectangle viewport_in{getIn(viewport.getTopLeft()), getIn(viewport.getBottomRight())};
 	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-	ofMesh ret = data.getMesh(mesh_resample_interval, tex_uv, &viewport_in);
+	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2(1,1)
+	: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
+	ofMesh ret = data.getMesh(mesh_resample_interval, tex_scale, &viewport_in);
 	auto &colors = ret.getColors();
 	for(auto &&c : colors) {
 		c = c*color;

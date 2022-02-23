@@ -110,6 +110,13 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool in
 	return ret;
 }
 
+void Data::uvRescale(const glm::vec2 &scale)
+{
+	for(auto &&m : mesh_) {
+		*m.second->uv_quad = getScaled(*m.second->uv_quad, scale);
+	}
+}
+
 #pragma mark - IO
 
 namespace {
@@ -138,21 +145,21 @@ ofMesh Data::getMeshForExport(float resample_min_interval, const glm::vec2 &coor
 	return ret;
 }
 
-void Data::save(const std::filesystem::path &filepath) const
+void Data::save(const std::filesystem::path &filepath, glm::vec2 scale) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
-	pack(file);
+	pack(file, scale);
 	file.close();
 }
-void Data::load(const std::filesystem::path &filepath)
+void Data::load(const std::filesystem::path &filepath, glm::vec2 scale)
 {
 	mesh_.clear();
 	ofFile file(filepath);
-	unpack(file);
+	unpack(file, scale);
 	file.close();
 }
 
-void Data::pack(std::ostream &stream) const
+void Data::pack(std::ostream &stream, glm::vec2 scale) const
 {
 	writeTo(stream, mesh_.size());
 	const int name_alignemt = 4;
@@ -162,10 +169,10 @@ void Data::pack(std::ostream &stream) const
 		std::size_t pad_size = std::ceil(name_size/(float)name_alignemt) * name_alignemt;
 		writeTo(stream, name.size());
 		stream.write(name.c_str(), pad_size);
-		m.second->pack(stream);
+		m.second->pack(stream, scale);
 	}
 }
-void Data::unpack(std::istream &stream)
+void Data::unpack(std::istream &stream, glm::vec2 scale)
 {
 	const int name_alignemt = 4;
 	std::size_t num;
@@ -179,30 +186,30 @@ void Data::unpack(std::istream &stream)
 		stream.read(const_cast<char*>(name.data()), pad_size);
 		name.resize(name_size);
 		auto mesh = std::make_shared<Mesh>();
-		mesh->unpack(stream);
+		mesh->unpack(stream, scale);
 		mesh_.insert(std::make_pair(name, mesh));
 	}
 }
 
-void Data::Mesh::pack(std::ostream &stream) const
+void Data::Mesh::pack(std::ostream &stream, glm::vec2 scale) const
 {
 	writeTo(stream, is_hidden);
 	writeTo(stream, is_locked);
 	writeTo(stream, is_solo);
 	for(int i = 0; i < uv_quad->size(); ++i) {
-		writeTo(stream, uv_quad->pt[i].x);
-		writeTo(stream, uv_quad->pt[i].y);
+		writeTo(stream, uv_quad->pt[i].x*scale.x);
+		writeTo(stream, uv_quad->pt[i].y*scale.y);
 	}
 	mesh->pack(stream, interpolator.get());
 }
-void Data::Mesh::unpack(std::istream &stream)
+void Data::Mesh::unpack(std::istream &stream, glm::vec2 scale)
 {
 	readFrom(stream, is_hidden);
 	readFrom(stream, is_locked);
 	readFrom(stream, is_solo);
 	for(int i = 0; i < uv_quad->size(); ++i) {
-		readFrom(stream, uv_quad->pt[i].x);
-		readFrom(stream, uv_quad->pt[i].y);
+		readFrom(stream, uv_quad->pt[i].x); uv_quad->pt[i].x *= scale.x;
+		readFrom(stream, uv_quad->pt[i].y); uv_quad->pt[i].y *= scale.y;
 	}
 	mesh->unpack(stream, interpolator.get());
 }
