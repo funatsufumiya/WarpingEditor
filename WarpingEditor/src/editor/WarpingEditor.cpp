@@ -342,6 +342,20 @@ void WarpingEditor::gui()
 		}
 		return ret;
 	};
+	float v_min[2] = {0,0};
+	float v_max[2] = {tex_.getWidth(), tex_.getHeight()};
+	std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
+		{"px", {
+			{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
+			{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
+		}},
+		{"%", {
+			{glm::vec2{0, 100}, 0.1f, "%.02f%%"}
+		}},
+		{"rate", {
+			{glm::vec2{0, 1}, 0.001f, "%.03f"}
+		}},
+	};
 	if(Begin("Mesh")) {
 		if(BeginTabBar("#filter")) {
 			if(BeginTabItem("selected")) {
@@ -385,20 +399,6 @@ void WarpingEditor::gui()
 		};
 		if(BeginTabBar("#mode")) {
 			if(BeginTabItem("Vertex")) {
-				float v_min[2] = {0,0};
-				float v_max[2] = {tex_.getWidth(), tex_.getHeight()};
-				std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> params{
-					{"px", {
-						{glm::ivec2{0, tex_.getWidth()}, 1, "%d"},
-						{glm::ivec2{0, tex_.getHeight()}, 1, "%d"}
-					}},
-					{"%", {
-						{glm::vec2{0, 100}, 0.1f, "%.02f%%"}
-					}},
-					{"rate", {
-						{glm::vec2{0, 1}, 0.001f, "%.03f"}
-					}},
-				};
 				guiPoint = [=](GuiPoint p) {
 					return DragFloatNAs(p.label, &p.point.v->x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 				};
@@ -480,6 +480,17 @@ void WarpingEditor::gui()
 		auto result = gui2DPanel("panel", &v_min.x, &v_max.x, params);
 		if(result.first) {
 			func(result.second);
+		}
+	}
+	End();
+	if(Begin("Grid")) {
+		Checkbox("show", &is_show_grid_);
+		Checkbox("snap", &is_snap_enabled_);
+		DragFloatNAs("offset", &snap_grid_.position.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+		glm::vec2 size{snap_grid_.width, snap_grid_.height};
+		if(DragFloatNAs("size", &size.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat)) {
+			snap_grid_.width = size.x;
+			snap_grid_.height = size.y;
 		}
 	}
 	End();

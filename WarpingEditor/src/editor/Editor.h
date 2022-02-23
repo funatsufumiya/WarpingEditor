@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ofGraphics.h"
+#include "of3dUtils.h"
 
 class EditorBase : public ofxEditorFrame
 {
@@ -110,10 +111,12 @@ protected:
 	glm::vec2 snap_diff_={0,0};
 	ofRectangle snap_grid_;
 	bool is_snap_enabled_=false;
+	bool is_show_grid_=false;
 	void drawMesh() const;
 	void drawWire() const;
 	void drawPoint(bool only_editable_point) const;
 	void drawDragRect() const;
+	void drawGrid() const;
 	
 	OpHover getHover(const glm::vec2 &screen_pos, bool only_editable_point);
 	OpRect getRectHover(const ofRectangle &screen_rect, bool only_editable_point);
@@ -422,12 +425,44 @@ void Editor<MeshType, IndexType, PointType>::drawDragRect() const
 		ofPopStyle();
 	}
 }
+template<typename MeshType, typename IndexType, typename PointType>
+void Editor<MeshType, IndexType, PointType>::drawGrid() const
+{
+	glm::vec2 grid_lt = snap_grid_.getTopLeft(), grid_rb = snap_grid_.getBottomRight();
+	glm::vec2 region_lt = region_.getTopLeft(), region_rb = region_.getBottomRight();
+	auto offset = grid_lt;
+	auto size = grid_rb - offset;
+	region_lt = getIn(region_lt);
+	region_rb = getIn(region_rb);
+	auto calcRange = [](float offset, float width, float l, float r) {
+		r += width-ofWrap(r-l, 0, width);
+		offset = ofWrap(offset, l, r);
+		return glm::vec2{
+			offset - width*ceil((offset-l)/width),
+			offset + width*ceil((r-offset)/width)
+		};
+	};
+	auto lr = calcRange(offset.x, size.x, region_lt.x, region_rb.x);
+	auto tb = calcRange(offset.y, size.y, region_lt.y, region_rb.y);
+	ofMesh m;
+	m.setMode(OF_PRIMITIVE_LINES);
+	for(auto x = lr[0]; x <= lr[1]; x += size.x) {
+		m.addVertices({{x, tb[0], 0}, {x, tb[1], 0}});
+	}
+	for(auto y = tb[0]; y <= tb[1]; y += size.y) {
+		m.addVertices({{lr[0], y, 0}, {lr[1], y, 0}});
+	}
+	m.drawWireframe();
+}
 
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::draw() const
 {
 	pushScissor();
 	pushMatrix();
+	if(is_show_grid_) {
+		drawGrid();
+	}
 	drawMesh();
 	drawWire();
 	drawPoint(!is_enabled_hovering_uneditable_point_);
