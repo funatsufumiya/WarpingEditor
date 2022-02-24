@@ -222,7 +222,8 @@ void UVEditor::gui()
 		Checkbox("show", &grid_.is_show);
 		Checkbox("snap", &grid_.enabled_snap);
 		DragFloatNAs("offset", &grid_.offset.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
-		DragFloatNAs("size", &grid_.size.x, 2, v_min, v_max, nullptr, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
+		bool clamp_min[] = {true, true};
+		DragFloatNAs("size", &grid_.size.x, 2, v_min, v_max, clamp_min, nullptr, params, ImGuiSliderFlags_NoRoundToFormat);
 	}
 	End();
 }

@@ -455,6 +455,16 @@ void Editor<MeshType, IndexType, PointType>::drawGrid() const
 		m.addVertices({{lr[0], y, 0}, {lr[1], y, 0}});
 	}
 	m.drawWireframe();
+
+	ofPushStyle();
+	ofSetDrawBitmapMode(OF_BITMAPMODE_MODEL_BILLBOARD);
+	for(auto x = lr[0]; x <= lr[1]; x += size.x) {
+		ofDrawBitmapString(ofToString(x), x, region_rb[1]);
+	}
+	for(auto y = tb[0]; y <= tb[1]; y += size.y) {
+		ofDrawBitmapString(ofToString(y), region_lt[0], y);
+	}
+	ofPopStyle();
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
