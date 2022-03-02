@@ -77,7 +77,7 @@ template<>
 struct adl_serializer<ProjectFolder::Viewport> {
 	static void to_json(ofJson &j, const ProjectFolder::Viewport &v) {
 		j = {
-			{"main", v.main},
+			{"result", v.result},
 			{"uv", {
 				{"pos", v.uv.first},
 				{"scale", v.uv.second}
@@ -89,7 +89,7 @@ struct adl_serializer<ProjectFolder::Viewport> {
 		};
 	}
 	static void from_json(const ofJson &j, ProjectFolder::Viewport &v) {
-		updateByJsonValue(v.main, j, "main");
+		updateByJsonValue(v.result, j, "result");
 		updateByJsonValue(v.uv.first, j["uv"], "pos");
 		updateByJsonValue(v.uv.second, j["uv"], "scale");
 		updateByJsonValue(v.warp.first, j["warp"], "pos");

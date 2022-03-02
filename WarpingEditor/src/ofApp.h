@@ -9,26 +9,26 @@
 #include "WorkFolder.h"
 #include "ProjectFolder.h"
 
-class MainApp;
+class ResultView;
 
-class GuiApp : public ofBaseApp
+class WarpingApp : public ofBaseApp
 {
 public:
-	void setup();
-	void update();
-	void draw();
+	void setup() override;
+	void update() override;
+	void draw() override;
 	void dragEvent(ofDragInfo dragInfo) override;
 	
 	void save(bool do_backup=true) const;
 	void openRecent(int index=0);
 	void openProject(const std::filesystem::path &proj_path);
 	
-	void keyPressed(int key);
-	void setMainApp(std::shared_ptr<MainApp> app) { main_app_ = app; }
-	void setMainWindow(std::shared_ptr<ofAppBaseWindow> window) { main_window_ = window; }
+	void keyPressed(int key) override;
+	void setResultApp(std::shared_ptr<ResultView> app) { result_app_ = app; }
+	void setResultWindow(std::shared_ptr<ofAppBaseWindow> window) { result_window_ = window; }
 private:
-	std::shared_ptr<MainApp> main_app_;
-	std::shared_ptr<ofAppBaseWindow> main_window_;
+	std::shared_ptr<ResultView> result_app_;
+	std::shared_ptr<ofAppBaseWindow> result_window_;
 	ofxImGui::Gui gui_;
 	std::shared_ptr<ImageSource> texture_source_;
 	WarpingEditor warp_;
@@ -48,18 +48,17 @@ private:
 	void exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb=false) const;
 	void exportMesh(const ProjectFolder &proj) const;
 
-	
 	ofxNDIFinder ndi_finder_;
 	
 	mutable ProjectFolder proj_;
 };
 
-class MainApp : public ofBaseApp
+class ResultView : public ofBaseApp
 {
 public:
-	void setup();
-	void update();
-	void draw();
+	void setup() override;
+	void update() override;
+	void draw() override;
 	
 	void setTexture(ofTexture texture) { texture_ = texture; }
 	void setMesh(const ofMesh &mesh) { mesh_ = mesh; }

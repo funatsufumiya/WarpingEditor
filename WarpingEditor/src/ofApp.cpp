@@ -27,7 +27,7 @@ std::shared_ptr<ImageSource> buildTextureSource(const ProjectFolder &proj) {
 }
 }
 //--------------------------------------------------------------
-void GuiApp::setup(){
+void WarpingApp::setup(){
 	ofDisableArbTex();
 	Icon::init();
 	
@@ -49,13 +49,13 @@ void GuiApp::setup(){
 }
 
 //--------------------------------------------------------------
-void GuiApp::update(){
+void WarpingApp::update(){
 	auto &data = MeshData::shared();
 	if(texture_source_) {
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
 		if(texture_source_->isFrameNew()) {
-			main_app_->setTexture(tex);
+			result_app_->setTexture(tex);
 			for(auto &&e : editor_) {
 				e->setTexture(tex);
 			}
@@ -92,14 +92,14 @@ void GuiApp::update(){
 				glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
 				? glm::vec2{1,1}
 				: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
-				main_app_->setMesh(data.getMeshForExport(100, tex_scale));
+				result_app_->setMesh(data.getMeshForExport(100, tex_scale));
 			}
 		}
 	}
 }
 
 //--------------------------------------------------------------
-void GuiApp::draw(){
+void WarpingApp::draw(){
 	auto editor = editor_[state_];
 	if(editor) {
 		editor->draw();
@@ -167,7 +167,7 @@ void GuiApp::draw(){
 					if((texture_source_ = buildTextureSource(proj_))) {
 						auto tex = texture_source_->getTexture();
 						if(tex.isAllocated()) {
-							main_app_->setTexture(tex);
+							result_app_->setTexture(tex);
 							auto editor = editor_[state_];
 							if(editor) {
 								editor->setTexture(tex);
@@ -272,7 +272,7 @@ void GuiApp::draw(){
 			if((texture_source_ = buildTextureSource(proj_))) {
 				auto tex = texture_source_->getTexture();
 				if(tex.isAllocated()) {
-					main_app_->setTexture(tex);
+					result_app_->setTexture(tex);
 					auto editor = editor_[state_];
 					if(editor) {
 						editor->setTexture(tex);
@@ -282,14 +282,14 @@ void GuiApp::draw(){
 		}
 		ImGuiFileDialog::Instance()->Close();
 	}
-	if(Begin("MainWindow")) {
-		auto position = main_window_->getWindowPosition();
+	if(Begin("ResultWindow")) {
+		auto position = result_window_->getWindowPosition();
 		if(DragFloat2("position", &position.x, 1, 0, -1, "%0.0f")) {
-			main_window_->setWindowPosition(position.x, position.y);
+			result_window_->setWindowPosition(position.x, position.y);
 		}
-		auto size = main_window_->getWindowSize();
+		auto size = result_window_->getWindowSize();
 		if(DragFloat2("size", &size.x, 1, 1, -1, "%0.0f")) {
-			main_window_->setWindowShape(size.x, size.y);
+			result_window_->setWindowShape(size.x, size.y);
 		}
 	}
 	End();
@@ -374,13 +374,13 @@ void GuiApp::draw(){
 	}
 }
 
-void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
+void WarpingApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
 {
 	auto tex = texture_source_->getTexture();
 	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
 	MeshData::shared().exportMesh(filepath, resample_min_interval, coord_size);
 }
-void GuiApp::exportMesh(const ProjectFolder &proj) const
+void WarpingApp::exportMesh(const ProjectFolder &proj) const
 {
 	std::string folder = proj_.getExportFolder();
 	float resample_min_interval = proj_.getExportMeshMinInterval();
@@ -391,7 +391,7 @@ void GuiApp::exportMesh(const ProjectFolder &proj) const
 
 
 //--------------------------------------------------------------
-void GuiApp::keyPressed(int key){
+void WarpingApp::keyPressed(int key){
 	if(ImGui::GetIO().WantCaptureKeyboard) {
 		return;
 	}
@@ -414,12 +414,12 @@ void GuiApp::keyPressed(int key){
 	}
 }
 
-void GuiApp::save(bool do_backup) const
+void WarpingApp::save(bool do_backup) const
 {
 	{
-		auto pos = main_window_->getWindowPosition();
-		auto size = main_window_->getWindowSize();
-		proj_.setMainViewport({pos.x,pos.y,size.x,size.y});
+		auto pos = result_window_->getWindowPosition();
+		auto size = result_window_->getWindowSize();
+		proj_.setResultViewport({pos.x,pos.y,size.x,size.y});
 	}
 	proj_.setUVView(-uv_.getTranslate(), uv_.getScale());
 	proj_.setUVGridData(uv_.getGridData());
@@ -449,15 +449,15 @@ void GuiApp::save(bool do_backup) const
 	}
 }
 
-void GuiApp::openProject(const std::filesystem::path &proj_path)
+void WarpingApp::openProject(const std::filesystem::path &proj_path)
 {
 	proj_.WorkFolder::setRelative(proj_path);
 	proj_.setup();
 
 	{
-		auto view = proj_.getMainViewport();
-		main_window_->setWindowPosition(view[0], view[1]);
-		main_window_->setWindowShape(view[2], view[3]);
+		auto view = proj_.getResultViewport();
+		result_window_->setWindowPosition(view[0], view[1]);
+		result_window_->setWindowShape(view[2], view[3]);
 	}
 	{
 		auto view = proj_.getUVView();
@@ -478,7 +478,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	if((texture_source_ = buildTextureSource(proj_))) {
 		auto tex = texture_source_->getTexture();
 		if(tex.isAllocated()) {
-			main_app_->setTexture(tex);
+			result_app_->setTexture(tex);
 			for(auto &&e : editor_) {
 				e->setTexture(tex);
 			}
@@ -487,7 +487,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	MeshData::shared().load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
 }
 
-void GuiApp::openRecent(int index)
+void WarpingApp::openRecent(int index)
 {
 	auto json = ofLoadJson("project_folder.json");
 	auto most_recent = getJsonValue<std::vector<ofJson>>(json, "recent");
@@ -497,7 +497,7 @@ void GuiApp::openRecent(int index)
 	}
 }
 
-void GuiApp::loadRecent()
+void WarpingApp::loadRecent()
 {
 	auto recent = getJsonValue<ofJson>(ofLoadJson("project_folder.json"), "recent");
 	recent_ = accumulate(begin(recent), end(recent), decltype(recent_){}, [](decltype(recent_) acc, const ofJson &json) {
@@ -507,7 +507,7 @@ void GuiApp::loadRecent()
 		return acc;
 	});
 }
-void GuiApp::updateRecent(const ProjectFolder &proj)
+void WarpingApp::updateRecent(const ProjectFolder &proj)
 {
 	auto found = find_if(begin(recent_), end(recent_), [proj](const WorkFolder &w) {
 		return w.toJson() == proj.WorkFolder::toJson();
@@ -523,7 +523,7 @@ void GuiApp::updateRecent(const ProjectFolder &proj)
 	ofSavePrettyJson("project_folder.json", {{"recent", recent}});
 }
 
-void GuiApp::dragEvent(ofDragInfo dragInfo)
+void WarpingApp::dragEvent(ofDragInfo dragInfo)
 {
 	if(dragInfo.files.empty()) return;
 	auto filepath = dragInfo.files[0];
@@ -534,14 +534,14 @@ void GuiApp::dragEvent(ofDragInfo dragInfo)
 }
 
 //--------------------------------------------------------------
-void MainApp::setup()
+void ResultView::setup()
 {
 	ofBackground(0);
 }
-void MainApp::update()
+void ResultView::update()
 {
 }
-void MainApp::draw()
+void ResultView::draw()
 {
 	texture_.bind();
 	mesh_.draw();

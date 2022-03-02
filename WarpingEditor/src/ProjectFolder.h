@@ -20,7 +20,7 @@ public:
 	const std::string& getTextureNDIName() const { return texture_.ndi; }
 	glm::vec2 getTextureSizeCache() const { return texture_.size_cache; }
 
-	glm::vec4 getMainViewport() const { return viewport_.main; }
+	glm::vec4 getResultViewport() const { return viewport_.result; }
 	std::pair<glm::vec2, float> getUVView() const { return viewport_.uv; }
 	std::pair<glm::vec2, float> getWarpView() const { return viewport_.warp; }
 	
@@ -41,7 +41,7 @@ public:
 	void setTextureSourceNDI(const std::string &ndi_name);
 	void setTextureSizeCache(const glm::vec2 size) { texture_.size_cache = size; }
 	
-	void setMainViewport(const glm::vec4 &viewport) { viewport_.main = viewport; }
+	void setResultViewport(const glm::vec4 &viewport) { viewport_.result = viewport; }
 	void setUVView(const glm::vec2 &pos, float scale) { viewport_.uv = {pos, scale}; }
 	void setWarpView(const glm::vec2 &pos, float scale) { viewport_.warp = {pos, scale}; }
 	
@@ -65,7 +65,7 @@ public:
 		glm::ivec2 size_cache;
 	};
 	struct Viewport {
-		glm::vec4 main;
+		glm::vec4 result;
 		std::pair<glm::vec2, float> uv{{0,0},1}, warp{{0,0},1};
 	};
 	struct Export {
