@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofxEditorFrame.h"
-#include "Models.h"
+#include "MeshData.h"
 #include "ofTexture.h"
 #include "GuiFunc.h"
 #include "imgui.h"
@@ -71,10 +71,10 @@ public:
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void moveSelectedOnScreenScale(const glm::vec2 &delta) override { moveSelected(delta/getScale()); }
 
-	virtual bool isSelectedMesh(const Data::Mesh &data) const;
-	virtual bool selectMesh(const Data::Mesh &data);
-	virtual bool deselectMesh(const Data::Mesh &data);
-	virtual bool isSelectedPoint(const Data::Mesh &data, IndexType index) const;
+	virtual bool isSelectedMesh(const MeshData::Mesh &data) const;
+	virtual bool selectMesh(const MeshData::Mesh &data);
+	virtual bool deselectMesh(const MeshData::Mesh &data);
+	virtual bool isSelectedPoint(const MeshData::Mesh &data, IndexType index) const;
 	
 	bool calcSnapToGrid(const PointType &point, const ofRectangle &grid, float snap_distance, glm::vec2 &diff) const;
 	virtual PointType getPoint(const MeshType &mesh, const IndexType &index) const = 0;
@@ -131,25 +131,25 @@ protected:
 	void moveMeshOnScreenScale(MeshType &mesh, const glm::vec2 &delta) { moveMesh(mesh, delta/getScale()); }
 	void movePointOnScreenScale(MeshType &mesh, IndexType index, const glm::vec2 &delta) { movePoint(mesh, delta/getScale()); }
 	
-	virtual std::shared_ptr<MeshType> getMeshType(const Data::Mesh &data) const { return nullptr; }
+	virtual std::shared_ptr<MeshType> getMeshType(const MeshData::Mesh &data) const { return nullptr; }
 	
-	virtual bool isEditableMesh(const Data::Mesh &data) const;
-	virtual bool isEditablePoint(const Data::Mesh &data, IndexType index) const { return true; }
-	virtual bool isHoveredMesh(const Data::Mesh &data) const;
-	virtual bool isHoveredPoint(const Data::Mesh &data, IndexType index) const;
-	virtual bool isRectHoveredPoint(const Data::Mesh &data, IndexType index) const;
+	virtual bool isEditableMesh(const MeshData::Mesh &data) const;
+	virtual bool isEditablePoint(const MeshData::Mesh &data, IndexType index) const { return true; }
+	virtual bool isHoveredMesh(const MeshData::Mesh &data) const;
+	virtual bool isHoveredPoint(const MeshData::Mesh &data, IndexType index) const;
+	virtual bool isRectHoveredPoint(const MeshData::Mesh &data, IndexType index) const;
 	
-	virtual void forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const;
-	virtual void forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const {}
+	virtual void forEachMesh(std::function<void(std::shared_ptr<MeshData::Mesh>)> func) const;
+	virtual void forEachPoint(const MeshData::Mesh &data, std::function<void(const PointType&, IndexType)> func) const {}
 	
-	virtual ofMesh makeMeshFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
-	virtual ofMesh makeWireFromMesh(const Data::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
+	virtual ofMesh makeMeshFromMesh(const MeshData::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
+	virtual ofMesh makeWireFromMesh(const MeshData::Mesh &mesh, const ofColor &color) const { return ofMesh(); }
 	ofMesh makeMeshFromPoint(const PointType &point, const ofColor &color, float point_size) const;
 	virtual ofMesh makeBackground() const { return ofMesh(); }
 
-	virtual std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
-	virtual std::shared_ptr<MeshType> getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance) { return nullptr; }
-	virtual std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> getPointInsideRect(std::shared_ptr<Data::Mesh> data, const ofRectangle &rect, bool filter_by_if_editable=true);
+	virtual std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<MeshData::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
+	virtual std::shared_ptr<MeshType> getIfInside(std::shared_ptr<MeshData::Mesh> data, const glm::vec2 &pos, float &distance) { return nullptr; }
+	virtual std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> getPointInsideRect(std::shared_ptr<MeshData::Mesh> data, const ofRectangle &rect, bool filter_by_if_editable=true);
 	
 	std::pair<bool, glm::vec2> gui2DPanel(const std::string &label, const float v_min[2], const float v_max[2], const std::vector<std::pair<std::string, std::vector<ImGui::DragScalarAsParam>>> &params) const;
 };
@@ -246,7 +246,7 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta)
 {
-	auto &&data = Data::shared();
+	auto &&data = MeshData::shared();
 	auto points = op_selection_.point;
 	if(!op_selection_.mesh.empty()) {
 		for(auto &&q : op_selection_.mesh) {
@@ -361,7 +361,7 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	mesh.append(makeBackground());
-	auto meshes = Data::shared().getVisibleMesh();
+	auto meshes = MeshData::shared().getVisibleMesh();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		if(isSelectedMesh(*m)) {
@@ -383,7 +383,7 @@ void Editor<MeshType, IndexType, PointType>::drawWire() const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_LINES);
-	auto meshes = Data::shared().getVisibleMesh();
+	auto meshes = MeshData::shared().getVisibleMesh();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		mesh.append(makeWireFromMesh(*m, ofColor::white));
@@ -396,7 +396,7 @@ void Editor<MeshType, IndexType, PointType>::drawPoint(bool only_editable_point)
 	float point_size = mouse_near_distance_/getScale();
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-	auto meshes = Data::shared().getVisibleMesh();
+	auto meshes = MeshData::shared().getVisibleMesh();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		forEachPoint(*m, [&](const PointType &point, IndexType i) {
@@ -486,7 +486,7 @@ void Editor<MeshType, IndexType, PointType>::draw() const
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-std::pair<std::weak_ptr<MeshType>, IndexType> Editor<MeshType, IndexType, PointType>::getNearestPoint(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable)
+std::pair<std::weak_ptr<MeshType>, IndexType> Editor<MeshType, IndexType, PointType>::getNearestPoint(std::shared_ptr<MeshData::Mesh> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable)
 {
 	std::pair<std::weak_ptr<MeshType>, IndexType> ret;
 	distance2 = std::numeric_limits<float>::max();
@@ -506,7 +506,7 @@ std::pair<std::weak_ptr<MeshType>, IndexType> Editor<MeshType, IndexType, PointT
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> Editor<MeshType, IndexType, PointType>::getPointInsideRect(std::shared_ptr<Data::Mesh> data, const ofRectangle &rect, bool filter_by_if_editable)
+std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> Editor<MeshType, IndexType, PointType>::getPointInsideRect(std::shared_ptr<MeshData::Mesh> data, const ofRectangle &rect, bool filter_by_if_editable)
 {
 	std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak_ptr<MeshType>>> ret;
 	forEachPoint(*data, [&](const PointType &point, IndexType index) {
@@ -523,7 +523,7 @@ std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak
 template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexType, PointType>::getHover(const glm::vec2 &screen_pos, bool only_editable_point)
 {
-	auto &&data = Data::shared();
+	auto &&data = MeshData::shared();
 	auto &&meshes = data.getMesh();
 	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
 	OpHover ret;
@@ -561,7 +561,7 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpRect Editor<MeshType, IndexType, PointType>::getRectHover(const ofRectangle &screen_rect, bool only_editable_point)
 {
-	auto &&data = Data::shared();
+	auto &&data = MeshData::shared();
 	auto &&meshes = data.getMesh();
 	OpRect ret;
 	for(auto &&m : meshes) {
@@ -575,25 +575,25 @@ typename Editor<MeshType, IndexType, PointType>::OpRect Editor<MeshType, IndexTy
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::isEditableMesh(const Data::Mesh &data) const
+bool Editor<MeshType, IndexType, PointType>::isEditableMesh(const MeshData::Mesh &data) const
 {
-	auto shared = Data::shared();
+	auto shared = MeshData::shared();
 	auto d = shared.find(data.mesh);
 	return shared.isEditable(d.second);
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::isHoveredMesh(const Data::Mesh &data) const
+bool Editor<MeshType, IndexType, PointType>::isHoveredMesh(const MeshData::Mesh &data) const
 {
 	return getMeshType(data) == op_hover_.mesh.lock();
 }
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::isHoveredPoint(const Data::Mesh &data, IndexType index) const
+bool Editor<MeshType, IndexType, PointType>::isHoveredPoint(const MeshData::Mesh &data, IndexType index) const
 {
 	return getMeshType(data) == op_hover_.point.first.lock() && index == op_hover_.point.second;
 }
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::isRectHoveredPoint(const Data::Mesh &data, IndexType index) const
+bool Editor<MeshType, IndexType, PointType>::isRectHoveredPoint(const MeshData::Mesh &data, IndexType index) const
 {
 	auto mesh = getMeshType(data);
 	auto mesh_found = op_rect_.point.find(mesh);
@@ -604,14 +604,14 @@ bool Editor<MeshType, IndexType, PointType>::isRectHoveredPoint(const Data::Mesh
 	return find(begin(indices), end(indices), index) != end(indices);
 }
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::isSelectedMesh(const Data::Mesh &data) const
+bool Editor<MeshType, IndexType, PointType>::isSelectedMesh(const MeshData::Mesh &data) const
 {
 	return any_of(begin(op_selection_.mesh), end(op_selection_.mesh), [&](std::weak_ptr<MeshType> ptr) {
 		return getMeshType(data) == ptr.lock();
 	});
 }
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::isSelectedPoint(const Data::Mesh &data, IndexType index) const
+bool Editor<MeshType, IndexType, PointType>::isSelectedPoint(const MeshData::Mesh &data, IndexType index) const
 {
 	return any_of(begin(op_selection_.point), end(op_selection_.point), [&](std::pair<std::weak_ptr<MeshType>, std::set<IndexType>> ptr) {
 		return getMeshType(data) == ptr.first.lock() && ptr.second.find(index) != ptr.second.end();
@@ -619,13 +619,13 @@ bool Editor<MeshType, IndexType, PointType>::isSelectedPoint(const Data::Mesh &d
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::selectMesh(const Data::Mesh &data)
+bool Editor<MeshType, IndexType, PointType>::selectMesh(const MeshData::Mesh &data)
 {
 	std::weak_ptr<MeshType> ptr = getMeshType(data);
 	return op_selection_.mesh.insert(ptr).second;
 }
 template<typename MeshType, typename IndexType, typename PointType>
-bool Editor<MeshType, IndexType, PointType>::deselectMesh(const Data::Mesh &data)
+bool Editor<MeshType, IndexType, PointType>::deselectMesh(const MeshData::Mesh &data)
 {
 	auto found = find_if(begin(op_selection_.mesh), end(op_selection_.mesh), [&](std::weak_ptr<MeshType> ptr) {
 		return getMeshType(data) == ptr.lock();
@@ -638,9 +638,9 @@ bool Editor<MeshType, IndexType, PointType>::deselectMesh(const Data::Mesh &data
 }
 
 template<typename MeshType, typename IndexType, typename PointType>
-void Editor<MeshType, IndexType, PointType>::forEachMesh(std::function<void(std::shared_ptr<Data::Mesh>)> func) const
+void Editor<MeshType, IndexType, PointType>::forEachMesh(std::function<void(std::shared_ptr<MeshData::Mesh>)> func) const
 {
-	auto &&data = Data::shared();
+	auto &&data = MeshData::shared();
 	auto &&meshes = data.getMesh();
 	for(auto &&m : meshes) {
 		func(m.second);

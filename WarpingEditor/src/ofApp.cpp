@@ -1,5 +1,5 @@
 #include "ofApp.h"
-#include "Models.h"
+#include "MeshData.h"
 #include "GuiFunc.h"
 #include "Icon.h"
 #include "ImGuiFileDialog.h"
@@ -50,7 +50,7 @@ void GuiApp::setup(){
 
 //--------------------------------------------------------------
 void GuiApp::update(){
-	auto &data = Data::shared();
+	auto &data = MeshData::shared();
 	if(texture_source_) {
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
@@ -294,14 +294,14 @@ void GuiApp::draw(){
 	}
 	End();
 	if(Begin("MeshList")) {
-		auto &data = Data::shared();
-		static std::pair<std::string, std::weak_ptr<Data::Mesh>> mesh_edit;
+		auto &data = MeshData::shared();
+		static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
 		static std::string mesh_name_buf;
 		static bool need_keyboard_focus=false;
 		bool update_mesh_name = false;
-		std::weak_ptr<Data::Mesh> mesh_delete;
+		std::weak_ptr<MeshData::Mesh> mesh_delete;
 		
-		std::map<std::string, std::shared_ptr<Data::Mesh>> selected_meshes;
+		std::map<std::string, std::shared_ptr<MeshData::Mesh>> selected_meshes;
 		auto &meshes = data.getMesh();
 		for(auto &&m : meshes) {
 			PushID(m.first.c_str());
@@ -378,7 +378,7 @@ void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path
 {
 	auto tex = texture_source_->getTexture();
 	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
-	Data::shared().exportMesh(filepath, resample_min_interval, coord_size);
+	MeshData::shared().exportMesh(filepath, resample_min_interval, coord_size);
 }
 void GuiApp::exportMesh(const ProjectFolder &proj) const
 {
@@ -429,7 +429,7 @@ void GuiApp::save(bool do_backup) const
 
 	auto filepath = proj_.getDataFilePath();
 	auto tex_size = proj_.getTextureSizeCache();
-	Data::shared().save(filepath, {1/tex_size.x, 1/tex_size.y});
+	MeshData::shared().save(filepath, {1/tex_size.x, 1/tex_size.y});
 	
 	if(do_backup && proj_.isBackupEnabled()) {
 		auto backup_path = proj_.getBackupFilePath();
@@ -484,7 +484,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 			}
 		}
 	}
-	Data::shared().load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
+	MeshData::shared().load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
 }
 
 void GuiApp::openRecent(int index)
@@ -529,7 +529,7 @@ void GuiApp::dragEvent(ofDragInfo dragInfo)
 	auto filepath = dragInfo.files[0];
 	auto ext = ofFilePath::getFileExt(filepath);
 	if(ext == "maap") {
-		Data::shared().load(filepath, proj_.getTextureSizeCache());
+		MeshData::shared().load(filepath, proj_.getTextureSizeCache());
 	}
 }
 

@@ -1,7 +1,7 @@
 #include "UVEditor.h"
 #include "ofGraphics.h"
 
-std::shared_ptr<UVEditor::MeshType> UVEditor::getMeshType(const Data::Mesh &data) const
+std::shared_ptr<UVEditor::MeshType> UVEditor::getMeshType(const MeshData::Mesh &data) const
 {
 	return data.uv_quad;
 }
@@ -11,13 +11,13 @@ UVEditor::PointType UVEditor::getPoint(const MeshType &mesh, const IndexType &in
 	return mesh[index];
 }
 
-bool UVEditor::isEditablePoint(const Data::Mesh &data, IndexType index) const
+bool UVEditor::isEditablePoint(const MeshData::Mesh &data, IndexType index) const
 {
 	return true;
 }
 
 
-void UVEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
+void UVEditor::forEachPoint(const MeshData::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
 {
 	auto mesh = *getMeshType(data);
 	for(int i = 0; i < mesh.size(); ++i) {
@@ -113,7 +113,7 @@ ofMesh UVEditor::makeBackground() const
 void UVEditor::gui()
 {
 	using namespace ImGui;
-	auto data = Data::shared();
+	auto data = MeshData::shared();
 	const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
 
 	struct GuiMesh {

@@ -1,5 +1,5 @@
 //
-//  Models.h
+//  MeshData.h
 //  WarpingEditor
 //
 //  Created by Iwatani Nariaki on 2021/12/22.
@@ -12,11 +12,11 @@
 #include "ofxMapperUpSampler.h"
 #include "Quad.h"
 
-class Data
+class MeshData
 {
 public:
-	static Data& shared() {
-		static Data instance;
+	static MeshData& shared() {
+		static MeshData instance;
 		return instance;
 	}
 	struct Mesh {
@@ -79,8 +79,8 @@ public:
 	std::map<std::string, std::shared_ptr<Mesh>> getEditableMesh(bool include_hidden=false) const;
 	bool isVisible(std::shared_ptr<Mesh> mesh) const;
 	bool isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden=false) const;
-	std::pair<std::string, std::shared_ptr<Data::Mesh>> find(std::shared_ptr<geom::Quad> quad);
-	std::pair<std::string, std::shared_ptr<Data::Mesh>> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
+	std::pair<std::string, std::shared_ptr<MeshData::Mesh>> find(std::shared_ptr<geom::Quad> quad);
+	std::pair<std::string, std::shared_ptr<MeshData::Mesh>> find(std::shared_ptr<ofx::mapper::Mesh> mesh);
 
 	void uvRescale(const glm::vec2 &scale);
 	void save(const std::filesystem::path &filepath, glm::vec2 scale) const;

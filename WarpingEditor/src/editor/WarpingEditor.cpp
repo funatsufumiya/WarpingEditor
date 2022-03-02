@@ -32,7 +32,7 @@ bool isCorner(const WarpingEditor::MeshType &mesh, WarpingEditor::IndexType inde
 	return (x==0||x==mesh.getNumCols()) && (y==0||y==mesh.getNumRows());
 }
 }
-std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getMeshType(const Data::Mesh &data) const
+std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getMeshType(const MeshData::Mesh &data) const
 {
 	return data.mesh;
 }
@@ -42,7 +42,7 @@ WarpingEditor::PointType WarpingEditor::getPoint(const MeshType &mesh, const Ind
 	return *mesh.getPoint(index.first, index.second).v;
 }
 
-void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
+void WarpingEditor::forEachPoint(const MeshData::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
 {
 	auto &mesh = *data.mesh;
 	for(int r = 0; r <= mesh.getNumRows(); ++r) {
@@ -52,12 +52,12 @@ void WarpingEditor::forEachPoint(const Data::Mesh &data, std::function<void(cons
 	}
 }
 
-bool WarpingEditor::isEditablePoint(const Data::Mesh &data, IndexType index) const
+bool WarpingEditor::isEditablePoint(const MeshData::Mesh &data, IndexType index) const
 {
 	return data.interpolator->isSelected(index.first, index.second);
 }
 
-std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getIfInside(std::shared_ptr<Data::Mesh> data, const glm::vec2 &pos, float &distance)
+std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getIfInside(std::shared_ptr<MeshData::Mesh> data, const glm::vec2 &pos, float &distance)
 {
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
@@ -107,7 +107,7 @@ void WarpingEditor::moveSelectedCoord(const glm::vec2 &delta)
 	if(mode_ != MODE_MESH) {
 		return;
 	}
-	auto &&data = Data::shared();
+	auto &&data = MeshData::shared();
 	if(!op_selection_.point.empty()) {
 		for(auto &&qp : op_selection_.point) {
 			if(auto ptr = qp.first.lock()) {
@@ -202,13 +202,13 @@ void WarpingEditor::update()
 		op_rect_ = OpRect();
 	}
 	Editor::update();
-	auto data = Data::shared();
+	auto data = MeshData::shared();
 	if(mode_ == MODE_DIVISION) {
 		if(mouse_.isFrameNew()) {
 			is_div_point_valid_ = false;
 			glm::vec2 dst_findex;
 			bool is_row=false, is_col=false;
-			std::shared_ptr<Data::Mesh> div_mesh;
+			std::shared_ptr<MeshData::Mesh> div_mesh;
 			if(op_hover_.point.first.expired()) {
 				div_point_ = getIn(mouse_.pos);
 				if(grid_.enabled_snap) {
@@ -295,7 +295,7 @@ void WarpingEditor::draw() const
 			float cross_width = point_size/2.f;
 			ofMesh mesh;
 			mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-			forEachMesh([&](std::shared_ptr<Data::Mesh> m) {
+			forEachMesh([&](std::shared_ptr<MeshData::Mesh> m) {
 				forEachPoint(*m, [&](const PointType &point, IndexType i) {
 					if(isCorner(*m->mesh, i)) {
 						mesh.append(makeMeshFromPoint(point, ofColor::black, point_size/2.f));
@@ -336,7 +336,7 @@ std::string format(const std::string& fmt, Args ... args )
 void WarpingEditor::gui()
 {
 	using namespace ImGui;
-	auto data = Data::shared();
+	auto data = MeshData::shared();
 	
 	struct GuiMesh {
 		std::string label;

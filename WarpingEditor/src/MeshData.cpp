@@ -1,6 +1,6 @@
-#include "Models.h"
+#include "MeshData.h"
 
-std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::string &name, const ofRectangle &rect) {
+std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::create(const std::string &name, const ofRectangle &rect) {
 	std::string n = name;
 	int index=0;
 	auto m = std::make_shared<Mesh>();
@@ -10,19 +10,19 @@ std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::create(const std::stri
 	m->init(rect);
 	return std::make_pair(n, m);
 }
-std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::createCopy(const std::string &name, std::shared_ptr<Mesh> src)
+std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::createCopy(const std::string &name, std::shared_ptr<Mesh> src)
 {
 	auto ret = create(name);
 	*ret.second = *src;
 	return ret;
 }
 
-void Data::update() {
+void MeshData::update() {
 	for(auto &&m : mesh_) {
 		m.second->update();
 	}
 }
-bool Data::remove(const std::string &name) {
+bool MeshData::remove(const std::string &name) {
 	auto found = mesh_.find(name);
 	if(found == std::end(mesh_)) {
 		return false;
@@ -30,7 +30,7 @@ bool Data::remove(const std::string &name) {
 	mesh_.erase(found);
 	return true;
 }
-bool Data::remove(const std::shared_ptr<Mesh> mesh) {
+bool MeshData::remove(const std::shared_ptr<Mesh> mesh) {
 	auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
 		return m.second == mesh;
 	});
@@ -42,18 +42,18 @@ bool Data::remove(const std::shared_ptr<Mesh> mesh) {
 }
 
 
-bool Data::isVisible(std::shared_ptr<Mesh> mesh) const
+bool MeshData::isVisible(std::shared_ptr<Mesh> mesh) const
 {
-	return std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
+	return std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<MeshData::Mesh>> m) {
 		return m.second->is_solo;
 	}) ? mesh->is_solo && !mesh->is_hidden : !mesh->is_hidden;
 }
-bool Data::isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden) const
+bool MeshData::isEditable(std::shared_ptr<Mesh> mesh, bool include_hidden) const
 {
 	return !mesh->is_locked && (include_hidden || isVisible(mesh));
 }
 
-std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<geom::Quad> quad)
+std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::find(std::shared_ptr<geom::Quad> quad)
 {
 	auto found = std::find_if(begin(mesh_), end(mesh_), [quad](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
 		return m.second->uv_quad == quad;
@@ -64,7 +64,7 @@ std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<g
 	return *found;
 }
 
-std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
+std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
 {
 	auto found = std::find_if(begin(mesh_), end(mesh_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> m) {
 		return m.second->mesh == mesh;
@@ -75,14 +75,14 @@ std::pair<std::string, std::shared_ptr<Data::Mesh>> Data::find(std::shared_ptr<o
 	return *found;
 }
 
-std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh() const
+std::map<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::getVisibleMesh() const
 {
-	std::map<std::string, std::shared_ptr<Data::Mesh>> ret;
-	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
+	std::map<std::string, std::shared_ptr<MeshData::Mesh>> ret;
+	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<MeshData::Mesh>> m) {
 		return m.second->is_solo;
-	}) ? [](std::shared_ptr<Data::Mesh> m) {
+	}) ? [](std::shared_ptr<MeshData::Mesh> m) {
 		return m->is_solo && !m->is_hidden;
-	} : [](std::shared_ptr<Data::Mesh> m) {
+	} : [](std::shared_ptr<MeshData::Mesh> m) {
 		return !m->is_hidden;
 	};
 	for(auto &&m : mesh_) {
@@ -92,14 +92,14 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getVisibleMesh() const
 	}
 	return ret;
 }
-std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool include_hidden) const
+std::map<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::getEditableMesh(bool include_hidden) const
 {
-	std::map<std::string, std::shared_ptr<Data::Mesh>> ret;
-	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<Data::Mesh>> m) {
+	std::map<std::string, std::shared_ptr<MeshData::Mesh>> ret;
+	auto isVisible = std::any_of(begin(mesh_), end(mesh_), [](const std::pair<std::string, std::shared_ptr<MeshData::Mesh>> m) {
 		return m.second->is_solo;
-	}) ? [](std::shared_ptr<Data::Mesh> m) {
+	}) ? [](std::shared_ptr<MeshData::Mesh> m) {
 		return m->is_solo && !m->is_hidden;
-	} : [](std::shared_ptr<Data::Mesh> m) {
+	} : [](std::shared_ptr<MeshData::Mesh> m) {
 		return !m->is_hidden;
 	};
 	for(auto &&m : mesh_) {
@@ -110,7 +110,7 @@ std::map<std::string, std::shared_ptr<Data::Mesh>> Data::getEditableMesh(bool in
 	return ret;
 }
 
-void Data::uvRescale(const glm::vec2 &scale)
+void MeshData::uvRescale(const glm::vec2 &scale)
 {
 	for(auto &&m : mesh_) {
 		*m.second->uv_quad = getScaled(*m.second->uv_quad, scale);
@@ -130,12 +130,12 @@ void readFrom(std::istream& is, T& t) {
 }
 }
 
-void Data::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+void MeshData::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
 	getMeshForExport(resample_min_interval, coord_size).save(filepath);
 }
 
-ofMesh Data::getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+ofMesh MeshData::getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
 	ofMesh ret;
 	for(auto &&m : only_visible ? getVisibleMesh() : mesh_) {
@@ -145,13 +145,13 @@ ofMesh Data::getMeshForExport(float resample_min_interval, const glm::vec2 &coor
 	return ret;
 }
 
-void Data::save(const std::filesystem::path &filepath, glm::vec2 scale) const
+void MeshData::save(const std::filesystem::path &filepath, glm::vec2 scale) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
 	pack(file, scale);
 	file.close();
 }
-void Data::load(const std::filesystem::path &filepath, glm::vec2 scale)
+void MeshData::load(const std::filesystem::path &filepath, glm::vec2 scale)
 {
 	mesh_.clear();
 	ofFile file(filepath);
@@ -159,7 +159,7 @@ void Data::load(const std::filesystem::path &filepath, glm::vec2 scale)
 	file.close();
 }
 
-void Data::pack(std::ostream &stream, glm::vec2 scale) const
+void MeshData::pack(std::ostream &stream, glm::vec2 scale) const
 {
 	writeTo(stream, mesh_.size());
 	const int name_alignemt = 4;
@@ -172,7 +172,7 @@ void Data::pack(std::ostream &stream, glm::vec2 scale) const
 		m.second->pack(stream, scale);
 	}
 }
-void Data::unpack(std::istream &stream, glm::vec2 scale)
+void MeshData::unpack(std::istream &stream, glm::vec2 scale)
 {
 	const int name_alignemt = 4;
 	std::size_t num;
@@ -191,7 +191,7 @@ void Data::unpack(std::istream &stream, glm::vec2 scale)
 	}
 }
 
-void Data::Mesh::pack(std::ostream &stream, glm::vec2 scale) const
+void MeshData::Mesh::pack(std::ostream &stream, glm::vec2 scale) const
 {
 	writeTo(stream, is_hidden);
 	writeTo(stream, is_locked);
@@ -202,7 +202,7 @@ void Data::Mesh::pack(std::ostream &stream, glm::vec2 scale) const
 	}
 	mesh->pack(stream, interpolator.get());
 }
-void Data::Mesh::unpack(std::istream &stream, glm::vec2 scale)
+void MeshData::Mesh::unpack(std::istream &stream, glm::vec2 scale)
 {
 	readFrom(stream, is_hidden);
 	readFrom(stream, is_locked);
