@@ -15,10 +15,6 @@
 class MeshData
 {
 public:
-	static MeshData& shared() {
-		static MeshData instance;
-		return instance;
-	}
 	struct Mesh {
 		bool is_hidden=false;
 		bool is_locked=false;

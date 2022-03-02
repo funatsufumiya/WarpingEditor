@@ -113,7 +113,7 @@ ofMesh UVEditor::makeBackground() const
 void UVEditor::gui()
 {
 	using namespace ImGui;
-	auto data = MeshData::shared();
+	auto &&data = *data_;
 	const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
 
 	struct GuiMesh {

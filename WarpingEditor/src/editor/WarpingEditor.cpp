@@ -107,7 +107,7 @@ void WarpingEditor::moveSelectedCoord(const glm::vec2 &delta)
 	if(mode_ != MODE_MESH) {
 		return;
 	}
-	auto &&data = MeshData::shared();
+	auto &&data = *data_;
 	if(!op_selection_.point.empty()) {
 		for(auto &&qp : op_selection_.point) {
 			if(auto ptr = qp.first.lock()) {
@@ -202,7 +202,7 @@ void WarpingEditor::update()
 		op_rect_ = OpRect();
 	}
 	Editor::update();
-	auto data = MeshData::shared();
+	auto &&data = *data_;
 	if(mode_ == MODE_DIVISION) {
 		if(mouse_.isFrameNew()) {
 			is_div_point_valid_ = false;
@@ -336,7 +336,7 @@ std::string format(const std::string& fmt, Args ... args )
 void WarpingEditor::gui()
 {
 	using namespace ImGui;
-	auto data = MeshData::shared();
+	auto &&data = *data_;
 	
 	struct GuiMesh {
 		std::string label;

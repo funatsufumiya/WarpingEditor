@@ -27,6 +27,8 @@ public:
 	void setResultApp(std::shared_ptr<ResultView> app) { result_app_ = app; }
 	void setResultWindow(std::shared_ptr<ofAppBaseWindow> window) { result_window_ = window; }
 private:
+	std::shared_ptr<MeshData> warping_data_;
+	
 	std::shared_ptr<ResultView> result_app_;
 	std::shared_ptr<ofAppBaseWindow> result_window_;
 	ofxImGui::Gui gui_;

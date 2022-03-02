@@ -38,8 +38,11 @@ void WarpingApp::setup(){
 	
 	ndi_finder_.watchSources();
 	
+	warping_data_ = std::make_shared<MeshData>();
 	uv_.setup();
+	uv_.setMeshData(warping_data_);
 	warp_.setup();
+	warp_.setMeshData(warping_data_);
 	
 	editor_.push_back(&uv_);
 	editor_.push_back(&warp_);
@@ -50,7 +53,7 @@ void WarpingApp::setup(){
 
 //--------------------------------------------------------------
 void WarpingApp::update(){
-	auto &data = MeshData::shared();
+	auto &data = *warping_data_;
 	if(texture_source_) {
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
@@ -294,7 +297,7 @@ void WarpingApp::draw(){
 	}
 	End();
 	if(Begin("MeshList")) {
-		auto &data = MeshData::shared();
+		auto &data = *warping_data_;
 		static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
 		static std::string mesh_name_buf;
 		static bool need_keyboard_focus=false;
@@ -378,7 +381,7 @@ void WarpingApp::exportMesh(float resample_min_interval, const std::filesystem::
 {
 	auto tex = texture_source_->getTexture();
 	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
-	MeshData::shared().exportMesh(filepath, resample_min_interval, coord_size);
+	warping_data_->exportMesh(filepath, resample_min_interval, coord_size);
 }
 void WarpingApp::exportMesh(const ProjectFolder &proj) const
 {
@@ -429,7 +432,7 @@ void WarpingApp::save(bool do_backup) const
 
 	auto filepath = proj_.getDataFilePath();
 	auto tex_size = proj_.getTextureSizeCache();
-	MeshData::shared().save(filepath, {1/tex_size.x, 1/tex_size.y});
+	warping_data_->save(filepath, {1/tex_size.x, 1/tex_size.y});
 	
 	if(do_backup && proj_.isBackupEnabled()) {
 		auto backup_path = proj_.getBackupFilePath();
@@ -484,7 +487,7 @@ void WarpingApp::openProject(const std::filesystem::path &proj_path)
 			}
 		}
 	}
-	MeshData::shared().load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
+	warping_data_->load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
 }
 
 void WarpingApp::openRecent(int index)
@@ -529,7 +532,7 @@ void WarpingApp::dragEvent(ofDragInfo dragInfo)
 	auto filepath = dragInfo.files[0];
 	auto ext = ofFilePath::getFileExt(filepath);
 	if(ext == "maap") {
-		MeshData::shared().load(filepath, proj_.getTextureSizeCache());
+		warping_data_->load(filepath, proj_.getTextureSizeCache());
 	}
 }
 

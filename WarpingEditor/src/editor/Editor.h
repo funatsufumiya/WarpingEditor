@@ -66,6 +66,7 @@ template<typename MeshType, typename IndexType, typename PointType=glm::vec2>
 class Editor : public EditorBase
 {
 public:
+	void setMeshData(std::shared_ptr<MeshData> data) { data_ = data; }
 	virtual void draw() const override;
 	
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
@@ -80,6 +81,7 @@ public:
 	virtual PointType getPoint(const MeshType &mesh, const IndexType &index) const = 0;
 
 protected:
+	std::shared_ptr<MeshData> data_;
 	void procNewMouseEvent(const MouseEvent &mouse) override;
 
 	bool is_enabled_hovering_uneditable_point_=false;
@@ -246,7 +248,7 @@ typename Editor<MeshType, IndexType, PointType>::OpSelection Editor<MeshType, In
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::moveSelected(const glm::vec2 &delta)
 {
-	auto &&data = MeshData::shared();
+	auto &&data = *data_;
 	auto points = op_selection_.point;
 	if(!op_selection_.mesh.empty()) {
 		for(auto &&q : op_selection_.mesh) {
@@ -361,7 +363,7 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	mesh.append(makeBackground());
-	auto meshes = MeshData::shared().getVisibleMesh();
+	auto meshes = data_->getVisibleMesh();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		if(isSelectedMesh(*m)) {
@@ -383,7 +385,7 @@ void Editor<MeshType, IndexType, PointType>::drawWire() const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_LINES);
-	auto meshes = MeshData::shared().getVisibleMesh();
+	auto meshes = data_->getVisibleMesh();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		mesh.append(makeWireFromMesh(*m, ofColor::white));
@@ -396,7 +398,7 @@ void Editor<MeshType, IndexType, PointType>::drawPoint(bool only_editable_point)
 	float point_size = mouse_near_distance_/getScale();
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-	auto meshes = MeshData::shared().getVisibleMesh();
+	auto meshes = data_->getVisibleMesh();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		forEachPoint(*m, [&](const PointType &point, IndexType i) {
@@ -523,7 +525,7 @@ std::map<std::weak_ptr<MeshType>, std::set<IndexType>, std::owner_less<std::weak
 template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexType, PointType>::getHover(const glm::vec2 &screen_pos, bool only_editable_point)
 {
-	auto &&data = MeshData::shared();
+	auto &&data = *data_;
 	auto &&meshes = data.getMesh();
 	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
 	OpHover ret;
@@ -561,7 +563,7 @@ typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexT
 template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpRect Editor<MeshType, IndexType, PointType>::getRectHover(const ofRectangle &screen_rect, bool only_editable_point)
 {
-	auto &&data = MeshData::shared();
+	auto &&data = *data_;
 	auto &&meshes = data.getMesh();
 	OpRect ret;
 	for(auto &&m : meshes) {
@@ -577,7 +579,7 @@ typename Editor<MeshType, IndexType, PointType>::OpRect Editor<MeshType, IndexTy
 template<typename MeshType, typename IndexType, typename PointType>
 bool Editor<MeshType, IndexType, PointType>::isEditableMesh(const MeshData::Mesh &data) const
 {
-	auto shared = MeshData::shared();
+	auto shared = *data_;
 	auto d = shared.find(data.mesh);
 	return shared.isEditable(d.second);
 }
@@ -640,7 +642,7 @@ bool Editor<MeshType, IndexType, PointType>::deselectMesh(const MeshData::Mesh &
 template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::forEachMesh(std::function<void(std::shared_ptr<MeshData::Mesh>)> func) const
 {
-	auto &&data = MeshData::shared();
+	auto &&data = *data_;
 	auto &&meshes = data.getMesh();
 	for(auto &&m : meshes) {
 		func(m.second);
