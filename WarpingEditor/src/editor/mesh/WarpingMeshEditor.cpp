@@ -1,8 +1,8 @@
-#include "WarpingEditor.h"
+#include "WarpingMeshEditor.h"
 #include "ofGraphics.h"
 
 namespace {
-ofMesh makeCross(const WarpingEditor::PointType &point, const ofColor &color, float line_length, float stroke_width, float degree)
+ofMesh makeCross(const WarpingMeshEditor::PointType &point, const ofColor &color, float line_length, float stroke_width, float degree)
 {
 	ofMesh ret;
 	ret.setMode(OF_PRIMITIVE_TRIANGLES);
@@ -27,181 +27,34 @@ ofMesh makeCross(const WarpingEditor::PointType &point, const ofColor &color, fl
 	
 	return ret;
 }
-bool isCorner(const WarpingEditor::MeshType &mesh, WarpingEditor::IndexType index) {
+bool isCorner(const WarpingMeshEditor::MeshType &mesh, WarpingMeshEditor::IndexType index) {
 	int x = index.first, y = index.second;
 	return (x==0||x==mesh.getNumCols()) && (y==0||y==mesh.getNumRows());
 }
 }
-std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getMeshType(const MeshData::Mesh &data) const
-{
-	return data.mesh;
-}
 
-WarpingEditor::PointType WarpingEditor::getPoint(const MeshType &mesh, const IndexType &index) const
-{
-	return *mesh.getPoint(index.first, index.second).v;
-}
-
-void WarpingEditor::forEachPoint(const MeshData::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
-{
-	auto &mesh = *data.mesh;
-	for(int r = 0; r <= mesh.getNumRows(); ++r) {
-		for(int c = 0; c <= mesh.getNumCols(); ++c) {
-			func(glm::vec2(*mesh.getPoint(c, r).v), {c,r});
-		}
-	}
-}
-
-bool WarpingEditor::isEditablePoint(const MeshData::Mesh &data, IndexType index) const
-{
-	return data.interpolator->isSelected(index.first, index.second);
-}
-
-std::shared_ptr<WarpingEditor::MeshType> WarpingEditor::getIfInside(std::shared_ptr<MeshData::Mesh> data, const glm::vec2 &pos, float &distance)
-{
-	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-	? glm::vec2{tex_data.tex_w, tex_data.tex_h}
-	: glm::vec2{tex_data.tex_t, tex_data.tex_u};
-	auto uv = getScaled(*data->uv_quad, tex_uv);
-	auto p = getIn(pos);
-	auto &mesh = *data->mesh;
-	if(!mesh.isInside(p)) {
-		return nullptr;
-	}
-	glm::vec2 average(0,0);
-	float num = mesh.getNumRows()*mesh.getNumCols();
-	for(int r = 0; r <= mesh.getNumRows(); ++r) {
-		for(int c = 0; c <= mesh.getNumCols(); ++c) {
-			average += glm::vec2(*mesh.getPoint(c, r).v);
-		}
-	}
-	distance = glm::distance(pos, average/num);
-	return data->mesh;
-}
-
-void WarpingEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
-{
-	if(mode_ != MODE_MESH) {
-		return;
-	}
-	glm::vec3 d = {delta, 0};
-	for(int r = 0; r <= mesh.getNumRows(); ++r) {
-		for(int c = 0; c <= mesh.getNumCols(); ++c) {
-			*mesh.getPoint(c, r).v += d;
-		}
-	}
-}
-
-void WarpingEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta)
-{
-	if(mode_ != MODE_MESH) {
-		return;
-	}
-	glm::vec3 d = {delta, 0};
-	*mesh.getPoint(index.first, index.second).v += d;
-}
-
-void WarpingEditor::moveSelectedCoord(const glm::vec2 &delta)
-{
-	if(mode_ != MODE_MESH) {
-		return;
-	}
-	auto &&data = *data_;
-	if(!op_selection_.point.empty()) {
-		for(auto &&qp : op_selection_.point) {
-			if(auto ptr = qp.first.lock()) {
-				for(auto i : qp.second) {
-					movePointCoord(*ptr, i, delta);
-				}
-				data.find(ptr).second->setDirty();
-			}
-		}
-	}
-	if(!op_selection_.mesh.empty()) {
-		for(auto &&q : op_selection_.mesh) {
-			if(auto ptr = q.lock()) {
-				moveMeshCoord(*ptr, delta);
-				data.find(ptr).second->setDirty();
-			}
-		}
-	}
-}
-
-void WarpingEditor::moveMeshCoord(MeshType &mesh, const glm::vec2 &delta)
-{
-	for(int r = 0; r <= mesh.getNumRows(); ++r) {
-		for(int c = 0; c <= mesh.getNumCols(); ++c) {
-			*mesh.getPoint(c, r).t += delta;
-		}
-	}
-}
-void WarpingEditor::movePointCoord(MeshType &mesh, IndexType index, const glm::vec2 &delta)
-{
-	*mesh.getPoint(index.first, index.second).t += delta;
-}
-
-
-ofMesh WarpingEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) const
-{
-	const float min_interval = 100;
-	float mesh_resample_interval = std::max<float>(min_interval, (getIn({min_interval,0})-getIn({0,0})).x);
-	auto viewport = getRegion();
-	ofRectangle viewport_in{getIn(viewport.getTopLeft()), getIn(viewport.getBottomRight())};
-	auto tex_data = tex_.getTextureData();
-	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-	? glm::vec2(1,1)
-	: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
-	ofMesh ret = data.getMesh(mesh_resample_interval, tex_scale, &viewport_in);
-	auto &colors = ret.getColors();
-	for(auto &&c : colors) {
-		c = c*color;
-	}
-	return ret;
-}
-
-ofMesh WarpingEditor::makeWireFromMesh(const DataType &data, const ofColor &color) const
-{
-	ofMesh ret = data.mesh->getMesh();
-	ret.setMode(OF_PRIMITIVE_LINES);
-	int rows = data.mesh->getNumRows()+1;
-	int cols = data.mesh->getNumCols()+1;
-	ret.clearIndices();
-	for(int y = 0; y < rows-1; y++) {
-		for(int x = 0; x < cols-1; x++) {
-			if(y < rows-1) {
-				ret.addIndex((x)*rows + y);
-				ret.addIndex((x)*rows + y+1);
-			}
-			if(x < cols-1) {
-				ret.addIndex((x)*rows + y);
-				ret.addIndex((x+1)*rows + y);
-			}
-		}
-	}
-	return ret;
-}
-
-void WarpingEditor::update()
+void WarpingMeshEditor::update()
 {
 	auto mode_prev = mode_;
 	if(ofGetKeyPressed('d')) {
 		mode_ = MODE_DIVISION;
 		setEnabledHoveringUneditablePoint(true);
 		setEnabledRectSelection(false);
+		setEnableMoveMeshByMouse(false);
 		is_div_point_valid_ = false;
 	}
 	if(ofGetKeyPressed('m')) {
 		mode_ = MODE_MESH;
 		setEnabledHoveringUneditablePoint(false);
 		setEnabledRectSelection(true);
+		setEnableMoveMeshByMouse(true);
 	}
 	if(mode_ != mode_prev) {
 		op_selection_ = OpSelection();
 		op_hover_ = OpHover();
 		op_rect_ = OpRect();
 	}
-	Editor::update();
+	MeshEditor::update();
 	auto &&data = *data_;
 	if(mode_ == MODE_DIVISION) {
 		if(mouse_.isFrameNew()) {
@@ -276,11 +129,11 @@ void WarpingEditor::update()
 }
 
 
-void WarpingEditor::draw() const
+void WarpingMeshEditor::draw() const
 {
 	switch(mode_) {
 		case MODE_MESH:
-			Editor::draw();
+			MeshEditor::draw();
 			return;
 		case MODE_DIVISION: {
 			pushMatrix();
@@ -333,7 +186,7 @@ std::string format(const std::string& fmt, Args ... args )
 	std::snprintf(&buf[0], len + 1, fmt.c_str(), args ... );
 	return std::string(&buf[0], &buf[0] + len);
 }}
-void WarpingEditor::gui()
+void WarpingMeshEditor::gui()
 {
 	using namespace ImGui;
 	auto &&data = *data_;

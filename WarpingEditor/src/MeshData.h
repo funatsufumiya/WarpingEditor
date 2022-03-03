@@ -50,8 +50,8 @@ public:
 			interpolator->setMesh(mesh);
 			return *this;
 		}
-		void init(const ofRectangle &rect) {
-			mesh->init({1,1}, rect);
+		void init(const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect={0,0,1,1}) {
+			mesh->init(num_cells, vert_rect, coord_rect);
 		}
 		void update() {
 			interpolator->update();
@@ -65,7 +65,7 @@ public:
 		mutable ofRectangle cached_valid_viewport_;
 		mutable bool is_dirty_=true;
 	};
-	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name="data", const ofRectangle &rect={0,0,1,1});
+	std::pair<std::string, std::shared_ptr<Mesh>> create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect={0,0,1,1});
 	std::pair<std::string, std::shared_ptr<Mesh>> createCopy(const std::string &name, std::shared_ptr<Mesh> src);
 	void update();
 	bool remove(const std::string &name);

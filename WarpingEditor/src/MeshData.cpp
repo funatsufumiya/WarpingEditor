@@ -1,18 +1,18 @@
 #include "MeshData.h"
 
-std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::create(const std::string &name, const ofRectangle &rect) {
+std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect) {
 	std::string n = name;
 	int index=0;
 	auto m = std::make_shared<Mesh>();
 	while(!add(n, m)) {
 		n = name+ofToString(index++);
 	}
-	m->init(rect);
+	m->init(num_cells, vert_rect, coord_rect);
 	return std::make_pair(n, m);
 }
 std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::createCopy(const std::string &name, std::shared_ptr<Mesh> src)
 {
-	auto ret = create(name);
+	auto ret = create(name,{1,1},{0,0,1,1});
 	*ret.second = *src;
 	return ret;
 }

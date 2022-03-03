@@ -2,22 +2,13 @@
 
 #include "Editor.h"
 
-class WarpingEditor : public Editor<ofx::mapper::Mesh, std::pair<int,int>>
+class MeshEditor : public Editor<ofx::mapper::Mesh, std::pair<int,int>>
 {
 public:
 	using DataType = MeshData::Mesh;
 	using MeshType = ofx::mapper::Mesh;
 	using IndexType = std::pair<int,int>;
 	using PointType = glm::vec2;
-	enum {
-		MODE_MESH,
-		MODE_DIVISION
-	};
-	void update() override;
-	void draw() const override;
-	void gui() override;
-	
-	bool isPreventMeshInterpolation() const override { return mode_==MODE_DIVISION; }
 
 protected:
 	std::shared_ptr<MeshType> getMeshType(const MeshData::Mesh &data) const override;
@@ -32,13 +23,5 @@ protected:
 	void moveSelectedCoord(const glm::vec2 &delta);
 	void moveMeshCoord(MeshType &mesh, const glm::vec2 &delta);
 	void movePointCoord(MeshType &mesh, IndexType index, const glm::vec2 &delta);
-	
-	
-private:
-	int mode_=MODE_MESH;
-	bool is_mesh_div_edited_=false;
-	
-	bool is_div_point_valid_=false;
-	glm::vec2 div_point_;
 };
 

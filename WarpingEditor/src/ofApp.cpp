@@ -121,16 +121,7 @@ void WarpingApp::draw(){
 			s();
 		}
 	}
-	/*
-	auto &&io = ImGui::GetIO();
-	std::cout << "mod1:" << (Shortcut::MOD_FLAG_DEFAULT|ImGuiKeyModFlags_Shift) << std::endl;
-	std::cout << "mod2:" << io.KeyMods << std::endl;
-	for(int i = 0; i < 512; ++i) {
-		if(io.KeysDown[i]) {
-			std::cout << "keys:" << i << std::endl;
-		}
-	}
-	 */
+
 	std::vector<std::string> shortcut_triggers;
 	if(BeginMainMenuBar()) {
 		if(BeginMenu("Project")) {
@@ -297,79 +288,85 @@ void WarpingApp::draw(){
 	}
 	End();
 	if(Begin("MeshList")) {
-		auto &data = *warping_data_;
-		static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
-		static std::string mesh_name_buf;
-		static bool need_keyboard_focus=false;
-		bool update_mesh_name = false;
-		std::weak_ptr<MeshData::Mesh> mesh_delete;
-		
-		std::map<std::string, std::shared_ptr<MeshData::Mesh>> selected_meshes;
-		auto &meshes = data.getMesh();
-		for(auto &&m : meshes) {
-			PushID(m.first.c_str());
-			ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
-			ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
-			ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
-			if(mesh_edit.second.lock() == m.second) {
-				if(need_keyboard_focus) SetKeyboardFocusHere();
-				need_keyboard_focus = false;
-				update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
-			}
-			else {
-				bool selected
-				= editor == &uv_ ? selected = uv_.isSelectedMesh(*m.second)
-				: editor == &warp_ ? selected = warp_.isSelectedMesh(*m.second)
-				: false;
-				if(Selectable(m.first.c_str(), &selected)) {
-					editor == &uv_ ? selected ? uv_.selectMesh(*m.second) : uv_.deselectMesh(*m.second)
-					: editor == &warp_ ? selected ? warp_.selectMesh(*m.second) : warp_.deselectMesh(*m.second)
-					: false;
+		if(BeginTabBar("type")) {
+			if(BeginTabItem("warpping")) {
+				auto &data = *warping_data_;
+				static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
+				static std::string mesh_name_buf;
+				static bool need_keyboard_focus=false;
+				bool update_mesh_name = false;
+				std::weak_ptr<MeshData::Mesh> mesh_delete;
+				
+				std::map<std::string, std::shared_ptr<MeshData::Mesh>> selected_meshes;
+				auto &meshes = data.getMesh();
+				for(auto &&m : meshes) {
+					PushID(m.first.c_str());
+					ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
+					ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
+					ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
+					if(mesh_edit.second.lock() == m.second) {
+						if(need_keyboard_focus) SetKeyboardFocusHere();
+						need_keyboard_focus = false;
+						update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
+					}
+					else {
+						bool selected
+						= editor == &uv_ ? selected = uv_.isSelectedMesh(*m.second)
+						: editor == &warp_ ? selected = warp_.isSelectedMesh(*m.second)
+						: false;
+						if(Selectable(m.first.c_str(), &selected)) {
+							editor == &uv_ ? selected ? uv_.selectMesh(*m.second) : uv_.deselectMesh(*m.second)
+							: editor == &warp_ ? selected ? warp_.selectMesh(*m.second) : warp_.deselectMesh(*m.second)
+							: false;
+						}
+						if(selected) {
+							selected_meshes.insert(m);
+						}
+						if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
+							mesh_edit.second.reset();
+						}
+						else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
+								|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
+							) {
+							mesh_delete = m.second;
+						}
+						else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
+							mesh_name_buf = m.first;
+							mesh_edit = m;
+							need_keyboard_focus = true;
+						}
+					}
+					PopID();
 				}
-				if(selected) {
-					selected_meshes.insert(m);
-				}
-				if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
+				if(update_mesh_name) {
+					auto found = meshes.find(mesh_edit.first);
+					assert(found != end(meshes));
+					if(mesh_name_buf != "" && meshes.insert({mesh_name_buf, found->second}).second) {
+						meshes.erase(found);
+					}
 					mesh_edit.second.reset();
 				}
-				else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
-						|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
-					) {
-					mesh_delete = m.second;
+				if(auto mesh_to_delete = mesh_delete.lock()) {
+					data.remove(mesh_to_delete);
 				}
-				else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
-					mesh_name_buf = m.first;
-					mesh_edit = m;
-					need_keyboard_focus = true;
+				if(Button("create new")) {
+					auto tex = texture_source_->getTexture();
+					if(tex.isAllocated()) {
+						data.create("mesh", {1,1}, {0,0,tex.getWidth(),tex.getHeight()});
+					}
 				}
-			}
-			PopID();
-		}
-		if(update_mesh_name) {
-			auto found = meshes.find(mesh_edit.first);
-			assert(found != end(meshes));
-			if(mesh_name_buf != "" && meshes.insert({mesh_name_buf, found->second}).second) {
-				meshes.erase(found);
-			}
-			mesh_edit.second.reset();
-		}
-		if(auto mesh_to_delete = mesh_delete.lock()) {
-			data.remove(mesh_to_delete);
-		}
-		if(Button("create new")) {
-			auto tex = texture_source_->getTexture();
-			if(tex.isAllocated()) {
-				data.create("mesh", {0,0,tex.getWidth(),tex.getHeight()});
-			}
-		}
-		if(mesh_edit.second.expired() && !selected_meshes.empty()) {
-			SameLine();
-			if(Button("duplicate selected")) {
-				for(auto &&s : selected_meshes) {
-					data.createCopy(s.first, s.second);
+				if(mesh_edit.second.expired() && !selected_meshes.empty()) {
+					SameLine();
+					if(Button("duplicate selected")) {
+						for(auto &&s : selected_meshes) {
+							data.createCopy(s.first, s.second);
+						}
+					}
 				}
+				EndTabItem();
 			}
 		}
+		EndTabBar();
 	}
 	End();
 	if(editor) {

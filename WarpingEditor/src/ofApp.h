@@ -2,8 +2,10 @@
 
 #include "ofMain.h"
 #include "ofxImGui.h"
-#include "WarpingEditor.h"
-#include "UVEditor.h"
+#include "WarpingMeshEditor.h"
+#include "WarpingUVEditor.h"
+#include "BlendingMeshEditor.h"
+#include "BlendingUVEditor.h"
 #include "ImageSource.h"
 #include "ofxNDIFinder.h"
 #include "WorkFolder.h"
@@ -33,8 +35,8 @@ private:
 	std::shared_ptr<ofAppBaseWindow> result_window_;
 	ofxImGui::Gui gui_;
 	std::shared_ptr<ImageSource> texture_source_;
-	WarpingEditor warp_;
-	UVEditor uv_;
+	WarpingMeshEditor warp_;
+	WarpingUVEditor uv_;
 	enum State {
 		EDIT_UV,
 		EDIT_WRAP

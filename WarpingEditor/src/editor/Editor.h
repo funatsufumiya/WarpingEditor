@@ -23,6 +23,7 @@ public:
 	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }
 	void setEnabledRectSelection(bool enable) { is_enabled_rect_selection_ = enable; }
 	void setEnableMeshEditByMouse(bool enable) { is_mesh_editable_by_mouse_ = enable; }
+	void setEnableMoveMeshByMouse(bool enable) { is_mesh_movable_by_mouse_ = enable; }
 	
 	virtual bool isPreventMeshInterpolation() const { return false; }
 
@@ -44,6 +45,7 @@ protected:
 	bool is_viewport_editable_by_mouse_=true;
 	bool is_enabled_rect_selection_=true;
 	bool is_mesh_editable_by_mouse_=true;
+	bool is_mesh_movable_by_mouse_=true;
 
 	class MouseEvent : public ofxEditorFrame::MouseEventArg {
 	public:
@@ -297,7 +299,7 @@ void Editor<MeshType, IndexType, PointType>::procNewMouseEvent(const MouseEvent 
 	bool used = false;
 	if(!used && is_mesh_editable_by_mouse_) {
 		if(mouse.isDragged(OF_MOUSE_BUTTON_LEFT)) {
-			if(is_grabbing_by_mouse_) {
+			if(is_grabbing_by_mouse_ && is_mesh_movable_by_mouse_) {
 				moveSelected(mouse.delta/getScale()-snap_diff_);
 				snap_diff_ = {0,0};
 				if(grid_.enabled_snap && op_selection_.contains(op_hover_.point)) {
@@ -658,11 +660,11 @@ ofMesh Editor<MeshType, IndexType, PointType>::makeMeshFromPoint(const PointType
 	const int resolution = 16;
 	float angle = TWO_PI/(float)resolution;
 	for(int i = 0; i < resolution; ++i) {
-		ret.addIndex(ret.getNumVertices());
+		ret.addIndex((ofIndexType)ret.getNumVertices());
 		ret.addVertex(glm::vec3(point+glm::vec2(cos(angle*i), sin(angle*i))*point_size,0));
-		ret.addIndex(ret.getNumVertices());
+		ret.addIndex((ofIndexType)ret.getNumVertices());
 		ret.addVertex(glm::vec3(point,0));
-		ret.addIndex(ret.getNumVertices());
+		ret.addIndex((ofIndexType)ret.getNumVertices());
 		ret.addVertex(glm::vec3(point+glm::vec2(cos(angle*(i+1)), sin(angle*(i+1)))*point_size,0));
 		ret.addColor(color);
 		ret.addColor(color);
