@@ -180,7 +180,7 @@ void UVEditor::gui()
 				EndTabItem();
 			}
 			if(BeginTabItem("editable")) {
-				for(auto &&mesh : data.getEditableMesh()) {
+				for(auto &&mesh : data.getEditableData()) {
 					if(mesh.second) {
 						auto m = getMeshType(*mesh.second);
 						meshes.push_back({mesh.first, m});
@@ -189,7 +189,7 @@ void UVEditor::gui()
 				EndTabItem();
 			}
 			if(BeginTabItem("all")) {
-				for(auto &&mesh : data.getMesh()) {
+				for(auto &&mesh : data.getData()) {
 					if(mesh.second) {
 						auto m = getMeshType(*mesh.second);
 						meshes.push_back({mesh.first, m});

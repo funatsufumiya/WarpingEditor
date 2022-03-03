@@ -29,20 +29,29 @@ public:
 	void setResultApp(std::shared_ptr<ResultView> app) { result_app_ = app; }
 	void setResultWindow(std::shared_ptr<ofAppBaseWindow> window) { result_window_ = window; }
 private:
+	enum State {
+		EDIT_WARP_UV,
+		EDIT_WARP_MESH,
+		EDIT_BLEND_UV,
+		EDIT_BLEND_MESH,
+	};
+	int state_;
+	bool isStateWarping() const { return state_ == EDIT_WARP_UV || state_ == EDIT_WARP_MESH; }
+	bool isStateBlending() const { return state_ == EDIT_BLEND_UV || state_ == EDIT_BLEND_MESH; }
+	std::vector<EditorBase*> editor_;
+
 	std::shared_ptr<MeshData> warping_data_;
+	WarpingUVEditor warp_uv_;
+	WarpingMeshEditor warp_mesh_;
+
+	std::shared_ptr<MeshData> blending_data_;
+	BlendingUVEditor blend_uv_;
+	BlendingMeshEditor blend_mesh_;
 	
 	std::shared_ptr<ResultView> result_app_;
 	std::shared_ptr<ofAppBaseWindow> result_window_;
 	ofxImGui::Gui gui_;
 	std::shared_ptr<ImageSource> texture_source_;
-	WarpingMeshEditor warp_;
-	WarpingUVEditor uv_;
-	enum State {
-		EDIT_UV,
-		EDIT_WRAP
-	};
-	int state_=EDIT_UV;
-	std::vector<EditorBase*> editor_;
 	
 	void backup();
 	void loadRecent();

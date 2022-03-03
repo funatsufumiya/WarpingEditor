@@ -365,7 +365,7 @@ void Editor<MeshType, IndexType, PointType>::drawMesh() const
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	mesh.append(makeBackground());
-	auto meshes = data_->getVisibleMesh();
+	auto meshes = data_->getVisibleData();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		if(isSelectedMesh(*m)) {
@@ -387,7 +387,7 @@ void Editor<MeshType, IndexType, PointType>::drawWire() const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_LINES);
-	auto meshes = data_->getVisibleMesh();
+	auto meshes = data_->getVisibleData();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		mesh.append(makeWireFromMesh(*m, ofColor::white));
@@ -400,7 +400,7 @@ void Editor<MeshType, IndexType, PointType>::drawPoint(bool only_editable_point)
 	float point_size = mouse_near_distance_/getScale();
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-	auto meshes = data_->getVisibleMesh();
+	auto meshes = data_->getVisibleData();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		forEachPoint(*m, [&](const PointType &point, IndexType i) {
@@ -528,7 +528,7 @@ template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpHover Editor<MeshType, IndexType, PointType>::getHover(const glm::vec2 &screen_pos, bool only_editable_point)
 {
 	auto &&data = *data_;
-	auto &&meshes = data.getMesh();
+	auto &&meshes = data.getData();
 	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
 	OpHover ret;
 	
@@ -566,7 +566,7 @@ template<typename MeshType, typename IndexType, typename PointType>
 typename Editor<MeshType, IndexType, PointType>::OpRect Editor<MeshType, IndexType, PointType>::getRectHover(const ofRectangle &screen_rect, bool only_editable_point)
 {
 	auto &&data = *data_;
-	auto &&meshes = data.getMesh();
+	auto &&meshes = data.getData();
 	OpRect ret;
 	for(auto &&m : meshes) {
 		if(!isEditableMesh(*m.second)) {
@@ -645,7 +645,7 @@ template<typename MeshType, typename IndexType, typename PointType>
 void Editor<MeshType, IndexType, PointType>::forEachMesh(std::function<void(std::shared_ptr<MeshData::Mesh>)> func) const
 {
 	auto &&data = *data_;
-	auto &&meshes = data.getMesh();
+	auto &&meshes = data.getData();
 	for(auto &&m : meshes) {
 		func(m.second);
 	}

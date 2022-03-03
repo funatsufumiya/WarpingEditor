@@ -39,13 +39,22 @@ void WarpingApp::setup(){
 	ndi_finder_.watchSources();
 	
 	warping_data_ = std::make_shared<MeshData>();
-	uv_.setup();
-	uv_.setMeshData(warping_data_);
-	warp_.setup();
-	warp_.setMeshData(warping_data_);
+	warp_uv_.setup();
+	warp_uv_.setMeshData(warping_data_);
+	warp_mesh_.setup();
+	warp_mesh_.setMeshData(warping_data_);
+
+	blending_data_ = std::make_shared<MeshData>();
+	blend_uv_.setup();
+	blend_uv_.setMeshData(blending_data_);
+	blend_mesh_.setup();
+	blend_mesh_.setMeshData(blending_data_);
 	
-	editor_.push_back(&uv_);
-	editor_.push_back(&warp_);
+	editor_.push_back(&warp_uv_);
+	editor_.push_back(&warp_mesh_);
+	editor_.push_back(&blend_uv_);
+	editor_.push_back(&blend_mesh_);
+	state_ = EDIT_BLEND_UV;
 	
 	loadRecent();
 	openRecent();
@@ -53,7 +62,7 @@ void WarpingApp::setup(){
 
 //--------------------------------------------------------------
 void WarpingApp::update(){
-	auto &data = *warping_data_;
+	auto &data = *(isStateWarping() ? warping_data_ : blending_data_);
 	if(texture_source_) {
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
@@ -288,85 +297,104 @@ void WarpingApp::draw(){
 	}
 	End();
 	if(Begin("MeshList")) {
-		if(BeginTabBar("type")) {
-			if(BeginTabItem("warpping")) {
-				auto &data = *warping_data_;
-				static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
-				static std::string mesh_name_buf;
-				static bool need_keyboard_focus=false;
-				bool update_mesh_name = false;
-				std::weak_ptr<MeshData::Mesh> mesh_delete;
-				
-				std::map<std::string, std::shared_ptr<MeshData::Mesh>> selected_meshes;
-				auto &meshes = data.getMesh();
-				for(auto &&m : meshes) {
-					PushID(m.first.c_str());
-					ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
-					ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
-					ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
-					if(mesh_edit.second.lock() == m.second) {
-						if(need_keyboard_focus) SetKeyboardFocusHere();
-						need_keyboard_focus = false;
-						update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
-					}
-					else {
-						bool selected
-						= editor == &uv_ ? selected = uv_.isSelectedMesh(*m.second)
-						: editor == &warp_ ? selected = warp_.isSelectedMesh(*m.second)
+		static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
+		static std::string mesh_name_buf;
+		static bool need_keyboard_focus=false;
+		auto MeshListGui = [&](MeshData &data, std::function<void()> create_new) {
+			bool update_mesh_name = false;
+			std::weak_ptr<MeshData::Mesh> mesh_delete;
+			
+			std::map<std::string, std::shared_ptr<MeshData::Mesh>> selected_meshes;
+			auto &meshes = data.getData();
+			for(auto &&m : meshes) {
+				PushID(m.first.c_str());
+				ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
+				ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
+				ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
+				if(mesh_edit.second.lock() == m.second) {
+					if(need_keyboard_focus) SetKeyboardFocusHere();
+					need_keyboard_focus = false;
+					update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
+				}
+				else {
+					bool selected
+					= editor == &warp_uv_ ? selected = warp_uv_.isSelectedMesh(*m.second)
+					: editor == &warp_mesh_ ? selected = warp_mesh_.isSelectedMesh(*m.second)
+					: false;
+					if(Selectable(m.first.c_str(), &selected)) {
+						editor == &warp_uv_ ? selected ? warp_uv_.selectMesh(*m.second) : warp_uv_.deselectMesh(*m.second)
+						: editor == &warp_mesh_ ? selected ? warp_mesh_.selectMesh(*m.second) : warp_mesh_.deselectMesh(*m.second)
 						: false;
-						if(Selectable(m.first.c_str(), &selected)) {
-							editor == &uv_ ? selected ? uv_.selectMesh(*m.second) : uv_.deselectMesh(*m.second)
-							: editor == &warp_ ? selected ? warp_.selectMesh(*m.second) : warp_.deselectMesh(*m.second)
-							: false;
-						}
-						if(selected) {
-							selected_meshes.insert(m);
-						}
-						if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
-							mesh_edit.second.reset();
-						}
-						else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
-								|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
-							) {
-							mesh_delete = m.second;
-						}
-						else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
-							mesh_name_buf = m.first;
-							mesh_edit = m;
-							need_keyboard_focus = true;
-						}
 					}
-					PopID();
-				}
-				if(update_mesh_name) {
-					auto found = meshes.find(mesh_edit.first);
-					assert(found != end(meshes));
-					if(mesh_name_buf != "" && meshes.insert({mesh_name_buf, found->second}).second) {
-						meshes.erase(found);
+					if(selected) {
+						selected_meshes.insert(m);
 					}
-					mesh_edit.second.reset();
-				}
-				if(auto mesh_to_delete = mesh_delete.lock()) {
-					data.remove(mesh_to_delete);
-				}
-				if(Button("create new")) {
-					auto tex = texture_source_->getTexture();
-					if(tex.isAllocated()) {
-						data.create("mesh", {1,1}, {0,0,tex.getWidth(),tex.getHeight()});
+					if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
+						mesh_edit.second.reset();
+					}
+					else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
+							|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
+						) {
+						mesh_delete = m.second;
+					}
+					else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
+						mesh_name_buf = m.first;
+						mesh_edit = m;
+						need_keyboard_focus = true;
 					}
 				}
-				if(mesh_edit.second.expired() && !selected_meshes.empty()) {
-					SameLine();
-					if(Button("duplicate selected")) {
-						for(auto &&s : selected_meshes) {
-							data.createCopy(s.first, s.second);
-						}
-					}
-				}
-				EndTabItem();
+				PopID();
 			}
+			if(update_mesh_name) {
+				auto found = meshes.find(mesh_edit.first);
+				assert(found != end(meshes));
+				if(mesh_name_buf != "" && meshes.insert({mesh_name_buf, found->second}).second) {
+					meshes.erase(found);
+				}
+				mesh_edit.second.reset();
+			}
+			if(auto mesh_to_delete = mesh_delete.lock()) {
+				data.remove(mesh_to_delete);
+			}
+			if(Button("create new")) {
+				create_new();
+			}
+			if(mesh_edit.second.expired() && !selected_meshes.empty()) {
+				SameLine();
+				if(Button("duplicate selected")) {
+					for(auto &&s : selected_meshes) {
+						data.createCopy(s.first, s.second);
+					}
+				}
+			}
+		};
+		if(isStateWarping()) {
+			PushID("warping");
+			MeshListGui(*warping_data_, [&]() {
+				auto tex = texture_source_->getTexture();
+				if(tex.isAllocated()) {
+					warping_data_->create("warp", {1,1}, {0,0,tex.getWidth(),tex.getHeight()},{0,0,tex.getWidth(),tex.getHeight()});
+				}
+			});
+			PopID();
 		}
-		EndTabBar();
+		if(isStateBlending()) {
+			PushID("blending");
+			MeshListGui(*blending_data_, [&]() {
+				auto tex = texture_source_->getTexture();
+				if(tex.isAllocated()) {
+					std::shared_ptr<MeshData::Mesh> mesh = blending_data_->create("blend", {1,1}, {0,0,tex.getWidth(),tex.getHeight()},{0,0,tex.getWidth(),tex.getHeight()}).second;
+					mesh->mesh->divideCol(0, {0.1f,0.9f});
+					mesh->mesh->divideRow(0, {0.1f,0.9f});
+					mesh->interpolator->selectCorners();
+					mesh->interpolator->selectPoint(1,1);
+					mesh->interpolator->selectPoint(2,1);
+					mesh->interpolator->selectPoint(1,2);
+					mesh->interpolator->selectPoint(2,2);
+				}
+			});
+			PopID();
+		}
 	}
 	End();
 	if(editor) {
@@ -421,10 +449,10 @@ void WarpingApp::save(bool do_backup) const
 		auto size = result_window_->getWindowSize();
 		proj_.setResultViewport({pos.x,pos.y,size.x,size.y});
 	}
-	proj_.setUVView(-uv_.getTranslate(), uv_.getScale());
-	proj_.setUVGridData(uv_.getGridData());
-	proj_.setWarpView(-warp_.getTranslate(), warp_.getScale());
-	proj_.setWarpGridData(warp_.getGridData());
+	proj_.setUVView(-warp_uv_.getTranslate(), warp_uv_.getScale());
+	proj_.setUVGridData(warp_uv_.getGridData());
+	proj_.setWarpView(-warp_mesh_.getTranslate(), warp_mesh_.getScale());
+	proj_.setWarpGridData(warp_mesh_.getGridData());
 	proj_.save();
 
 	auto filepath = proj_.getDataFilePath();
@@ -461,17 +489,17 @@ void WarpingApp::openProject(const std::filesystem::path &proj_path)
 	}
 	{
 		auto view = proj_.getUVView();
-		uv_.resetMatrix();
-		uv_.translate(view.first);
-		uv_.scale(view.second, {0,0});
-		uv_.setGridData(proj_.getUVGridData());
+		warp_uv_.resetMatrix();
+		warp_uv_.translate(view.first);
+		warp_uv_.scale(view.second, {0,0});
+		warp_uv_.setGridData(proj_.getUVGridData());
 	}
 	{
 		auto view = proj_.getWarpView();
-		warp_.resetMatrix();
-		warp_.translate(view.first);
-		warp_.scale(view.second, {0,0});
-		warp_.setGridData(proj_.getWarpGridData());
+		warp_mesh_.resetMatrix();
+		warp_mesh_.translate(view.first);
+		warp_mesh_.scale(view.second, {0,0});
+		warp_mesh_.setGridData(proj_.getWarpGridData());
 	}
 	updateRecent(proj_);
 
