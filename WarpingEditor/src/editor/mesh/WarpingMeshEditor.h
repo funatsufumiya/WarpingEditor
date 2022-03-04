@@ -5,10 +5,6 @@
 class WarpingMeshEditor : public MeshEditor
 {
 public:
-	using DataType = MeshEditor::DataType;
-	using MeshType = MeshEditor::MeshType;
-	using IndexType = MeshEditor::IndexType;
-	using PointType = MeshEditor::PointType;
 	enum {
 		MODE_MESH,
 		MODE_DIVISION

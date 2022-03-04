@@ -1,4 +1,7 @@
 #include "MeshData.h"
+#include "imgui.h"
+#include "GuiFunc.h"
+#include "Icon.h"
 
 #pragma mark - IO
 
@@ -26,7 +29,6 @@ void DataContainerBase::load(const std::filesystem::path &filepath, glm::vec2 sc
 	unpack(file, scale);
 	file.close();
 }
-
 
 template<typename Data>
 void DataContainer<Data>::update() {
@@ -105,6 +107,74 @@ std::map<std::string, std::shared_ptr<Data>> DataContainer<Data>::getEditableDat
 	return ret;
 }
 
+template<typename Data>
+void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::function<void(DataType&, bool)> set_selected, std::function<void()> create_new)
+{
+	using namespace ImGui;
+	
+	bool update_mesh_name = false;
+	std::weak_ptr<DataType> mesh_delete;
+	
+	std::map<std::string, std::shared_ptr<DataType>> selected_meshes;
+	auto &meshes = getData();
+	for(auto &&m : meshes) {
+		PushID(m.first.c_str());
+		ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
+		ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
+		ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
+		if(mesh_edit_.second.lock() == m.second) {
+			if(need_keyboard_focus_) SetKeyboardFocusHere();
+			need_keyboard_focus_ = false;
+			update_mesh_name = EditText("###change name", mesh_name_buf_, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
+		}
+		else {
+			bool selected = is_selected(*m.second);
+			if(Selectable(m.first.c_str(), &selected)) {
+				set_selected(*m.second, selected);
+			}
+			if(selected) {
+				selected_meshes.insert(m);
+			}
+			if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
+				mesh_edit_.second.reset();
+			}
+			else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
+					|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
+				) {
+				mesh_delete = m.second;
+			}
+			else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
+				mesh_name_buf_ = m.first;
+				mesh_edit_ = m;
+				need_keyboard_focus_ = true;
+			}
+		}
+		PopID();
+	}
+	if(update_mesh_name) {
+		auto found = meshes.find(mesh_edit_.first);
+		assert(found != end(meshes));
+		if(mesh_name_buf_ != "" && meshes.insert({mesh_name_buf_, found->second}).second) {
+			meshes.erase(found);
+		}
+		mesh_edit_.second.reset();
+	}
+	if(auto mesh_to_delete = mesh_delete.lock()) {
+		remove(mesh_to_delete);
+	}
+	if(Button("create new")) {
+		create_new();
+	}
+	if(mesh_edit_.second.expired() && !selected_meshes.empty()) {
+		SameLine();
+		if(Button("duplicate selected")) {
+			for(auto &&s : selected_meshes) {
+				createCopy(s.first, s.second);
+			}
+		}
+	}
+}
+
 #pragma mark - IO
 
 template<typename Data>
@@ -142,38 +212,43 @@ void DataContainer<Data>::unpack(std::istream &stream, glm::vec2 scale)
 	}
 }
 
+template<typename Data>
+std::pair<std::string, std::shared_ptr<Data>> DataContainer<Data>::createCopy(const std::string &name, std::shared_ptr<DataType> src)
+{
+	auto d = std::make_shared<Data>();
+	*d = *src;
+	auto n = name;
+	int index = 0;
+	while(!add(n, d)) {
+		n = name+ofToString(index++);
+	}
+	return std::make_pair(n, d);
+}
 
 
 // -------------
 
-std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect) {
+std::pair<std::string, std::shared_ptr<WarpingData::DataType>> WarpingData::create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect) {
 	std::string n = name;
 	int index=0;
-	auto m = std::make_shared<Mesh>();
-	while(!add(n, m)) {
+	auto d = std::make_shared<DataType>();
+	while(!add(n, d)) {
 		n = name+ofToString(index++);
 	}
-	m->init(num_cells, vert_rect, coord_rect);
-	return std::make_pair(n, m);
-}
-std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::createCopy(const std::string &name, std::shared_ptr<Mesh> src)
-{
-	auto ret = create(name,{1,1},{0,0,1,1});
-	*ret.second = *src;
-	return ret;
+	d->init(num_cells, vert_rect, coord_rect);
+	return std::make_pair(n, d);
 }
 
-
-void MeshData::uvRescale(const glm::vec2 &scale)
+void WarpingData::uvRescale(const glm::vec2 &scale)
 {
 	for(auto &&d : data_) {
 		*d.second->uv_quad = getScaled(*d.second->uv_quad, scale);
 	}
 }
 
-std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::find(std::shared_ptr<geom::Quad> quad)
+std::pair<std::string, std::shared_ptr<WarpingData::DataType>> WarpingData::find(std::shared_ptr<UVType> quad)
 {
-	auto found = std::find_if(begin(data_), end(data_), [quad](const std::pair<std::string, std::shared_ptr<Mesh>> d) {
+	auto found = std::find_if(begin(data_), end(data_), [quad](const std::pair<std::string, std::shared_ptr<DataType>> d) {
 		return d.second->uv_quad == quad;
 	});
 	if(found == std::end(data_)) {
@@ -182,9 +257,9 @@ std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::find(std::shar
 	return *found;
 }
 
-std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::find(std::shared_ptr<ofx::mapper::Mesh> mesh)
+std::pair<std::string, std::shared_ptr<WarpingData::DataType>> WarpingData::find(std::shared_ptr<MeshType> mesh)
 {
-	auto found = std::find_if(begin(data_), end(data_), [mesh](const std::pair<std::string, std::shared_ptr<Mesh>> d) {
+	auto found = std::find_if(begin(data_), end(data_), [mesh](const std::pair<std::string, std::shared_ptr<DataType>> d) {
 		return d.second->mesh == mesh;
 	});
 	if(found == std::end(data_)) {
@@ -195,12 +270,12 @@ std::pair<std::string, std::shared_ptr<MeshData::Mesh>> MeshData::find(std::shar
 
 #pragma mark - IO
 
-void MeshData::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+void WarpingData::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
 	getMeshForExport(resample_min_interval, coord_size).save(filepath);
 }
 
-ofMesh MeshData::getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+ofMesh WarpingData::getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
 	ofMesh ret;
 	for(auto &&d : only_visible ? getVisibleData() : data_) {
@@ -210,7 +285,7 @@ ofMesh MeshData::getMeshForExport(float resample_min_interval, const glm::vec2 &
 	return ret;
 }
 
-void MeshData::Mesh::pack(std::ostream &stream, glm::vec2 scale) const
+void WarpingData::DataType::pack(std::ostream &stream, glm::vec2 scale) const
 {
 	writeTo(stream, is_hidden);
 	writeTo(stream, is_locked);
@@ -221,7 +296,7 @@ void MeshData::Mesh::pack(std::ostream &stream, glm::vec2 scale) const
 	}
 	mesh->pack(stream, interpolator.get());
 }
-void MeshData::Mesh::unpack(std::istream &stream, glm::vec2 scale)
+void WarpingData::DataType::unpack(std::istream &stream, glm::vec2 scale)
 {
 	readFrom(stream, is_hidden);
 	readFrom(stream, is_locked);
@@ -234,4 +309,37 @@ void MeshData::Mesh::unpack(std::istream &stream, glm::vec2 scale)
 }
 
 
+std::pair<std::string, std::shared_ptr<BlendingData::DataType>> BlendingData::create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio)
+{
+	std::string n = name;
+	int index=0;
+	auto d = std::make_shared<DataType>();
+	while(!add(n, d)) {
+		n = name+ofToString(index++);
+	}
+	d->init(frame, default_inner_ratio);
+	return std::make_pair(n, d);
+}
+
+std::pair<std::string, std::shared_ptr<BlendingData::DataType>> BlendingData::find(std::shared_ptr<MeshType> mesh)
+{
+	auto found = std::find_if(begin(data_), end(data_), [mesh](const std::pair<std::string, std::shared_ptr<DataType>> d) {
+		return d.second->mesh == mesh;
+	});
+	if(found == std::end(data_)) {
+		return {"", nullptr};
+	}
+	return *found;
+}
+
+void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
+{
+	mesh->quad[0] =
+	mesh->quad[1] = frame;
+	auto inner = frame;
+	inner.scaleFromCenter(default_inner_ratio);
+	mesh->quad[2] = inner;
+}
+
 template class DataContainer<WarpingMesh>;
+template class DataContainer<BlendingMesh>;

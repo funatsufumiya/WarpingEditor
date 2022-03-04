@@ -1,7 +1,7 @@
 #include "UVEditor.h"
 #include "ofGraphics.h"
 
-std::shared_ptr<UVEditor::MeshType> UVEditor::getMeshType(const MeshData::Mesh &data) const
+std::shared_ptr<UVEditor::MeshType> UVEditor::getMeshType(const DataType &data) const
 {
 	return data.uv_quad;
 }
@@ -11,13 +11,13 @@ UVEditor::PointType UVEditor::getPoint(const MeshType &mesh, const IndexType &in
 	return mesh[index];
 }
 
-bool UVEditor::isEditablePoint(const MeshData::Mesh &data, IndexType index) const
+bool UVEditor::isEditablePoint(const DataType &data, IndexType index) const
 {
 	return true;
 }
 
 
-void UVEditor::forEachPoint(const MeshData::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
+void UVEditor::forEachPoint(const DataType &data, std::function<void(const PointType&, IndexType)> func) const
 {
 	auto mesh = *getMeshType(data);
 	for(int i = 0; i < mesh.size(); ++i) {

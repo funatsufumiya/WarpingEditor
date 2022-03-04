@@ -4,8 +4,7 @@
 #include "ofxImGui.h"
 #include "WarpingMeshEditor.h"
 #include "WarpingUVEditor.h"
-#include "BlendingMeshEditor.h"
-#include "BlendingUVEditor.h"
+#include "BlendingEditor.h"
 #include "ImageSource.h"
 #include "ofxNDIFinder.h"
 #include "WorkFolder.h"
@@ -13,7 +12,7 @@
 
 class ResultView;
 
-class WarpingApp : public ofBaseApp
+class GuiApp : public ofBaseApp
 {
 public:
 	void setup() override;
@@ -32,21 +31,19 @@ private:
 	enum State {
 		EDIT_WARP_UV,
 		EDIT_WARP_MESH,
-		EDIT_BLEND_UV,
-		EDIT_BLEND_MESH,
+		EDIT_BLEND,
 	};
 	int state_;
 	bool isStateWarping() const { return state_ == EDIT_WARP_UV || state_ == EDIT_WARP_MESH; }
-	bool isStateBlending() const { return state_ == EDIT_BLEND_UV || state_ == EDIT_BLEND_MESH; }
+	bool isStateBlending() const { return state_ == EDIT_BLEND; }
 	std::vector<EditorBase*> editor_;
 
-	std::shared_ptr<MeshData> warping_data_;
+	std::shared_ptr<WarpingData> warping_data_;
 	WarpingUVEditor warp_uv_;
 	WarpingMeshEditor warp_mesh_;
 
-	std::shared_ptr<MeshData> blending_data_;
-	BlendingUVEditor blend_uv_;
-	BlendingMeshEditor blend_mesh_;
+	std::shared_ptr<BlendingData> blending_data_;
+	BlendingEditor blend_editor_;
 	
 	std::shared_ptr<ResultView> result_app_;
 	std::shared_ptr<ofAppBaseWindow> result_window_;

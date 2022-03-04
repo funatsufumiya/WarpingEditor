@@ -1,7 +1,7 @@
 #include "MeshEditor.h"
 #include "ofGraphics.h"
 
-std::shared_ptr<MeshEditor::MeshType> MeshEditor::getMeshType(const MeshData::Mesh &data) const
+std::shared_ptr<MeshEditor::MeshType> MeshEditor::getMeshType(const DataType &data) const
 {
 	return data.mesh;
 }
@@ -11,7 +11,7 @@ MeshEditor::PointType MeshEditor::getPoint(const MeshType &mesh, const IndexType
 	return *mesh.getPoint(index.first, index.second).v;
 }
 
-void MeshEditor::forEachPoint(const MeshData::Mesh &data, std::function<void(const PointType&, IndexType)> func) const
+void MeshEditor::forEachPoint(const DataType &data, std::function<void(const PointType&, IndexType)> func) const
 {
 	auto &mesh = *data.mesh;
 	for(int r = 0; r <= mesh.getNumRows(); ++r) {
@@ -21,12 +21,12 @@ void MeshEditor::forEachPoint(const MeshData::Mesh &data, std::function<void(con
 	}
 }
 
-bool MeshEditor::isEditablePoint(const MeshData::Mesh &data, IndexType index) const
+bool MeshEditor::isEditablePoint(const DataType &data, IndexType index) const
 {
 	return data.interpolator->isSelected(index.first, index.second);
 }
 
-std::shared_ptr<MeshEditor::MeshType> MeshEditor::getIfInside(std::shared_ptr<MeshData::Mesh> data, const glm::vec2 &pos, float &distance)
+std::shared_ptr<MeshEditor::MeshType> MeshEditor::getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance)
 {
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_uv = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB

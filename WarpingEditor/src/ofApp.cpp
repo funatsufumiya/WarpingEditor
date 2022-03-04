@@ -27,7 +27,7 @@ std::shared_ptr<ImageSource> buildTextureSource(const ProjectFolder &proj) {
 }
 }
 //--------------------------------------------------------------
-void WarpingApp::setup(){
+void GuiApp::setup(){
 	ofDisableArbTex();
 	Icon::init();
 	
@@ -38,31 +38,27 @@ void WarpingApp::setup(){
 	
 	ndi_finder_.watchSources();
 	
-	warping_data_ = std::make_shared<MeshData>();
+	warping_data_ = std::make_shared<WarpingData>();
 	warp_uv_.setup();
 	warp_uv_.setMeshData(warping_data_);
 	warp_mesh_.setup();
 	warp_mesh_.setMeshData(warping_data_);
 
-	blending_data_ = std::make_shared<MeshData>();
-	blend_uv_.setup();
-	blend_uv_.setMeshData(blending_data_);
-	blend_mesh_.setup();
-	blend_mesh_.setMeshData(blending_data_);
+	blending_data_ = std::make_shared<BlendingData>();
+	blend_editor_.setup();
+	blend_editor_.setMeshData(blending_data_);
 	
 	editor_.push_back(&warp_uv_);
 	editor_.push_back(&warp_mesh_);
-	editor_.push_back(&blend_uv_);
-	editor_.push_back(&blend_mesh_);
-	state_ = EDIT_BLEND_UV;
+	editor_.push_back(&blend_editor_);
+	state_ = EDIT_BLEND;
 	
 	loadRecent();
 	openRecent();
 }
 
 //--------------------------------------------------------------
-void WarpingApp::update(){
-	auto &data = *(isStateWarping() ? warping_data_ : blending_data_);
+void GuiApp::update(){
 	if(texture_source_) {
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
@@ -76,7 +72,7 @@ void WarpingApp::update(){
 			glm::vec2 tex_size{tex.getWidth(), tex.getHeight()};
 			glm::vec2 tex_size_cache = proj_.getTextureSizeCache();
 			if(tex_size_cache != tex_size) {
-				data.uvRescale(tex_size/tex_size_cache);
+				warping_data_->rescale(tex_size/tex_size_cache);
 				proj_.setTextureSizeCache(tex_size);
 			}
 		}
@@ -96,7 +92,8 @@ void WarpingApp::update(){
 	}
 
 	if(update_mesh) {
-		data.update();
+		warping_data_->update();
+		blending_data_->update();
 		if(texture_source_) {
 			auto tex = texture_source_->getTexture();
 			if(tex.isAllocated()) {
@@ -104,14 +101,14 @@ void WarpingApp::update(){
 				glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
 				? glm::vec2{1,1}
 				: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
-				result_app_->setMesh(data.getMeshForExport(100, tex_scale));
+				result_app_->setMesh(warping_data_->getMeshForExport(100, tex_scale));
 			}
 		}
 	}
 }
 
 //--------------------------------------------------------------
-void WarpingApp::draw(){
+void GuiApp::draw(){
 	auto editor = editor_[state_];
 	if(editor) {
 		editor->draw();
@@ -297,102 +294,42 @@ void WarpingApp::draw(){
 	}
 	End();
 	if(Begin("MeshList")) {
-		static std::pair<std::string, std::weak_ptr<MeshData::Mesh>> mesh_edit;
-		static std::string mesh_name_buf;
-		static bool need_keyboard_focus=false;
-		auto MeshListGui = [&](MeshData &data, std::function<void()> create_new) {
-			bool update_mesh_name = false;
-			std::weak_ptr<MeshData::Mesh> mesh_delete;
-			
-			std::map<std::string, std::shared_ptr<MeshData::Mesh>> selected_meshes;
-			auto &meshes = data.getData();
-			for(auto &&m : meshes) {
-				PushID(m.first.c_str());
-				ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
-				ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
-				ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
-				if(mesh_edit.second.lock() == m.second) {
-					if(need_keyboard_focus) SetKeyboardFocusHere();
-					need_keyboard_focus = false;
-					update_mesh_name = EditText("###change name", mesh_name_buf, 256, ImGuiInputTextFlags_EnterReturnsTrue|ImGuiInputTextFlags_AutoSelectAll);
-				}
-				else {
-					bool selected
-					= editor == &warp_uv_ ? selected = warp_uv_.isSelectedMesh(*m.second)
-					: editor == &warp_mesh_ ? selected = warp_mesh_.isSelectedMesh(*m.second)
-					: false;
-					if(Selectable(m.first.c_str(), &selected)) {
-						editor == &warp_uv_ ? selected ? warp_uv_.selectMesh(*m.second) : warp_uv_.deselectMesh(*m.second)
-						: editor == &warp_mesh_ ? selected ? warp_mesh_.selectMesh(*m.second) : warp_mesh_.deselectMesh(*m.second)
-						: false;
-					}
-					if(selected) {
-						selected_meshes.insert(m);
-					}
-					if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
-						mesh_edit.second.reset();
-					}
-					else if(IsItemClicked(ImGuiPopupFlags_MouseButtonMiddle)
-							|| (IsItemClicked(ImGuiPopupFlags_MouseButtonRight) && IsModKeyDown(ImGuiKeyModFlags_Alt))
-						) {
-						mesh_delete = m.second;
-					}
-					else if(IsItemClicked(ImGuiPopupFlags_MouseButtonRight)) {
-						mesh_name_buf = m.first;
-						mesh_edit = m;
-						need_keyboard_focus = true;
-					}
-				}
-				PopID();
-			}
-			if(update_mesh_name) {
-				auto found = meshes.find(mesh_edit.first);
-				assert(found != end(meshes));
-				if(mesh_name_buf != "" && meshes.insert({mesh_name_buf, found->second}).second) {
-					meshes.erase(found);
-				}
-				mesh_edit.second.reset();
-			}
-			if(auto mesh_to_delete = mesh_delete.lock()) {
-				data.remove(mesh_to_delete);
-			}
-			if(Button("create new")) {
-				create_new();
-			}
-			if(mesh_edit.second.expired() && !selected_meshes.empty()) {
-				SameLine();
-				if(Button("duplicate selected")) {
-					for(auto &&s : selected_meshes) {
-						data.createCopy(s.first, s.second);
-					}
-				}
-			}
-		};
 		if(isStateWarping()) {
 			PushID("warping");
-			MeshListGui(*warping_data_, [&]() {
-				auto tex = texture_source_->getTexture();
-				if(tex.isAllocated()) {
-					warping_data_->create("warp", {1,1}, {0,0,tex.getWidth(),tex.getHeight()},{0,0,tex.getWidth(),tex.getHeight()});
-				}
-			});
+			warping_data_->gui(
+							   [&](WarpingMesh &data) {
+								   return state_ == EDIT_WARP_UV ? warp_uv_.isSelectedMesh(data) : warp_mesh_.isSelectedMesh(data);
+							   },
+							   [&](WarpingMesh &data, bool select) {
+								   return EDIT_WARP_UV ? (select ? warp_uv_.selectMesh(data) : warp_uv_.deselectMesh(data))
+								   : (select ? warp_mesh_.selectMesh(data) : warp_mesh_.deselectMesh(data));
+							   },
+							   [&]() {
+								   auto tex = texture_source_->getTexture();
+								   if(tex.isAllocated()) {
+									   warping_data_->create("warp", glm::ivec2{1,1},
+															 ofRectangle{0,0,tex.getWidth(),tex.getHeight()},
+															 ofRectangle{0,0,tex.getWidth(),tex.getHeight()});
+								   }
+							   });
 			PopID();
 		}
 		if(isStateBlending()) {
 			PushID("blending");
-			MeshListGui(*blending_data_, [&]() {
-				auto tex = texture_source_->getTexture();
-				if(tex.isAllocated()) {
-					std::shared_ptr<MeshData::Mesh> mesh = blending_data_->create("blend", {1,1}, {0,0,tex.getWidth(),tex.getHeight()},{0,0,tex.getWidth(),tex.getHeight()}).second;
-					mesh->mesh->divideCol(0, {0.1f,0.9f});
-					mesh->mesh->divideRow(0, {0.1f,0.9f});
-					mesh->interpolator->selectCorners();
-					mesh->interpolator->selectPoint(1,1);
-					mesh->interpolator->selectPoint(2,1);
-					mesh->interpolator->selectPoint(1,2);
-					mesh->interpolator->selectPoint(2,2);
-				}
-			});
+			blending_data_->gui(
+							   [&](BlendingMesh &data) {
+								   return blend_editor_.isSelectedMesh(data);
+							   },
+							   [&](BlendingMesh &data, bool select) {
+								   return select ? blend_editor_.selectMesh(data) : blend_editor_.deselectMesh(data);
+							   },
+							   [&]() {
+								   auto tex = texture_source_->getTexture();
+								   if(tex.isAllocated()) {
+									   blending_data_->create("blend", ofRectangle{0,0,tex.getWidth(),tex.getHeight()}, 0.9f);
+								   }
+							   }
+			);
 			PopID();
 		}
 	}
@@ -402,13 +339,13 @@ void WarpingApp::draw(){
 	}
 }
 
-void WarpingApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
+void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb) const
 {
 	auto tex = texture_source_->getTexture();
 	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
 	warping_data_->exportMesh(filepath, resample_min_interval, coord_size);
 }
-void WarpingApp::exportMesh(const ProjectFolder &proj) const
+void GuiApp::exportMesh(const ProjectFolder &proj) const
 {
 	std::string folder = proj_.getExportFolder();
 	float resample_min_interval = proj_.getExportMeshMinInterval();
@@ -419,7 +356,7 @@ void WarpingApp::exportMesh(const ProjectFolder &proj) const
 
 
 //--------------------------------------------------------------
-void WarpingApp::keyPressed(int key){
+void GuiApp::keyPressed(int key){
 	if(ImGui::GetIO().WantCaptureKeyboard) {
 		return;
 	}
@@ -442,7 +379,7 @@ void WarpingApp::keyPressed(int key){
 	}
 }
 
-void WarpingApp::save(bool do_backup) const
+void GuiApp::save(bool do_backup) const
 {
 	{
 		auto pos = result_window_->getWindowPosition();
@@ -477,7 +414,7 @@ void WarpingApp::save(bool do_backup) const
 	}
 }
 
-void WarpingApp::openProject(const std::filesystem::path &proj_path)
+void GuiApp::openProject(const std::filesystem::path &proj_path)
 {
 	proj_.WorkFolder::setRelative(proj_path);
 	proj_.setup();
@@ -515,7 +452,7 @@ void WarpingApp::openProject(const std::filesystem::path &proj_path)
 	warping_data_->load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
 }
 
-void WarpingApp::openRecent(int index)
+void GuiApp::openRecent(int index)
 {
 	auto json = ofLoadJson("project_folder.json");
 	auto most_recent = getJsonValue<std::vector<ofJson>>(json, "recent");
@@ -525,7 +462,7 @@ void WarpingApp::openRecent(int index)
 	}
 }
 
-void WarpingApp::loadRecent()
+void GuiApp::loadRecent()
 {
 	auto recent = getJsonValue<ofJson>(ofLoadJson("project_folder.json"), "recent");
 	recent_ = accumulate(begin(recent), end(recent), decltype(recent_){}, [](decltype(recent_) acc, const ofJson &json) {
@@ -535,7 +472,7 @@ void WarpingApp::loadRecent()
 		return acc;
 	});
 }
-void WarpingApp::updateRecent(const ProjectFolder &proj)
+void GuiApp::updateRecent(const ProjectFolder &proj)
 {
 	auto found = find_if(begin(recent_), end(recent_), [proj](const WorkFolder &w) {
 		return w.toJson() == proj.WorkFolder::toJson();
@@ -551,7 +488,7 @@ void WarpingApp::updateRecent(const ProjectFolder &proj)
 	ofSavePrettyJson("project_folder.json", {{"recent", recent}});
 }
 
-void WarpingApp::dragEvent(ofDragInfo dragInfo)
+void GuiApp::dragEvent(ofDragInfo dragInfo)
 {
 	if(dragInfo.files.empty()) return;
 	auto filepath = dragInfo.files[0];

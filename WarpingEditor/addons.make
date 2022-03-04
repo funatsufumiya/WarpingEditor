@@ -1,3 +1,4 @@
+ofxBlendScreen
 ofxEditorFrame
 ofxImGui
 ofxMapper

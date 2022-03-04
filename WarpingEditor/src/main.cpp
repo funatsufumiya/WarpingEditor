@@ -22,7 +22,7 @@ int main( ){
 	shared_ptr<ofAppBaseWindow> warpingWindow = ofCreateWindow(settings);
 
 	shared_ptr<ResultView> resultApp(new ResultView);
-	shared_ptr<WarpingApp> guiApp(new WarpingApp);
+	shared_ptr<GuiApp> guiApp(new GuiApp);
 	guiApp->setResultWindow(resultWindow);
 	guiApp->setResultApp(resultApp);
 	

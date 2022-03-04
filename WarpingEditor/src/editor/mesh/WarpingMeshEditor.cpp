@@ -61,7 +61,7 @@ void WarpingMeshEditor::update()
 			is_div_point_valid_ = false;
 			glm::vec2 dst_findex;
 			bool is_row=false, is_col=false;
-			std::shared_ptr<MeshData::Mesh> div_mesh;
+			std::shared_ptr<DataType> div_mesh;
 			if(op_hover_.point.first.expired()) {
 				div_point_ = getIn(mouse_.pos);
 				if(grid_.enabled_snap) {
@@ -148,7 +148,7 @@ void WarpingMeshEditor::draw() const
 			float cross_width = point_size/2.f;
 			ofMesh mesh;
 			mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-			forEachMesh([&](std::shared_ptr<MeshData::Mesh> m) {
+			forEachMesh([&](std::shared_ptr<DataType> m) {
 				forEachPoint(*m, [&](const PointType &point, IndexType i) {
 					if(isCorner(*m->mesh, i)) {
 						mesh.append(makeMeshFromPoint(point, ofColor::black, point_size/2.f));
