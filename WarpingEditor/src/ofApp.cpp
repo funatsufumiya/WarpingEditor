@@ -54,6 +54,7 @@ void GuiApp::setup(){
 	state_ = EDIT_BLEND;
 	
 	warped_result_.allocate(3840*3, 2160, GL_RGBA);
+	blend_editor_.setTexture(warped_result_.getTexture());
 	
 	loadRecent();
 	openRecent();
@@ -330,7 +331,7 @@ void GuiApp::draw(){
 								   return select ? blend_editor_.selectMesh(data) : blend_editor_.deselectMesh(data);
 							   },
 							   [&]() {
-								   auto tex = texture_source_->getTexture();
+								   auto tex = warped_result_.getTexture();
 								   if(tex.isAllocated()) {
 									   blending_data_->create("blend", ofRectangle{0,0,tex.getWidth(),tex.getHeight()}, 0.9f);
 								   }

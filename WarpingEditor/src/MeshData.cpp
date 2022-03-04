@@ -335,21 +335,44 @@ std::pair<std::string, std::shared_ptr<BlendingData::DataType>> BlendingData::fi
 
 void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 {
-	mesh->quad[0] =
-	mesh->quad[1] = frame;
+	mesh->quad[0] = frame;
 	auto inner = frame;
 	inner.scaleFromCenter(default_inner_ratio);
-	mesh->quad[2] = inner;
+	mesh->quad[1] = inner;
 }
 
-ofMesh BlendingMesh::getMesh(const glm::vec2 &remap_coord) const
+ofMesh BlendingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
 {
-	if(true || is_dirty_) {
-		auto frame_uv = getScaled(mesh->quad[0], remap_coord);
-		cache_ = ofxBlendScreen::createMesh(mesh->quad[1], mesh->quad[2], mesh->quad[0], frame_uv);
+	if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
+		auto outer_uv = getScaled(mesh->quad[0], remap_coord);
+		auto src_mesh = ofxBlendScreen::createMesh(mesh->quad[0], mesh->quad[1], outer_uv
+												   ,(blend_l?ofxBlendScreen::BLEND_LEFT:0)
+												   |(blend_r?ofxBlendScreen::BLEND_RIGHT:0)
+												   |(blend_t?ofxBlendScreen::BLEND_TOP:0)
+												   |(blend_b?ofxBlendScreen::BLEND_BOTTOM:0)
+												   );
+		ofx::mapper::Mesh mm;
+		mm.init(src_mesh, {3,3});
+		cache_ = ofx::mapper::UpSampler().proc(mm, resample_min_interval, use_area);
+		auto *v = cache_.getVerticesPointer();
+		auto *t = cache_.getTexCoordsPointer();
+		for(int i = 0; i < cache_.getNumVertices(); ++i) {
+			t[i] = v[i]*remap_coord;
+		}
+//		cache_ = mm.getMesh();
 		is_dirty_ = false;
+		cached_resample_interval_ = resample_min_interval;
+		if(use_area) {
+			cached_valid_viewport_ = *use_area;
+		}
 	}
 	return cache_;
+}
+
+ofMesh BlendingMesh::getWireframe(const glm::vec2 &remap_coord) const
+{
+	auto outer_uv = getScaled(mesh->quad[0], remap_coord);
+	return ofxBlendScreen::createMesh(mesh->quad[0], mesh->quad[1], outer_uv);
 }
 
 template class DataContainer<WarpingMesh>;

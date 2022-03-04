@@ -23,19 +23,11 @@ public:
 
 	bool isPreventMeshInterpolation() const override { return true; }
 	
-	void setFboSize(glm::ivec2 size);
-	void update() override;
 	void draw() const override;
 	void gui() override;
 
 private:
-	enum State {
-		EDIT_FRAME,
-		EDIT_VERTEX
-	};
-	int state_=EDIT_FRAME;
 	std::vector<int> getEditableMeshIndex(int state);
 	
-	ofFbo fbo_;
 	mutable ofxBlendScreen::Shader shader_;
 };

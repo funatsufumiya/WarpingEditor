@@ -6,31 +6,19 @@ using MeshType = BlendingEditor::MeshType;
 using IndexType = BlendingEditor::IndexType;
 using PointType = BlendingEditor::PointType;
 
-std::vector<int> BlendingEditor::getEditableMeshIndex(int state) {
-	switch(state) {
-		case EDIT_FRAME: return {0};
-		case EDIT_VERTEX: return {1,2};
-	}
-	return {0,1,2};
-}
-
 PointType BlendingEditor::getPoint(const MeshType &mesh, const IndexType &index) const
 {
 	return mesh.quad[index.first][index.second];
 }
 void BlendingEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
 {
-	for(int i : getEditableMeshIndex(state_)) {
+	for(int i = 0; i < MeshType::size(); ++i) {
 		geom::translate(mesh.quad[i], delta);
 	}
 }
 void BlendingEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta)
 {
-	auto p = mesh.quad[index.first][index.second] += delta;
-	if(state_ == EDIT_FRAME) {
-		mesh.quad[index.first][index.second^2].x = p.x;
-		mesh.quad[index.first][index.second^1].y = p.y;
-	}
+	mesh.quad[index.first][index.second] += delta;
 }
 std::shared_ptr<MeshType> BlendingEditor::getMeshType(const DataType &data) const
 {
@@ -48,11 +36,15 @@ void BlendingEditor::forEachPoint(const DataType &data, std::function<void(const
 }
 ofMesh BlendingEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) const
 {
+	const float min_interval = 100;
+	float mesh_resample_interval = std::max<float>(min_interval, (getIn({min_interval,0})-getIn({0,0})).x);
+	auto viewport = getRegion();
+	ofRectangle viewport_in{getIn(viewport.getTopLeft()), getIn(viewport.getBottomRight())};
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
 	? glm::vec2(1,1)
 	: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
-	ofMesh ret = data.getMesh(tex_scale);
+	ofMesh ret = data.getMesh(mesh_resample_interval, tex_scale, &viewport_in);
 	auto &colors = ret.getColors();
 	for(auto &&c : colors) {
 		c = c*color;
@@ -61,11 +53,12 @@ ofMesh BlendingEditor::makeMeshFromMesh(const DataType &data, const ofColor &col
 }
 ofMesh BlendingEditor::makeWireFromMesh(const DataType &data, const ofColor &color) const
 {
+//	return makeMeshFromMesh(data, color);
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
 	? glm::vec2(1,1)
-	: glm::vec2(1/fbo_.getWidth(), 1/fbo_.getHeight());
-	ofMesh ret = data.getMesh(tex_scale);
+	: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
+	ofMesh ret = data.getWireframe(tex_scale);
 	auto &colors = ret.getColors();
 	for(auto &&c : colors) {
 		c = c*color;
@@ -93,22 +86,6 @@ std::shared_ptr<MeshType> BlendingEditor::getIfInside(std::shared_ptr<DataType> 
 	return found ? getMeshType(*data) : nullptr;
 }
 
-void BlendingEditor::setFboSize(glm::ivec2 size)
-{
-	if(!fbo_.isAllocated() || fbo_.getWidth() != size.x || fbo_.getHeight() != size.y) {
-		fbo_.allocate(size.x, size.y, GL_RGBA);
-	}
-}
-
-void BlendingEditor::update()
-{
-	Editor::update();
-	fbo_.begin();
-	ofClear(0);
-	drawMesh(tex_);
-	fbo_.end();
-}
-
 void BlendingEditor::draw() const
 {
 	pushScissor();
@@ -117,7 +94,25 @@ void BlendingEditor::draw() const
 		drawGrid();
 	}
 	shader_.begin(tex_);
-	drawMesh(tex_);
+	{
+		ofMesh mesh;
+		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+		mesh.append(makeBackground());
+		auto meshes = data_->getVisibleData();
+		for(auto &&mm : meshes) {
+			auto m = mm.second;
+			if(isSelectedMesh(*m)) {
+				mesh.append(makeMeshFromMesh(*m, ofColor::white));
+			}
+			else if(isHoveredMesh(*m)) {
+				mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
+			}
+			else {
+				mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+			}
+		}
+		mesh.draw();
+	}
 	shader_.end();
 	drawWire();
 	drawPoint(!is_enabled_hovering_uneditable_point_);
@@ -133,7 +128,7 @@ void BlendingEditor::gui()
 	using namespace ImGui;
 	auto &&data = *data_;
 	const auto names = std::vector<std::string>{"lt", "rt", "lb", "rb"};
-	const auto quad_names = std::vector<std::string>{"frame", "outer", "inner"};
+	const auto quad_names = std::vector<std::string>{"outer", "inner"};
 
 	struct GuiMesh {
 		std::string label;

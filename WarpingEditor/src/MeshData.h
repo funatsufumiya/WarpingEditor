@@ -119,14 +119,19 @@ struct BlendingMesh : public MeshData {
 		geom::Quad quad[N];
 		static int size() { return N; }
 	};
-	using MeshType = Mesh_<3>;
+	using MeshType = Mesh_<2>;
 	std::shared_ptr<MeshType> mesh;
 	void init(const ofRectangle &frame, float default_inner_ratio);
 	void update(){}
 	void pack(std::ostream &stream, glm::vec2 scale) const{}
 	void unpack(std::istream &stream, glm::vec2 scale){}
 
-	ofMesh getMesh(const glm::vec2 &remap_coord={1,1}) const;
+	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
+	ofMesh getWireframe(const glm::vec2 &remap_coord={1,1}) const;
+	bool blend_l=true;
+	bool blend_r=false;
+	bool blend_t=false;
+	bool blend_b=true;
 	BlendingMesh() {
 		mesh = std::make_shared<MeshType>();
 	}

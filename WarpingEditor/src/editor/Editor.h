@@ -389,7 +389,7 @@ void Editor<Data, Mesh, Index, Point>::drawMesh(ofTexture tex) const
 		else {
 			mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
 		}
-	};
+	}
 	tex.bind();
 	mesh.draw();
 	tex.unbind();
@@ -404,7 +404,7 @@ void Editor<Data, Mesh, Index, Point>::drawWire() const
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
 		mesh.append(makeWireFromMesh(*m, ofColor::white));
-	};
+	}
 	mesh.draw();
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
