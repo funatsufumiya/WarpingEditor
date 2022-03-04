@@ -134,7 +134,7 @@ protected:
 	
 	glm::vec2 snap_diff_={0,0};
 	
-	void drawMesh() const;
+	void drawMesh(ofTexture tex) const;
 	void drawWire() const;
 	void drawPoint(bool only_editable_point) const;
 	void drawDragRect() const;
@@ -372,7 +372,7 @@ inline void Editor<Data, Mesh, Index, Point>::procNewMouseEvent(const MouseEvent
 	}
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
-void Editor<Data, Mesh, Index, Point>::drawMesh() const
+void Editor<Data, Mesh, Index, Point>::drawMesh(ofTexture tex) const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
@@ -390,9 +390,9 @@ void Editor<Data, Mesh, Index, Point>::drawMesh() const
 			mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
 		}
 	};
-	tex_.bind();
+	tex.bind();
 	mesh.draw();
-	tex_.unbind();
+	tex.unbind();
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
 void Editor<Data, Mesh, Index, Point>::drawWire() const
@@ -492,7 +492,7 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 	if(grid_.is_show) {
 		drawGrid();
 	}
-	drawMesh();
+	drawMesh(tex_);
 	drawWire();
 	drawPoint(!is_enabled_hovering_uneditable_point_);
 	popMatrix();

@@ -46,14 +46,31 @@ void BlendingEditor::forEachPoint(const DataType &data, std::function<void(const
 		}
 	}
 }
-ofMesh BlendingEditor::makeMeshFromMesh(const DataType &mesh, const ofColor &color) const
+ofMesh BlendingEditor::makeMeshFromMesh(const DataType &data, const ofColor &color) const
 {
-	
-	return ofMesh();
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2(1,1)
+	: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
+	ofMesh ret = data.getMesh(tex_scale);
+	auto &colors = ret.getColors();
+	for(auto &&c : colors) {
+		c = c*color;
+	}
+	return ret;
 }
-ofMesh BlendingEditor::makeWireFromMesh(const DataType &mesh, const ofColor &color) const
+ofMesh BlendingEditor::makeWireFromMesh(const DataType &data, const ofColor &color) const
 {
-	return ofMesh();
+	auto tex_data = tex_.getTextureData();
+	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+	? glm::vec2(1,1)
+	: glm::vec2(1/fbo_.getWidth(), 1/fbo_.getHeight());
+	ofMesh ret = data.getMesh(tex_scale);
+	auto &colors = ret.getColors();
+	for(auto &&c : colors) {
+		c = c*color;
+	}
+	return ret;
 }
 ofMesh BlendingEditor::makeBackground() const
 {
@@ -74,6 +91,41 @@ std::shared_ptr<MeshType> BlendingEditor::getIfInside(std::shared_ptr<DataType> 
 		found = true;
 	}
 	return found ? getMeshType(*data) : nullptr;
+}
+
+void BlendingEditor::setFboSize(glm::ivec2 size)
+{
+	if(!fbo_.isAllocated() || fbo_.getWidth() != size.x || fbo_.getHeight() != size.y) {
+		fbo_.allocate(size.x, size.y, GL_RGBA);
+	}
+}
+
+void BlendingEditor::update()
+{
+	Editor::update();
+	fbo_.begin();
+	ofClear(0);
+	drawMesh(tex_);
+	fbo_.end();
+}
+
+void BlendingEditor::draw() const
+{
+	pushScissor();
+	pushMatrix();
+	if(grid_.is_show) {
+		drawGrid();
+	}
+	shader_.begin(tex_);
+	drawMesh(tex_);
+	shader_.end();
+	drawWire();
+	drawPoint(!is_enabled_hovering_uneditable_point_);
+	popMatrix();
+	if(is_enabled_rect_selection_) {
+		drawDragRect();
+	}
+	popScissor();
 }
 
 void BlendingEditor::gui()

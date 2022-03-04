@@ -11,7 +11,7 @@ ofMesh makeCross(const WarpingMeshEditor::PointType &point, const ofColor &color
 	float hl = line_length/2.f;
 	float hs = stroke_width/2.f;
 	for(int i = 0; i < 4; ++i) {
-		ofIndexType index = ret.getNumVertices();
+		ofIndexType index = (ofIndexType)ret.getNumVertices();
 		float rot = ofDegToRad(i*90+degree);
 		ret.addVertex(glm::vec3(glm::rotate(glm::vec2{hl,hs}, rot),0)+p);
 		ret.addVertex(glm::vec3(glm::rotate(glm::vec2{hs,hs}, rot),0)+p);
@@ -141,7 +141,7 @@ void WarpingMeshEditor::draw() const
 			if(grid_.is_show) {
 				drawGrid();
 			}
-			drawMesh();
+			drawMesh(tex_);
 			drawWire();
 			float point_size = mouse_near_distance_/getScale();
 			float cross_size = point_size*4;

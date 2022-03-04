@@ -55,12 +55,21 @@ protected:
 	bool need_keyboard_focus_=false;
 };
 
-struct WarpingMesh {
-	using UVType = geom::Quad;
-	using MeshType = ofx::mapper::Mesh;
+struct MeshData {
 	bool is_hidden=false;
 	bool is_locked=false;
 	bool is_solo=false;
+	void setDirty() { is_dirty_ = true; }
+protected:
+	mutable ofMesh cache_;
+	mutable float cached_resample_interval_;
+	mutable ofRectangle cached_valid_viewport_;
+	mutable bool is_dirty_=true;
+};
+
+struct WarpingMesh : public MeshData {
+	using UVType = geom::Quad;
+	using MeshType = ofx::mapper::Mesh;
 	std::shared_ptr<UVType> uv_quad;
 	std::shared_ptr<MeshType> mesh;
 	std::shared_ptr<ofx::mapper::Interpolator> interpolator;
@@ -101,14 +110,31 @@ struct WarpingMesh {
 	}
 	void pack(std::ostream &stream, glm::vec2 scale) const;
 	void unpack(std::istream &stream, glm::vec2 scale);
-	void setDirty() { is_dirty_ = true; }
-private:
-	mutable ofMesh cache_;
-	mutable float cached_resample_interval_;
-	mutable ofRectangle cached_valid_viewport_;
-	mutable bool is_dirty_=true;
 };
 
+
+struct BlendingMesh : public MeshData {
+	template<int N>
+	struct Mesh_ {
+		geom::Quad quad[N];
+		static int size() { return N; }
+	};
+	using MeshType = Mesh_<3>;
+	std::shared_ptr<MeshType> mesh;
+	void init(const ofRectangle &frame, float default_inner_ratio);
+	void update(){}
+	void pack(std::ostream &stream, glm::vec2 scale) const{}
+	void unpack(std::istream &stream, glm::vec2 scale){}
+
+	ofMesh getMesh(const glm::vec2 &remap_coord={1,1}) const;
+	BlendingMesh() {
+		mesh = std::make_shared<MeshType>();
+	}
+	BlendingMesh& operator=(const BlendingMesh &src) {
+		*mesh = *src.mesh;
+		return *this;
+	}
+};
 class WarpingData : public DataContainer<WarpingMesh>
 {
 public:
@@ -126,33 +152,6 @@ public:
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 };
 
-struct BlendingMesh {
-	bool is_hidden=false;
-	bool is_locked=false;
-	bool is_solo=false;
-	template<int N>
-	struct Mesh_ {
-		geom::Quad quad[N];
-		static int size() { return N; }
-	};
-	using MeshType = Mesh_<3>;
-	std::shared_ptr<MeshType> mesh;
-	void init(const ofRectangle &frame, float default_inner_ratio);
-	void update(){}
-	void pack(std::ostream &stream, glm::vec2 scale) const{}
-	void unpack(std::istream &stream, glm::vec2 scale){}
-	void setDirty() { is_dirty_ = true; }
-
-	BlendingMesh() {
-		mesh = std::make_shared<MeshType>();
-	}
-	BlendingMesh& operator=(const BlendingMesh &src) {
-		*mesh = *src.mesh;
-		return *this;
-	}
-private:
-	mutable bool is_dirty_=true;
-};
 class BlendingData : public DataContainer<BlendingMesh>
 {
 public:

@@ -31,7 +31,7 @@ void GuiApp::setup(){
 	ofDisableArbTex();
 	Icon::init();
 	
-	ofEnableArbTex();
+//	ofEnableArbTex();
 	ofBackground(0);
 
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
@@ -53,6 +53,8 @@ void GuiApp::setup(){
 	editor_.push_back(&blend_editor_);
 	state_ = EDIT_BLEND;
 	
+	warped_result_.allocate(3840*3, 2160, GL_RGBA);
+	
 	loadRecent();
 	openRecent();
 }
@@ -64,9 +66,8 @@ void GuiApp::update(){
 		texture_source_->update();
 		if(texture_source_->isFrameNew()) {
 			result_app_->setTexture(tex);
-			for(auto &&e : editor_) {
-				e->setTexture(tex);
-			}
+			warp_uv_.setTexture(tex);
+			warp_mesh_.setTexture(tex);
 		}
 		if(tex.isAllocated()) {
 			glm::vec2 tex_size{tex.getWidth(), tex.getHeight()};
@@ -102,6 +103,11 @@ void GuiApp::update(){
 				? glm::vec2{1,1}
 				: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
 				result_app_->setMesh(warping_data_->getMeshForExport(100, tex_scale));
+				warped_result_.begin();
+				ofClear(0);
+				result_app_->draw();
+				warped_result_.end();
+				blend_editor_.setTexture(warped_result_.getTexture());
 			}
 		}
 	}
@@ -363,7 +369,9 @@ void GuiApp::keyPressed(int key){
 	glm::vec2 move{0,0};
 	switch(key) {
 		case OF_KEY_TAB:
-			state_ ^= 1;
+			if(++state_ >= NUM_STATE) {
+				state_ = 0;
+			}
 			break;
 		case OF_KEY_LEFT: move.x = -1; break;
 		case OF_KEY_RIGHT: move.x = 1; break;

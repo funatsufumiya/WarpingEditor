@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "GuiFunc.h"
 #include "Icon.h"
+#include "ofxBlendScreen.h"
 
 #pragma mark - IO
 
@@ -339,6 +340,16 @@ void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 	auto inner = frame;
 	inner.scaleFromCenter(default_inner_ratio);
 	mesh->quad[2] = inner;
+}
+
+ofMesh BlendingMesh::getMesh(const glm::vec2 &remap_coord) const
+{
+	if(true || is_dirty_) {
+		auto frame_uv = getScaled(mesh->quad[0], remap_coord);
+		cache_ = ofxBlendScreen::createMesh(mesh->quad[1], mesh->quad[2], mesh->quad[0], frame_uv);
+		is_dirty_ = false;
+	}
+	return cache_;
 }
 
 template class DataContainer<WarpingMesh>;

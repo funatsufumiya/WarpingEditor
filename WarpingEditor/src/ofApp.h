@@ -32,6 +32,7 @@ private:
 		EDIT_WARP_UV,
 		EDIT_WARP_MESH,
 		EDIT_BLEND,
+		NUM_STATE
 	};
 	int state_;
 	bool isStateWarping() const { return state_ == EDIT_WARP_UV || state_ == EDIT_WARP_MESH; }
@@ -41,6 +42,8 @@ private:
 	std::shared_ptr<WarpingData> warping_data_;
 	WarpingUVEditor warp_uv_;
 	WarpingMeshEditor warp_mesh_;
+	
+	ofFbo warped_result_;
 
 	std::shared_ptr<BlendingData> blending_data_;
 	BlendingEditor blend_editor_;
