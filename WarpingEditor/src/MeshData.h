@@ -33,6 +33,7 @@ public:
 	bool remove(const std::string &name);
 	bool remove(const std::shared_ptr<DataType> mesh);
 	void clear() override { data_.clear(); }
+	bool isDirtyAny() const;
 	std::map<std::string, std::shared_ptr<DataType>>& getData() { return data_; }
 	std::map<std::string, std::shared_ptr<DataType>> getVisibleData() const;
 	std::map<std::string, std::shared_ptr<DataType>> getEditableData(bool include_hidden=false) const;
@@ -60,6 +61,7 @@ struct MeshData {
 	bool is_locked=false;
 	bool is_solo=false;
 	void setDirty() { is_dirty_ = true; }
+	bool isDirty() const { return is_dirty_; }
 protected:
 	mutable ofMesh cache_;
 	mutable float cached_resample_interval_;
@@ -146,6 +148,7 @@ public:
 	void uvRescale(const glm::vec2 &scale);
 
 	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
+	ofMesh getMesh(float resample_min_interval, const glm::vec2 &coord_size, ofRectangle *viewport=nullptr, bool only_visible=true) const;
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 };
 
@@ -156,6 +159,7 @@ public:
 	std::pair<std::string, std::shared_ptr<DataType>> create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio);
 	std::pair<std::string, std::shared_ptr<DataType>> find(std::shared_ptr<MeshType> mesh);
 	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
+	ofMesh getMesh(float resample_min_interval, const glm::vec2 &coord_size, ofRectangle *viewport=nullptr, bool only_visible=true) const;
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 };
 

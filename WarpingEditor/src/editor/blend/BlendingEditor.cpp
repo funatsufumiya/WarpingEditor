@@ -141,10 +141,10 @@ void BlendingEditor::gui()
 		bool ret = false;
 		if(TreeNode(mesh.label.c_str())) {
 			auto d = data.find(mesh.mesh).second;
-			Checkbox("Left", &d->blend_l); SameLine();
-			Checkbox("Right", &d->blend_r); SameLine();
-			Checkbox("Top", &d->blend_t); SameLine();
-			Checkbox("Bottom", &d->blend_b);
+			ret |= Checkbox("Left", &d->blend_l); SameLine();
+			ret |= Checkbox("Right", &d->blend_r); SameLine();
+			ret |= Checkbox("Top", &d->blend_t); SameLine();
+			ret |= Checkbox("Bottom", &d->blend_b);
 			for(int i = 0; i < mesh.mesh->size(); ++i) {
 				if(TreeNode(quad_names[i].c_str())) {
 					auto &&q = mesh.mesh->quad[i];
@@ -162,15 +162,6 @@ void BlendingEditor::gui()
 	std::vector<GuiPoint> points;
 
 	if(Begin("Blending")) {
-		int tex_id = tex_.getTextureData().textureID;
-		float tex_size[] = {tex_.getWidth(),tex_.getHeight()};
-		auto tex_data = tex_.getTextureData();
-		glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-		? glm::vec2(1,1)
-		: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
-		DragInt("tex_id", &tex_id);
-		DragFloat2("tex_size", tex_size);
-		DragFloat2("tex_scale", &tex_scale[0]);
 		if(TreeNode("shader")) {
 			auto &p = shader_.getParams();
 			SliderFloat("blend_power", &p.blend_power, 0, 2);

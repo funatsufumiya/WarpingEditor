@@ -226,6 +226,13 @@ std::pair<std::string, std::shared_ptr<Data>> DataContainer<Data>::createCopy(co
 	return std::make_pair(n, d);
 }
 
+template<typename Data>
+bool DataContainer<Data>::isDirtyAny() const
+{
+	return any_of(begin(data_), end(data_), [](std::pair<std::string, std::shared_ptr<DataType>> d) {
+		return d.second->isDirty();
+	});
+}
 
 // -------------
 
@@ -308,6 +315,15 @@ ofMesh WarpingData::getMeshForExport(float resample_min_interval, const glm::vec
 	return ret;
 }
 
+ofMesh WarpingData::getMesh(float resample_min_interval, const glm::vec2 &coord_size, ofRectangle *viewport, bool only_visible) const
+{
+	ofMesh ret;
+	for(auto &&d : only_visible ? getVisibleData() : data_) {
+		ret.append(d.second->getMesh(resample_min_interval, coord_size, viewport));
+	}
+	return ret;
+}
+
 void WarpingData::DataType::pack(std::ostream &stream, glm::vec2 scale) const
 {
 	writeTo(stream, is_hidden);
@@ -369,6 +385,14 @@ ofMesh BlendingData::getMeshForExport(float resample_min_interval, const glm::ve
 	return ret;
 }
 
+ofMesh BlendingData::getMesh(float resample_min_interval, const glm::vec2 &coord_size, ofRectangle *viewport, bool only_visible) const
+{
+	ofMesh ret;
+	for(auto &&d : only_visible ? getVisibleData() : data_) {
+		ret.append(d.second->getMesh(resample_min_interval, coord_size, viewport));
+	}
+	return ret;
+}
 
 void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 {

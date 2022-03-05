@@ -85,17 +85,14 @@ void GuiApp::update(){
 		e->setEnableMeshEditByMouse(!gui_focused);
 	}
 
-	bool update_mesh = true;
 	auto editor = editor_[state_];
 	if(editor) {
 		editor->setRegion(ofGetCurrentViewport());
 		editor->update();
-		update_mesh = !editor->isPreventMeshInterpolation();
 	}
-
-	if(update_mesh) {
+	
+	if(!warp_uv_.isPreventMeshInterpolation() && !warp_mesh_.isPreventMeshInterpolation()) {
 		warping_data_->update();
-		blending_data_->update();
 	}
 	if(texture_source_) {
 		auto tex = texture_source_->getTexture();
@@ -104,19 +101,26 @@ void GuiApp::update(){
 			glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
 			? glm::vec2{1,1}
 			: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
-			auto warped_mesh = warping_data_->getMeshForExport(100, tex_scale);
+			auto warped_mesh = warping_data_->getMesh(100, tex_scale);
 			fbo_.begin();
 			ofClear(0);
 			tex.bind();
 			warped_mesh.draw();
 			tex.unbind();
 			fbo_.end();
-			blend_editor_.setTexture(fbo_.getTexture());
-			auto blended_mesh = blending_data_->getMeshForExport(100, tex_scale);
-			result_app_->setTexture(fbo_.getTexture());
-			result_app_->setMesh(blended_mesh);
 		}
 	}
+	if(fbo_.isAllocated()) {
+		auto tex = fbo_.getTexture();
+		auto tex_data = tex.getTextureData();
+		glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+		? glm::vec2{1,1}
+		: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
+		auto blended_mesh = blending_data_->getMesh(100, tex_scale);
+		result_app_->setMesh(blended_mesh);
+	}
+	blend_editor_.setTexture(fbo_.getTexture());
+	result_app_->setTexture(fbo_.getTexture());
 }
 
 //--------------------------------------------------------------
