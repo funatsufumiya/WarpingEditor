@@ -184,6 +184,14 @@ void BlendingEditor::gui()
 	std::vector<GuiPoint> points;
 
 	if(Begin("Blending")) {
+		if(TreeNode("shader")) {
+			auto &p = shader_.getParams();
+			SliderFloat("blend_power", &p.blend_power, 0, 2);
+			SliderFloat("luminance_control", &p.luminance_control, 0, 1);
+			SliderFloat3("gamma", &p.gamma[0], 0, 3);
+			ColorEdit3("base_color", &p.base_color[0]);
+			TreePop();
+		}
 		if(BeginTabBar("#tab")) {
 			if(BeginTabItem("selected")) {
 				for(auto &&weak : op_selection_.mesh) {
