@@ -53,9 +53,9 @@ void GuiApp::setup(){
 	editor_.push_back(&blend_editor_);
 	state_ = EDIT_BLEND;
 	
-	warped_result_.allocate(3840*3, 2160, GL_RGBA);
-	blend_editor_.setTexture(warped_result_.getTexture());
-	
+	fbo_.allocate(3840*3, 2160, GL_RGB);
+	blend_editor_.setTexture(fbo_.getTexture());
+
 	loadRecent();
 	openRecent();
 }
@@ -66,7 +66,7 @@ void GuiApp::update(){
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
 		if(texture_source_->isFrameNew()) {
-			result_app_->setTexture(tex);
+//			result_app_->setTexture(tex);
 			warp_uv_.setTexture(tex);
 			warp_mesh_.setTexture(tex);
 		}
@@ -96,20 +96,25 @@ void GuiApp::update(){
 	if(update_mesh) {
 		warping_data_->update();
 		blending_data_->update();
-		if(texture_source_) {
-			auto tex = texture_source_->getTexture();
-			if(tex.isAllocated()) {
-				auto tex_data = tex.getTextureData();
-				glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-				? glm::vec2{1,1}
-				: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
-				result_app_->setMesh(warping_data_->getMeshForExport(100, tex_scale));
-				warped_result_.begin();
-				ofClear(0);
-				result_app_->draw();
-				warped_result_.end();
-				blend_editor_.setTexture(warped_result_.getTexture());
-			}
+	}
+	if(texture_source_) {
+		auto tex = texture_source_->getTexture();
+		if(tex.isAllocated()) {
+			auto tex_data = tex.getTextureData();
+			glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+			? glm::vec2{1,1}
+			: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
+			auto warped_mesh = warping_data_->getMeshForExport(100, tex_scale);
+			fbo_.begin();
+			ofClear(0);
+			tex.bind();
+			warped_mesh.draw();
+			tex.unbind();
+			fbo_.end();
+			blend_editor_.setTexture(fbo_.getTexture());
+			auto blended_mesh = blending_data_->getMeshForExport(100, tex_scale);
+			result_app_->setTexture(fbo_.getTexture());
+			result_app_->setMesh(blended_mesh);
 		}
 	}
 }
@@ -174,11 +179,9 @@ void GuiApp::draw(){
 					if((texture_source_ = buildTextureSource(proj_))) {
 						auto tex = texture_source_->getTexture();
 						if(tex.isAllocated()) {
-							result_app_->setTexture(tex);
-							auto editor = editor_[state_];
-							if(editor) {
-								editor->setTexture(tex);
-							}
+//							result_app_->setTexture(tex);
+							warp_uv_.setTexture(tex);
+							warp_mesh_.setTexture(tex);
 						}
 					}
 				}
@@ -279,11 +282,9 @@ void GuiApp::draw(){
 			if((texture_source_ = buildTextureSource(proj_))) {
 				auto tex = texture_source_->getTexture();
 				if(tex.isAllocated()) {
-					result_app_->setTexture(tex);
-					auto editor = editor_[state_];
-					if(editor) {
-						editor->setTexture(tex);
-					}
+//					result_app_->setTexture(tex);
+					warp_uv_.setTexture(tex);
+					warp_mesh_.setTexture(tex);
 				}
 			}
 		}
@@ -295,8 +296,20 @@ void GuiApp::draw(){
 			result_window_->setWindowPosition(position.x, position.y);
 		}
 		auto size = result_window_->getWindowSize();
-		if(DragFloat2("size", &size.x, 1, 1, -1, "%0.0f")) {
+		if(DragFloat2("viewport_size", &size.x, 1, 1, -1, "%0.0f") && size.x > 0 && size.y > 0) {
 			result_window_->setWindowShape(size.x, size.y);
+		}
+		auto fbo_size = glm::ivec2{fbo_.getWidth(), fbo_.getHeight()};
+		if(InputInt2("texture_size", &fbo_size.x) && fbo_size.x > 0 && fbo_size.y > 0) {
+			fbo_.allocate(fbo_size.x, fbo_size.y, GL_RGB);
+		}
+		bool scale_to_viewport = result_app_->isScaleToViewport();
+		if(Checkbox("scale_to_viewport", &scale_to_viewport)) {
+			result_app_->setScaleToViewport(scale_to_viewport);
+		}
+		bool enable_blending = result_app_->isEnabledBlending();
+		if(Checkbox("enable_blending", &enable_blending)) {
+			result_app_->setEnableBlending(enable_blending);
 		}
 	}
 	End();
@@ -331,7 +344,7 @@ void GuiApp::draw(){
 								   return select ? blend_editor_.selectMesh(data) : blend_editor_.deselectMesh(data);
 							   },
 							   [&]() {
-								   auto tex = warped_result_.getTexture();
+								   auto tex = fbo_.getTexture();
 								   if(tex.isAllocated()) {
 									   blending_data_->create("blend", ofRectangle{0,0,tex.getWidth(),tex.getHeight()}, 0.9f);
 								   }
@@ -452,10 +465,9 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	if((texture_source_ = buildTextureSource(proj_))) {
 		auto tex = texture_source_->getTexture();
 		if(tex.isAllocated()) {
-			result_app_->setTexture(tex);
-			for(auto &&e : editor_) {
-				e->setTexture(tex);
-			}
+//			result_app_->setTexture(tex);
+			warp_uv_.setTexture(tex);
+			warp_mesh_.setTexture(tex);
 		}
 	}
 	warping_data_->load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
@@ -511,13 +523,24 @@ void GuiApp::dragEvent(ofDragInfo dragInfo)
 void ResultView::setup()
 {
 	ofBackground(0);
+	shader_.setup();
 }
-void ResultView::update()
-{
-}
+
 void ResultView::draw()
 {
-	texture_.bind();
-	mesh_.draw();
-	texture_.unbind();
+	ofPushMatrix();
+	if(is_scale_to_viewport_) {
+		ofScale(ofGetWidth()/texture_.getWidth(), ofGetHeight()/texture_.getHeight());
+	}
+	if(is_enabled_blending_) {
+		shader_.begin(texture_);
+		mesh_.draw();
+		shader_.end();
+	}
+	else {
+		texture_.bind();
+		mesh_.draw();
+		texture_.unbind();
+	}
+	ofPopMatrix();
 }

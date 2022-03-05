@@ -23,6 +23,9 @@ public:
 	glm::vec4 getResultViewport() const { return viewport_.result; }
 	std::pair<glm::vec2, float> getUVView() const { return viewport_.uv; }
 	std::pair<glm::vec2, float> getWarpView() const { return viewport_.warp; }
+
+	glm::ivec2 getResultResolution() const { return result_.resolution; }
+	bool isResultScaleToViewport() const { return result_.is_scale_to_viewport; }
 	
 	float getExportMeshMinInterval() const { return export_.max_mesh_size; }
 	std::string getExportFolder() const { return export_.folder; }
@@ -45,6 +48,9 @@ public:
 	void setUVView(const glm::vec2 &pos, float scale) { viewport_.uv = {pos, scale}; }
 	void setWarpView(const glm::vec2 &pos, float scale) { viewport_.warp = {pos, scale}; }
 	
+	void setResultResolution(const glm::ivec2 &resolution) { result_.resolution = resolution; }
+	void setResultScaleToViewport(bool enable) { result_.is_scale_to_viewport = enable; }
+
 	void setExportMeshMinInterval(float interval) { export_.max_mesh_size = interval; }
 	void setExportFolder(const std::string &folder) { export_.folder = folder; }
 	void setExportFileName(const std::string &filename) { export_.filename = filename; }
@@ -81,12 +87,17 @@ public:
 	struct Grid {
 		EditorBase::GridData uv, warp;
 	};
+	struct Result {
+		glm::ivec2 resolution;
+		bool is_scale_to_viewport;
+	};
 private:
 	Texture texture_;
 	Viewport viewport_;
 	Export export_;
 	Backup backup_;
 	Grid grid_;
+	Result result_;
 	std::string filename_;
 	
 	ofJson toJson() const;

@@ -43,8 +43,6 @@ private:
 	WarpingUVEditor warp_uv_;
 	WarpingMeshEditor warp_mesh_;
 	
-	ofFbo warped_result_;
-
 	std::shared_ptr<BlendingData> blending_data_;
 	BlendingEditor blend_editor_;
 	
@@ -64,18 +62,30 @@ private:
 	ofxNDIFinder ndi_finder_;
 	
 	mutable ProjectFolder proj_;
+	
+	ofFbo fbo_;
 };
 
 class ResultView : public ofBaseApp
 {
 public:
 	void setup() override;
-	void update() override;
 	void draw() override;
 	
-	void setTexture(ofTexture texture) { texture_ = texture; }
+	void setTexture(const ofTexture &texture) { texture_ = texture; }
 	void setMesh(const ofMesh &mesh) { mesh_ = mesh; }
+	
+	void setScaleToViewport(bool enable) { is_scale_to_viewport_ = enable; }
+	bool isScaleToViewport() const { return is_scale_to_viewport_; }
+	
+	void setEnableBlending(bool enable) { is_enabled_blending_ = enable; }
+	bool isEnabledBlending() const { return is_enabled_blending_; }
+	
+	ofxBlendScreen::Shader::Params& getBlendParams() { return shader_.getParams(); } 
 private:
 	ofMesh mesh_;
 	ofTexture texture_;
+	bool is_scale_to_viewport_;
+	bool is_enabled_blending_;
+	ofxBlendScreen::Shader shader_;
 };

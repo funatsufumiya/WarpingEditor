@@ -229,6 +229,28 @@ std::pair<std::string, std::shared_ptr<Data>> DataContainer<Data>::createCopy(co
 
 // -------------
 
+ofMesh WarpingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const {
+	if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
+		cache_ = createMesh(resample_min_interval, remap_coord, use_area);
+		is_dirty_ = false;
+		cached_resample_interval_ = resample_min_interval;
+		if(use_area) {
+			cached_valid_viewport_ = *use_area;
+		}
+	}
+	return cache_;
+}
+
+ofMesh WarpingMesh::createMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
+{
+	ofMesh ret = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval, use_area);
+	auto uv = geom::getScaled(*uv_quad, remap_coord);
+	for(auto &t : ret.getTexCoords()) {
+		t = geom::rescalePosition(uv, t);
+	}
+	return ret;
+}
+
 std::pair<std::string, std::shared_ptr<WarpingData::DataType>> WarpingData::create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect) {
 	std::string n = name;
 	int index=0;
@@ -271,6 +293,7 @@ std::pair<std::string, std::shared_ptr<WarpingData::DataType>> WarpingData::find
 
 #pragma mark - IO
 
+
 void WarpingData::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
 {
 	getMeshForExport(resample_min_interval, coord_size).save(filepath);
@@ -280,8 +303,7 @@ ofMesh WarpingData::getMeshForExport(float resample_min_interval, const glm::vec
 {
 	ofMesh ret;
 	for(auto &&d : only_visible ? getVisibleData() : data_) {
-		d.second->setDirty();	// force clear cache
-		ret.append(d.second->getMesh(resample_min_interval, coord_size));
+		ret.append(d.second->createMesh(resample_min_interval, coord_size));
 	}
 	return ret;
 }
@@ -333,6 +355,21 @@ std::pair<std::string, std::shared_ptr<BlendingData::DataType>> BlendingData::fi
 	return *found;
 }
 
+void BlendingData::exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+{
+	getMeshForExport(resample_min_interval, coord_size).save(filepath);
+}
+
+ofMesh BlendingData::getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible) const
+{
+	ofMesh ret;
+	for(auto &&d : only_visible ? getVisibleData() : data_) {
+		ret.append(d.second->createMesh(resample_min_interval, coord_size));
+	}
+	return ret;
+}
+
+
 void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 {
 	mesh->quad[0] = frame;
@@ -344,22 +381,7 @@ void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 ofMesh BlendingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
 {
 	if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
-		auto outer_uv = getScaled(mesh->quad[0], remap_coord);
-		auto src_mesh = ofxBlendScreen::createMesh(mesh->quad[0], mesh->quad[1], outer_uv
-												   ,(blend_l?ofxBlendScreen::BLEND_LEFT:0)
-												   |(blend_r?ofxBlendScreen::BLEND_RIGHT:0)
-												   |(blend_t?ofxBlendScreen::BLEND_TOP:0)
-												   |(blend_b?ofxBlendScreen::BLEND_BOTTOM:0)
-												   );
-		ofx::mapper::Mesh mm;
-		mm.init(src_mesh, {3,3});
-		cache_ = ofx::mapper::UpSampler().proc(mm, resample_min_interval, use_area);
-		auto *v = cache_.getVerticesPointer();
-		auto *t = cache_.getTexCoordsPointer();
-		for(int i = 0; i < cache_.getNumVertices(); ++i) {
-			t[i] = v[i]*remap_coord;
-		}
-//		cache_ = mm.getMesh();
+		cache_ = createMesh(resample_min_interval, remap_coord, use_area);
 		is_dirty_ = false;
 		cached_resample_interval_ = resample_min_interval;
 		if(use_area) {
@@ -367,6 +389,27 @@ ofMesh BlendingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap
 		}
 	}
 	return cache_;
+}
+
+
+ofMesh BlendingMesh::createMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
+{
+	auto outer_uv = getScaled(mesh->quad[0], remap_coord);
+	auto src_mesh = ofxBlendScreen::createMesh(mesh->quad[0], mesh->quad[1], outer_uv
+											   ,(blend_l?ofxBlendScreen::BLEND_LEFT:0)
+											   |(blend_r?ofxBlendScreen::BLEND_RIGHT:0)
+											   |(blend_t?ofxBlendScreen::BLEND_TOP:0)
+											   |(blend_b?ofxBlendScreen::BLEND_BOTTOM:0)
+											   );
+	ofx::mapper::Mesh mm;
+	mm.init(src_mesh, {3,3});
+	ofMesh ret = ofx::mapper::UpSampler().proc(mm, resample_min_interval, use_area);
+	auto *v = ret.getVerticesPointer();
+	auto *t = ret.getTexCoordsPointer();
+	for(int i = 0; i < ret.getNumVertices(); ++i) {
+		t[i] = v[i]*remap_coord;
+	}
+	return ret;
 }
 
 ofMesh BlendingMesh::getWireframe(const glm::vec2 &remap_coord, const ofFloatColor &color) const

@@ -73,21 +73,8 @@ struct WarpingMesh : public MeshData {
 	std::shared_ptr<UVType> uv_quad;
 	std::shared_ptr<MeshType> mesh;
 	std::shared_ptr<ofx::mapper::Interpolator> interpolator;
-	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const {
-		if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
-			cache_ = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval, use_area);
-			auto uv = geom::getScaled(*uv_quad, remap_coord);
-			for(auto &t : cache_.getTexCoords()) {
-				t = geom::rescalePosition(uv, t);
-			}
-			is_dirty_ = false;
-			cached_resample_interval_ = resample_min_interval;
-			if(use_area) {
-				cached_valid_viewport_ = *use_area;
-			}
-		}
-		return cache_;
-	}
+	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
+	ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
 	WarpingMesh() {
 		uv_quad = std::make_shared<UVType>();
 		mesh = std::make_shared<MeshType>();
@@ -128,6 +115,7 @@ struct BlendingMesh : public MeshData {
 
 	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
 	ofMesh getWireframe(const glm::vec2 &remap_coord={1,1}, const ofFloatColor &color=ofFloatColor::white) const;
+	ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
 	bool blend_l=true;
 	bool blend_r=true;
 	bool blend_t=true;
@@ -137,6 +125,10 @@ struct BlendingMesh : public MeshData {
 	}
 	BlendingMesh& operator=(const BlendingMesh &src) {
 		*mesh = *src.mesh;
+		blend_l = src.blend_l;
+		blend_r = src.blend_r;
+		blend_t = src.blend_t;
+		blend_b = src.blend_b;
 		return *this;
 	}
 };
@@ -163,6 +155,8 @@ public:
 	using MeshType = BlendingMesh::MeshType;
 	std::pair<std::string, std::shared_ptr<DataType>> create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio);
 	std::pair<std::string, std::shared_ptr<DataType>> find(std::shared_ptr<MeshType> mesh);
+	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
+	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 };
 
 extern template class DataContainer<WarpingMesh>;

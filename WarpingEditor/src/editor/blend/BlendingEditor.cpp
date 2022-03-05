@@ -90,25 +90,7 @@ void BlendingEditor::draw() const
 		drawGrid();
 	}
 	shader_.begin(tex_);
-	{
-		ofMesh mesh;
-		mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-		mesh.append(makeBackground());
-		auto meshes = data_->getVisibleData();
-		for(auto &&mm : meshes) {
-			auto m = mm.second;
-			if(isSelectedMesh(*m)) {
-				mesh.append(makeMeshFromMesh(*m, ofColor::white));
-			}
-			else if(isHoveredMesh(*m)) {
-				mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
-			}
-			else {
-				mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
-			}
-		}
-		mesh.draw();
-	}
+	drawMesh(tex_);
 	shader_.end();
 	drawWire();
 	drawPoint(!is_enabled_hovering_uneditable_point_);
@@ -180,6 +162,15 @@ void BlendingEditor::gui()
 	std::vector<GuiPoint> points;
 
 	if(Begin("Blending")) {
+		int tex_id = tex_.getTextureData().textureID;
+		float tex_size[] = {tex_.getWidth(),tex_.getHeight()};
+		auto tex_data = tex_.getTextureData();
+		glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
+		? glm::vec2(1,1)
+		: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
+		DragInt("tex_id", &tex_id);
+		DragFloat2("tex_size", tex_size);
+		DragFloat2("tex_scale", &tex_scale[0]);
 		if(TreeNode("shader")) {
 			auto &p = shader_.getParams();
 			SliderFloat("blend_power", &p.blend_power, 0, 2);
