@@ -162,6 +162,11 @@ void BlendingEditor::gui()
 	auto guiMesh = [&](const GuiMesh &mesh) {
 		bool ret = false;
 		if(TreeNode(mesh.label.c_str())) {
+			auto d = data.find(mesh.mesh).second;
+			Checkbox("Left", &d->blend_l); SameLine();
+			Checkbox("Right", &d->blend_r); SameLine();
+			Checkbox("Top", &d->blend_t); SameLine();
+			Checkbox("Bottom", &d->blend_b);
 			for(int i = 0; i < mesh.mesh->size(); ++i) {
 				if(TreeNode(quad_names[i].c_str())) {
 					auto &&q = mesh.mesh->quad[i];
