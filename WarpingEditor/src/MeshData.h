@@ -127,7 +127,7 @@ struct BlendingMesh : public MeshData {
 	void unpack(std::istream &stream, glm::vec2 scale){}
 
 	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
-	ofMesh getWireframe(const glm::vec2 &remap_coord={1,1}) const;
+	ofMesh getWireframe(const glm::vec2 &remap_coord={1,1}, const ofFloatColor &color=ofFloatColor::white) const;
 	bool blend_l=true;
 	bool blend_r=true;
 	bool blend_t=true;

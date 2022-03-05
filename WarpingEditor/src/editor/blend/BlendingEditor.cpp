@@ -59,10 +59,6 @@ ofMesh BlendingEditor::makeWireFromMesh(const DataType &data, const ofColor &col
 	? glm::vec2(1,1)
 	: glm::vec2(1/tex_data.tex_w, 1/tex_data.tex_h);
 	ofMesh ret = data.getWireframe(tex_scale);
-	auto &colors = ret.getColors();
-	for(auto &&c : colors) {
-		c = c*color;
-	}
 	return ret;
 }
 ofMesh BlendingEditor::makeBackground() const

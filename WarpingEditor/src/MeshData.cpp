@@ -369,10 +369,38 @@ ofMesh BlendingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap
 	return cache_;
 }
 
-ofMesh BlendingMesh::getWireframe(const glm::vec2 &remap_coord) const
+ofMesh BlendingMesh::getWireframe(const glm::vec2 &remap_coord, const ofFloatColor &color) const
 {
 	auto outer_uv = getScaled(mesh->quad[0], remap_coord);
-	return ofxBlendScreen::createMesh(mesh->quad[0], mesh->quad[1], outer_uv);
+	auto ret = ofxBlendScreen::createMesh(mesh->quad[0], mesh->quad[1], outer_uv);
+	ret.getColors().assign(ret.getNumVertices(), color);
+	if(blend_l && blend_r && blend_t && blend_b) {
+		return ret;
+	}
+	ret.clearIndices();
+	auto makeIndexVector = [](std::vector<bool> enabler) {
+		std::vector<ofIndexType> ret;
+		ret.reserve(enabler.size());
+		for(ofIndexType i = 0; i < enabler.size(); ++i) {
+			if(enabler[i]) ret.push_back(i);
+		}
+		return ret;
+	};
+	auto makeQuadIndices = [](ofIndexType lt, ofIndexType rt, ofIndexType lb, ofIndexType rb) {
+		return std::vector<ofIndexType>{lt,lb,rt,rt,lb,rb};
+	};
+	auto cols = makeIndexVector({true, blend_l, blend_r, true});
+	auto rows = makeIndexVector({true, blend_t, blend_b, true});
+	for(int r = 0; r < rows.size()-1; ++r) {
+		for(int c = 0; c < cols.size()-1; ++c) {
+			int lt = rows[r]*4+cols[c];
+			int rt = rows[r]*4+cols[c+1];
+			int lb = rows[r+1]*4+cols[c];
+			int rb = rows[r+1]*4+cols[c+1];
+			ret.addIndices(makeQuadIndices(lt,rt,lb,rb));
+		}
+	}
+	return ret;
 }
 
 template class DataContainer<WarpingMesh>;
