@@ -62,6 +62,8 @@ struct MeshData {
 	bool is_solo=false;
 	void setDirty() { is_dirty_ = true; }
 	bool isDirty() const { return is_dirty_; }
+	void pack(std::ostream &stream, glm::vec2 scale) const;
+	void unpack(std::istream &stream, glm::vec2 scale);
 protected:
 	mutable ofMesh cache_;
 	mutable float cached_resample_interval_;
@@ -112,8 +114,8 @@ struct BlendingMesh : public MeshData {
 	std::shared_ptr<MeshType> mesh;
 	void init(const ofRectangle &frame, float default_inner_ratio);
 	void update(){}
-	void pack(std::ostream &stream, glm::vec2 scale) const{}
-	void unpack(std::istream &stream, glm::vec2 scale){}
+	void pack(std::ostream &stream, glm::vec2 scale) const;
+	void unpack(std::istream &stream, glm::vec2 scale);
 
 	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
 	ofMesh getWireframe(const glm::vec2 &remap_coord={1,1}, const ofFloatColor &color=ofFloatColor::white) const;

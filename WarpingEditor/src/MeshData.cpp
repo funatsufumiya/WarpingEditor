@@ -197,6 +197,7 @@ template<typename Data>
 void DataContainer<Data>::unpack(std::istream &stream, glm::vec2 scale)
 {
 	const int name_alignemt = 4;
+	data_.clear();
 	std::size_t num;
 	readFrom(stream, num);
 	while(num-->0) {
@@ -324,30 +325,6 @@ ofMesh WarpingData::getMesh(float resample_min_interval, const glm::vec2 &coord_
 	return ret;
 }
 
-void WarpingData::DataType::pack(std::ostream &stream, glm::vec2 scale) const
-{
-	writeTo(stream, is_hidden);
-	writeTo(stream, is_locked);
-	writeTo(stream, is_solo);
-	for(int i = 0; i < uv_quad->size(); ++i) {
-		writeTo(stream, uv_quad->pt[i].x*scale.x);
-		writeTo(stream, uv_quad->pt[i].y*scale.y);
-	}
-	mesh->pack(stream, interpolator.get());
-}
-void WarpingData::DataType::unpack(std::istream &stream, glm::vec2 scale)
-{
-	readFrom(stream, is_hidden);
-	readFrom(stream, is_locked);
-	readFrom(stream, is_solo);
-	for(int i = 0; i < uv_quad->size(); ++i) {
-		readFrom(stream, uv_quad->pt[i].x); uv_quad->pt[i].x *= scale.x;
-		readFrom(stream, uv_quad->pt[i].y); uv_quad->pt[i].y *= scale.y;
-	}
-	mesh->unpack(stream, interpolator.get());
-}
-
-
 std::pair<std::string, std::shared_ptr<BlendingData::DataType>> BlendingData::create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio)
 {
 	std::string n = name;
@@ -404,7 +381,7 @@ void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 
 ofMesh BlendingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
 {
-	if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
+	if(is_dirty_ || !ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
 		cache_ = createMesh(resample_min_interval, remap_coord, use_area);
 		is_dirty_ = false;
 		cached_resample_interval_ = resample_min_interval;
@@ -467,6 +444,76 @@ ofMesh BlendingMesh::getWireframe(const glm::vec2 &remap_coord, const ofFloatCol
 	}
 	return ret;
 }
+
+#pragma mark - IO
+
+
+namespace geom {
+void pack(const Quad &quad, std::ostream &stream, glm::vec2 scale) {
+	for(int i = 0; i < quad.size(); ++i) {
+		writeTo(stream, quad.pt[i].x*scale.x);
+		writeTo(stream, quad.pt[i].y*scale.y);
+	}
+}
+void unpack(Quad &quad, std::istream &stream, glm::vec2 scale) {
+	for(int i = 0; i < quad.size(); ++i) {
+		readFrom(stream, quad.pt[i].x); quad.pt[i].x *= scale.x;
+		readFrom(stream, quad.pt[i].y); quad.pt[i].y *= scale.y;
+	}
+}
+
+}
+void MeshData::pack(std::ostream &stream, glm::vec2 scale) const
+{
+	writeTo(stream, is_hidden);
+	writeTo(stream, is_locked);
+	writeTo(stream, is_solo);
+}
+void MeshData::unpack(std::istream &stream, glm::vec2 scale)
+{
+	readFrom(stream, is_hidden);
+	readFrom(stream, is_locked);
+	readFrom(stream, is_solo);
+	setDirty();
+}
+
+void WarpingMesh::pack(std::ostream &stream, glm::vec2 scale) const
+{
+	MeshData::pack(stream, scale);
+	geom::pack(*uv_quad, stream, scale);
+	mesh->pack(stream, interpolator.get());
+}
+void WarpingMesh::unpack(std::istream &stream, glm::vec2 scale)
+{
+	MeshData::unpack(stream, scale);
+	geom::unpack(*uv_quad, stream, scale);
+	mesh->unpack(stream, interpolator.get());
+}
+
+
+void BlendingMesh::pack(std::ostream &stream, glm::vec2 scale) const
+{
+	MeshData::pack(stream, scale);
+	writeTo(stream, blend_l);
+	writeTo(stream, blend_r);
+	writeTo(stream, blend_t);
+	writeTo(stream, blend_b);
+	for(int i = 0; i < MeshType::size(); ++i) {
+		geom::pack(mesh->quad[i], stream, scale);
+	}
+}
+void BlendingMesh::unpack(std::istream &stream, glm::vec2 scale)
+{
+	MeshData::unpack(stream, scale);
+	readFrom(stream, blend_l);
+	readFrom(stream, blend_r);
+	readFrom(stream, blend_t);
+	readFrom(stream, blend_b);
+	for(int i = 0; i < MeshType::size(); ++i) {
+		geom::unpack(mesh->quad[i], stream, scale);
+	}
+}
+
 
 template class DataContainer<WarpingMesh>;
 template class DataContainer<BlendingMesh>;

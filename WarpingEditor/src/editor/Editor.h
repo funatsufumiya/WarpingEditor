@@ -19,7 +19,7 @@ public:
 	virtual void drawControl(float parent_scale) const {}
 	virtual void drawBackground() const {
 		ofPushStyle();
-		ofSetColor(ofColor::gray);
+		ofSetColor(32);
 		tex_.draw(0,0);
 		ofPopStyle();
 	}

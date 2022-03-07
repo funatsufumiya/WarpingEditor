@@ -57,6 +57,9 @@ private:
 	void updateRecent(const ProjectFolder &proj);
 	std::deque<WorkFolder> recent_;
 	
+	void saveDataFile(const std::filesystem::path &filepath) const;
+	void loadDataFile(const std::filesystem::path &filepath);
+	
 	void exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb=false) const;
 	void exportMesh(const ProjectFolder &proj) const;
 

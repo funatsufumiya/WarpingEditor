@@ -19,7 +19,7 @@ public:
 	int getTextureType() const { return texture_.type; }
 	std::filesystem::path getTextureFilePath() const { return getAbsolute(texture_.file); }
 	const std::string& getTextureNDIName() const { return texture_.ndi; }
-	glm::vec2 getTextureSizeCache() const { return texture_.size_cache; }
+	glm::ivec2 getTextureSizeCache() const { return texture_.size_cache; }
 
 	glm::vec4 getResultViewport() const { return viewport_.result; }
 	std::pair<glm::vec2, float> getUVView() const { return viewport_.uv; }

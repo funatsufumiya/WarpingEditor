@@ -433,9 +433,8 @@ void GuiApp::save(bool do_backup) const
 	proj_.save();
 
 	auto filepath = proj_.getDataFilePath();
-	auto tex_size = proj_.getTextureSizeCache();
-	warping_data_->save(filepath, {1/tex_size.x, 1/tex_size.y});
-	
+	saveDataFile(filepath);
+
 	if(do_backup && proj_.isBackupEnabled()) {
 		auto backup_path = proj_.getBackupFilePath();
 		ofDirectory folder(ofFilePath::getEnclosingDirectory(backup_path));
@@ -453,6 +452,84 @@ void GuiApp::save(bool do_backup) const
 		}
 	}
 }
+
+namespace {
+template<typename T>
+void writeTo(std::ostream& os, const T& t) {
+	os.write(reinterpret_cast<const char*>(&t), sizeof(T));
+}
+template<typename T>
+void readFrom(std::istream& is, T& t) {
+	is.read(reinterpret_cast<char*>(&t), sizeof(T));
+}
+}
+
+void GuiApp::saveDataFile(const std::filesystem::path &filepath) const
+{
+	ofFile file(filepath, ofFile::WriteOnly);
+	file << "maap";
+	writeTo<std::size_t>(file, 0);	// version number
+	auto writeToPosition = [&](ofFile::pos_type pos, std::size_t size) {
+		file.seekg(pos, std::ios_base::beg);
+		writeTo(file, size);
+	};
+	file << "warp";
+	auto pos_warpsize = file.tellg();
+	writeTo<std::size_t>(file, 0);	// placeholder for chunksize
+	auto begin_warpsize = file.tellg();
+	{
+		glm::vec2 tex_size = proj_.getTextureSizeCache();
+		warping_data_->pack(file, {1/tex_size.x, 1/tex_size.y});
+	}
+	auto warpsize = file.tellg() - begin_warpsize;
+	
+	file << "blnd";
+	auto pos_blendsize = file.tellg();
+	writeTo<std::size_t>(file, 0);	// placeholder for chunksize
+	auto begin_blendsize = file.tellg();
+	{
+		glm::vec2 tex_size = proj_.getBridgeResolution();
+		blending_data_->pack(file, {1/tex_size.x, 1/tex_size.y});
+	}
+	auto blendsize = file.tellg() - begin_blendsize;
+	
+	writeToPosition(pos_warpsize, warpsize);
+	writeToPosition(pos_blendsize, blendsize);
+	
+	file.close();
+}
+
+void GuiApp::loadDataFile(const std::filesystem::path &filepath)
+{
+	ofFile file(filepath, ofFile::ReadOnly);
+	char maap[4];
+	readFrom(file, maap);
+	if(strncmp(maap, "maap", 4) != 0) {
+		file.seekg(0, std::ios_base::beg);
+		warping_data_->unpack(file, proj_.getTextureSizeCache());
+		return;
+	}
+	std::size_t version;
+	readFrom(file, version);
+	
+	while(file.good()) {
+		char chunkname[4];
+		std::size_t chunksize;
+		readFrom(file, chunkname);
+		readFrom(file, chunksize);
+		if(file.eof() || file.fail()) {
+			break;
+		}
+		if(strncmp(chunkname, "warp", 4) == 0) {
+			warping_data_->unpack(file, proj_.getTextureSizeCache());
+		}
+		if(strncmp(chunkname, "blnd", 4) == 0) {
+			blending_data_->unpack(file, proj_.getBridgeResolution());
+		}
+	}
+	file.close();
+}
+
 
 void GuiApp::openProject(const std::filesystem::path &proj_path)
 {
@@ -503,7 +580,9 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 			warp_mesh_->setTexture(tex);
 		}
 	}
-	warping_data_->load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
+
+	auto filepath = proj_.getDataFilePath();
+	loadDataFile(filepath);
 
 	auto bridge_res = proj_.getBridgeResolution();
 	fbo_.allocate(bridge_res.x, bridge_res.y, GL_RGB);
@@ -552,7 +631,7 @@ void GuiApp::dragEvent(ofDragInfo dragInfo)
 	auto filepath = dragInfo.files[0];
 	auto ext = ofFilePath::getFileExt(filepath);
 	if(ext == "maap") {
-		warping_data_->load(filepath, proj_.getTextureSizeCache());
+		loadDataFile(filepath);
 	}
 }
 
