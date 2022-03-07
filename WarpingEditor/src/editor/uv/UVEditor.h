@@ -14,6 +14,5 @@ public:
 	void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta) override;
 	ofMesh makeMeshFromMesh(const DataType &data, const ofColor &color) const override;
 	ofMesh makeWireFromMesh(const DataType &data, const ofColor &color) const override;
-	ofMesh makeBackground() const override;
 	void gui() override;
 };

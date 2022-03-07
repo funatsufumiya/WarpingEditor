@@ -17,6 +17,12 @@ public:
 	virtual void draw() const{}
 	virtual void drawMesh() const {}
 	virtual void drawControl(float parent_scale) const {}
+	virtual void drawBackground() const {
+		ofPushStyle();
+		ofSetColor(ofColor::gray);
+		tex_.draw(0,0);
+		ofPopStyle();
+	}
 	virtual void gui() {}
 
 	void setTexture(ofTexture tex) { tex_ = tex; }
@@ -35,7 +41,7 @@ public:
 	struct GridData {
 		bool is_show=true;
 		bool enabled_snap=true;
-		glm::vec2 offset, size;
+		glm::vec2 offset={0,0}, size={1920,1080};
 	};
 
 	const GridData& getGridData() const { return grid_; }
@@ -167,7 +173,6 @@ protected:
 	virtual ofMesh makeMeshFromMesh(const DataType &mesh, const ofColor &color) const { return ofMesh(); }
 	virtual ofMesh makeWireFromMesh(const DataType &mesh, const ofColor &color) const { return ofMesh(); }
 	ofMesh makeMeshFromPoint(const PointType &point, const ofColor &color, float point_size) const;
-	virtual ofMesh makeBackground() const { return ofMesh(); }
 
 	virtual std::pair<std::weak_ptr<MeshType>, IndexType> getNearestPoint(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance2, bool filter_by_if_editable=true);
 	virtual std::shared_ptr<MeshType> getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance) { return nullptr; }
@@ -380,7 +385,6 @@ void Editor<Data, Mesh, Index, Point>::drawMesh() const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
-	mesh.append(makeBackground());
 	auto meshes = data_->getVisibleData();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
@@ -493,6 +497,7 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 {
 	pushScissor();
 	pushMatrix();
+	drawBackground();
 	if(grid_.is_show) {
 		drawGrid();
 	}

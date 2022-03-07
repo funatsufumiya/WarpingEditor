@@ -90,26 +90,6 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 }
 
 
-ofMesh UVEditor::makeBackground() const
-{
-	MeshType mesh{tex_.getWidth(),tex_.getHeight()};
-	ofMesh ret;
-	ret.setMode(OF_PRIMITIVE_TRIANGLES);
-	auto vert = mesh;
-	auto tex_data = tex_.getTextureData();
-	auto coord = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB ? mesh : getScaled(mesh, {1/tex_data.tex_w, 1/tex_data.tex_h});
-	for(int i = 0; i < mesh.size(); ++i) {
-		ret.addTexCoord(coord[i]);
-		ret.addVertex(glm::vec3(vert[i],0));
-		ret.addColor(ofColor::gray);
-	}
-	for(auto i : {0,2,1,1,2,3}) {
-		ret.addIndex(i);
-	}
-	return ret;
-}
-
-
 void UVEditor::gui()
 {
 	using namespace ImGui;

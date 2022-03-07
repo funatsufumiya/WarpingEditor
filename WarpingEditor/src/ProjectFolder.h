@@ -23,9 +23,13 @@ public:
 	glm::vec4 getResultViewport() const { return viewport_.result; }
 	std::pair<glm::vec2, float> getUVView() const { return viewport_.uv; }
 	std::pair<glm::vec2, float> getWarpView() const { return viewport_.warp; }
+	std::pair<glm::vec2, float> getBlendView() const { return viewport_.blend; }
 
-	glm::ivec2 getResultResolution() const { return result_.resolution; }
+	std::string getResultEditorName() const { return result_.editor_name; }
 	bool isResultScaleToViewport() const { return result_.is_scale_to_viewport; }
+	bool isResultShowControl() const { return result_.is_show_control; }
+	
+	glm::ivec2 getBridgeResolution() const { return bridge_.resolution; }
 	
 	float getExportMeshMinInterval() const { return export_.max_mesh_size; }
 	std::string getExportFolder() const { return export_.folder; }
@@ -39,6 +43,7 @@ public:
 	
 	EditorBase::GridData getUVGridData() const { return grid_.uv; }
 	EditorBase::GridData getWarpGridData() const { return grid_.warp; }
+	EditorBase::GridData getBlendGridData() const { return grid_.blend; }
 	
 	void setTextureSourceFile(const std::string &file_name);
 	void setTextureSourceNDI(const std::string &ndi_name);
@@ -47,9 +52,13 @@ public:
 	void setResultViewport(const glm::vec4 &viewport) { viewport_.result = viewport; }
 	void setUVView(const glm::vec2 &pos, float scale) { viewport_.uv = {pos, scale}; }
 	void setWarpView(const glm::vec2 &pos, float scale) { viewport_.warp = {pos, scale}; }
+	void setBlendView(const glm::vec2 &pos, float scale) { viewport_.blend = {pos, scale}; }
 	
-	void setResultResolution(const glm::ivec2 &resolution) { result_.resolution = resolution; }
+	void setResultEditorName(const std::string &name) { result_.editor_name = name; }
 	void setResultScaleToViewport(bool enable) { result_.is_scale_to_viewport = enable; }
+	void setResultShowControl(bool enable) { result_.is_show_control = enable; }
+	
+	void setBridgeResolution(glm::ivec2 resolution) { bridge_.resolution = resolution; }
 
 	void setExportMeshMinInterval(float interval) { export_.max_mesh_size = interval; }
 	void setExportFolder(const std::string &folder) { export_.folder = folder; }
@@ -58,6 +67,7 @@ public:
 
 	void setUVGridData(const EditorBase::GridData &data) { grid_.uv = data; }
 	void setWarpGridData(const EditorBase::GridData &data) { grid_.warp = data; }
+	void setBlendGridData(const EditorBase::GridData &data) { grid_.blend = data; }
 	
 	void setFileName(const std::string &filename) { filename_ = filename; }
 	
@@ -71,8 +81,8 @@ public:
 		glm::ivec2 size_cache;
 	};
 	struct Viewport {
-		glm::vec4 result;
-		std::pair<glm::vec2, float> uv{{0,0},1}, warp{{0,0},1};
+		glm::vec4 result={0,0,1920,1080};
+		std::pair<glm::vec2, float> uv{{0,0},1}, warp{{0,0},1}, blend{{0,0},1};
 	};
 	struct Export {
 		std::string folder, filename="mesh.ply";
@@ -85,11 +95,15 @@ public:
 		int limit=0;
 	};
 	struct Grid {
-		EditorBase::GridData uv, warp;
+		EditorBase::GridData uv, warp, blend;
+	};
+	struct Bridge {
+		glm::ivec2 resolution={1920,1080};
 	};
 	struct Result {
-		glm::ivec2 resolution;
-		bool is_scale_to_viewport;
+		std::string editor_name="uv";
+		bool is_scale_to_viewport=false;
+		bool is_show_control=false;
 	};
 private:
 	Texture texture_;
@@ -97,6 +111,7 @@ private:
 	Export export_;
 	Backup backup_;
 	Grid grid_;
+	Bridge bridge_;
 	Result result_;
 	std::string filename_;
 	

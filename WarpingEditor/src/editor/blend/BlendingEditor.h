@@ -17,7 +17,6 @@ public:
 	void forEachPoint(const DataType &data, std::function<void(const PointType&, IndexType)> func) const override;
 	ofMesh makeMeshFromMesh(const DataType &data, const ofColor &color) const override;
 	ofMesh makeWireFromMesh(const DataType &data, const ofColor &color) const override;
-	ofMesh makeBackground() const override;
 
 	std::shared_ptr<MeshType> getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance) override;
 

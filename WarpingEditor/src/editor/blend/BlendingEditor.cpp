@@ -60,10 +60,6 @@ ofMesh BlendingEditor::makeWireFromMesh(const DataType &data, const ofColor &col
 	ofMesh ret = data.getWireframe(tex_scale);
 	return ret;
 }
-ofMesh BlendingEditor::makeBackground() const
-{
-	return ofMesh();
-}
 
 std::shared_ptr<MeshType> BlendingEditor::getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance)
 {

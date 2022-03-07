@@ -85,15 +85,24 @@ struct adl_serializer<ProjectFolder::Viewport> {
 			{"warp", {
 				{"pos", v.warp.first},
 				{"scale", v.warp.second}
+			}},
+			{"blend", {
+				{"pos", v.blend.first},
+				{"scale", v.blend.second}
 			}}
 		};
 	}
 	static void from_json(const ofJson &j, ProjectFolder::Viewport &v) {
 		updateByJsonValue(v.result, j, "result");
-		updateByJsonValue(v.uv.first, j["uv"], "pos");
-		updateByJsonValue(v.uv.second, j["uv"], "scale");
-		updateByJsonValue(v.warp.first, j["warp"], "pos");
-		updateByJsonValue(v.warp.second, j["warp"], "scale");
+		auto uv = getJsonValue<ofJson>(j, "uv");
+		updateByJsonValue(v.uv.first, uv, "pos");
+		updateByJsonValue(v.uv.second, uv, "scale");
+		auto warp = getJsonValue<ofJson>(j, "warp");
+		updateByJsonValue(v.warp.first, warp, "pos");
+		updateByJsonValue(v.warp.second, warp, "scale");
+		auto blend = getJsonValue<ofJson>(j, "blend");
+		updateByJsonValue(v.blend.first, blend, "pos");
+		updateByJsonValue(v.blend.second, blend, "scale");
 	}
 };
 
@@ -112,6 +121,17 @@ struct adl_serializer<ProjectFolder::Export> {
 		updateByJsonValue(v.filename, j, "filename");
 		updateByJsonValue(v.is_arb, j, "is_arb");
 		updateByJsonValue(v.max_mesh_size, j, "max_mesh_size");
+	}
+};
+template<>
+struct adl_serializer<ProjectFolder::Bridge> {
+	static void to_json(ofJson &j, const ProjectFolder::Bridge &v) {
+		j = {
+			{"resolution", v.resolution}
+		};
+	}
+	static void from_json(const ofJson &j, ProjectFolder::Bridge &v) {
+		updateByJsonValue(v.resolution, j, "resolution");
 	}
 };
 template<>
@@ -134,12 +154,29 @@ struct adl_serializer<ProjectFolder::Grid> {
 	static void to_json(ofJson &j, const ProjectFolder::Grid &v) {
 		j = {
 			{"uv", v.uv},
-			{"warp", v.warp}
+			{"warp", v.warp},
+			{"blend", v.blend}
 		};
 	}
 	static void from_json(const ofJson &j, ProjectFolder::Grid &v) {
 		updateByJsonValue(v.uv, j, "uv");
 		updateByJsonValue(v.warp, j, "warp");
+		updateByJsonValue(v.blend, j, "blend");
+	}
+};
+template<>
+struct adl_serializer<ProjectFolder::Result> {
+	static void to_json(ofJson &j, const ProjectFolder::Result &v) {
+		j = {
+			{"editor_name", v.editor_name},
+			{"is_scale_to_viewport", v.is_scale_to_viewport},
+			{"is_show_control", v.is_show_control}
+		};
+	}
+	static void from_json(const ofJson &j, ProjectFolder::Result &v) {
+		updateByJsonValue(v.editor_name, j, "editor_name");
+		updateByJsonValue(v.is_scale_to_viewport, j, "is_scale_to_viewport");
+		updateByJsonValue(v.is_show_control, j, "is_show_control");
 	}
 };
 }
@@ -151,8 +188,10 @@ ofJson ProjectFolder::toJson() const
 		{"viewport", viewport_},
 		{"export", export_},
 		{"backup", backup_},
+		{"bridge", bridge_},
 		{"grid", grid_},
-		{"filename", filename_}
+		{"filename", filename_},
+		{"result", result_}
 	};
 }
 void ProjectFolder::loadJson(const ofJson &json)
@@ -161,8 +200,10 @@ void ProjectFolder::loadJson(const ofJson &json)
 	updateByJsonValue(viewport_, json, "viewport");
 	updateByJsonValue(export_, json, "export");
 	updateByJsonValue(backup_, json, "backup");
+	updateByJsonValue(bridge_, json, "bridge");
 	updateByJsonValue(grid_, json, "grid");
 	updateByJsonValue(filename_, json, "filename");
+	updateByJsonValue(result_, json, "result");
 }
 
 void ProjectFolder::setup() {

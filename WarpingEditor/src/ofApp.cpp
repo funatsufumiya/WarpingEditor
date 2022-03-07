@@ -63,11 +63,10 @@ void GuiApp::setup(){
 		{"blend", blend_editor_}
 	};
 	state_ = EDIT_BLEND;
-	
-	fbo_.allocate(1920, 1080, GL_RGB);
-	blend_editor_->setTexture(fbo_.getTexture());
-	
 	result_app_->setEditor(blend_editor_);
+
+	// avoid weird flipping
+	fbo_.allocate(1,1, GL_RGB);
 
 	loadRecent();
 	openRecent();
@@ -79,7 +78,6 @@ void GuiApp::update(){
 		auto tex = texture_source_->getTexture();
 		texture_source_->update();
 		if(texture_source_->isFrameNew()) {
-//			result_app_->setTexture(tex);
 			warp_uv_->setTexture(tex);
 			warp_mesh_->setTexture(tex);
 		}
@@ -122,13 +120,6 @@ void GuiApp::update(){
 			tex.unbind();
 			fbo_.end();
 		}
-	}
-	if(fbo_.isAllocated()) {
-		auto tex = fbo_.getTexture();
-		auto tex_data = tex.getTextureData();
-		glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
-		? glm::vec2{1,1}
-		: glm::vec2{1/tex_data.tex_w, 1/tex_data.tex_h};
 	}
 	blend_editor_->setTexture(fbo_.getTexture());
 }
@@ -193,7 +184,6 @@ void GuiApp::draw(){
 					if((texture_source_ = buildTextureSource(proj_))) {
 						auto tex = texture_source_->getTexture();
 						if(tex.isAllocated()) {
-//							result_app_->setTexture(tex);
 							warp_uv_->setTexture(tex);
 							warp_mesh_->setTexture(tex);
 						}
@@ -296,7 +286,6 @@ void GuiApp::draw(){
 			if((texture_source_ = buildTextureSource(proj_))) {
 				auto tex = texture_source_->getTexture();
 				if(tex.isAllocated()) {
-//					result_app_->setTexture(tex);
 					warp_uv_->setTexture(tex);
 					warp_mesh_->setTexture(tex);
 				}
@@ -426,11 +415,20 @@ void GuiApp::save(bool do_backup) const
 		auto pos = result_window_->getWindowPosition();
 		auto size = result_window_->getWindowSize();
 		proj_.setResultViewport({pos.x,pos.y,size.x,size.y});
+		
+		proj_.setResultEditorName(stateName(state_));
+		proj_.setResultScaleToViewport(result_app_->isScaleToViewport());
+		proj_.setResultShowControl(result_app_->isShowControl());
 	}
 	proj_.setUVView(-warp_uv_->getTranslate(), warp_uv_->getScale());
 	proj_.setUVGridData(warp_uv_->getGridData());
 	proj_.setWarpView(-warp_mesh_->getTranslate(), warp_mesh_->getScale());
 	proj_.setWarpGridData(warp_mesh_->getGridData());
+	proj_.setBlendView(-blend_editor_->getTranslate(), blend_editor_->getScale());
+	proj_.setBlendGridData(blend_editor_->getGridData());
+	
+	proj_.setBridgeResolution({fbo_.getWidth(), fbo_.getHeight()});
+	
 	proj_.save();
 
 	auto filepath = proj_.getDataFilePath();
@@ -464,6 +462,13 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		auto view = proj_.getResultViewport();
 		result_window_->setWindowPosition(view[0], view[1]);
 		result_window_->setWindowShape(view[2], view[3]);
+		
+		auto found = editor_.find(proj_.getResultEditorName());
+		if(found != end(editor_)) {
+			result_app_->setEditor(found->second);
+		}
+		result_app_->setScaleToViewport(proj_.isResultScaleToViewport());
+		result_app_->setShowControl(proj_.isResultShowControl());
 	}
 	{
 		auto view = proj_.getUVView();
@@ -479,17 +484,27 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		warp_mesh_->scale(view.second, {0,0});
 		warp_mesh_->setGridData(proj_.getWarpGridData());
 	}
+	{
+		auto view = proj_.getBlendView();
+		blend_editor_->resetMatrix();
+		blend_editor_->translate(view.first);
+		blend_editor_->scale(view.second, {0,0});
+		blend_editor_->setGridData(proj_.getBlendGridData());
+	}
 	updateRecent(proj_);
 
 	if((texture_source_ = buildTextureSource(proj_))) {
 		auto tex = texture_source_->getTexture();
 		if(tex.isAllocated()) {
-//			result_app_->setTexture(tex);
 			warp_uv_->setTexture(tex);
 			warp_mesh_->setTexture(tex);
 		}
 	}
 	warping_data_->load(proj_.getDataFilePath(), proj_.getTextureSizeCache());
+
+	auto bridge_res = proj_.getBridgeResolution();
+	fbo_.allocate(bridge_res.x, bridge_res.y, GL_RGB);
+	blend_editor_->setTexture(fbo_.getTexture());
 }
 
 void GuiApp::openRecent(int index)
