@@ -90,7 +90,7 @@ void BlendingEditor::draw() const
 		drawGrid();
 	}
 	shader_.begin(tex_);
-	drawMesh(tex_);
+	drawMesh();
 	shader_.end();
 	drawWire();
 	drawPoint(!is_enabled_hovering_uneditable_point_);

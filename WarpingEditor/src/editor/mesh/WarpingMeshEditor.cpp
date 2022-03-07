@@ -128,21 +128,13 @@ void WarpingMeshEditor::update()
 	}
 }
 
-
-void WarpingMeshEditor::draw() const
+void WarpingMeshEditor::drawControl() const
 {
 	switch(mode_) {
 		case MODE_MESH:
-			MeshEditor::draw();
+			MeshEditor::drawControl();
 			return;
 		case MODE_DIVISION: {
-			pushMatrix();
-			pushScissor();
-			if(grid_.is_show) {
-				drawGrid();
-			}
-			drawMesh(tex_);
-			drawWire();
 			float point_size = mouse_near_distance_/getScale();
 			float cross_size = point_size*4;
 			float cross_width = point_size/2.f;
@@ -171,11 +163,10 @@ void WarpingMeshEditor::draw() const
 				mesh.append(makeCross(div_point_, ofColor::green, cross_size, cross_width, 0));
 			}
 			mesh.draw();
-			popScissor();
-			popMatrix();
 		}	break;
 	}
 }
+
 
 namespace {
 template <typename ... Args>

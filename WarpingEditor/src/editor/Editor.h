@@ -85,6 +85,7 @@ public:
 	
 	void setMeshData(std::shared_ptr<ContainerType> data) { data_ = data; }
 	virtual void draw() const override;
+	virtual void drawControl() const;
 	
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void moveSelectedOnScreenScale(const glm::vec2 &delta) override { moveSelected(delta/getScale()); }
@@ -134,7 +135,7 @@ protected:
 	
 	glm::vec2 snap_diff_={0,0};
 	
-	void drawMesh(ofTexture tex) const;
+	void drawMesh() const;
 	void drawWire() const;
 	void drawPoint(bool only_editable_point) const;
 	void drawDragRect() const;
@@ -372,7 +373,7 @@ inline void Editor<Data, Mesh, Index, Point>::procNewMouseEvent(const MouseEvent
 	}
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
-void Editor<Data, Mesh, Index, Point>::drawMesh(ofTexture tex) const
+void Editor<Data, Mesh, Index, Point>::drawMesh() const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
@@ -390,9 +391,9 @@ void Editor<Data, Mesh, Index, Point>::drawMesh(ofTexture tex) const
 			mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
 		}
 	}
-	tex.bind();
+	tex_.bind();
 	mesh.draw();
-	tex.unbind();
+	tex_.unbind();
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
 void Editor<Data, Mesh, Index, Point>::drawWire() const
@@ -492,14 +493,20 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 	if(grid_.is_show) {
 		drawGrid();
 	}
-	drawMesh(tex_);
-	drawWire();
-	drawPoint(!is_enabled_hovering_uneditable_point_);
+	drawMesh();
+	drawControl();
 	popMatrix();
 	if(is_enabled_rect_selection_) {
 		drawDragRect();
 	}
 	popScissor();
+}
+
+template<typename Data, typename Mesh, typename Index, typename Point>
+void Editor<Data, Mesh, Index, Point>::drawControl() const
+{
+	drawWire();
+	drawPoint(!is_enabled_hovering_uneditable_point_);
 }
 
 template<typename Data, typename Mesh, typename Index, typename Point>

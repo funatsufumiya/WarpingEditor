@@ -10,7 +10,7 @@ public:
 		MODE_DIVISION
 	};
 	void update() override;
-	void draw() const override;
+	void drawControl() const override;
 	void gui() override;
 	
 	bool isPreventMeshInterpolation() const override { return mode_==MODE_DIVISION; }
