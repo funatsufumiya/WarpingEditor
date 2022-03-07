@@ -24,6 +24,9 @@ public:
 	
 	void drawMesh() const override;
 	void gui() override;
+	
+	ofxBlendScreen::Shader::Params& getShaderParam() const { return shader_.getParams(); }
+	void setShaderParam(const ofxBlendScreen::Shader::Params &params) { shader_.getParams() = params; }
 
 private:
 	std::vector<int> getEditableMeshIndex(int state);

@@ -2,6 +2,7 @@
 
 #include "WorkFolder.h"
 #include "Editor.h"
+#include "ofxBlendScreen.h"
 
 class ProjectFolder : public WorkFolder
 {
@@ -31,6 +32,8 @@ public:
 	
 	glm::ivec2 getBridgeResolution() const { return bridge_.resolution; }
 	
+	ofxBlendScreen::Shader::Params getBlendParams() const { return blend_params_; }
+	
 	float getExportMeshMinInterval() const { return export_.max_mesh_size; }
 	std::string getExportFolder() const { return export_.folder; }
 	std::string getExportFileName() const { return export_.filename; }
@@ -59,6 +62,8 @@ public:
 	void setResultShowControl(bool enable) { result_.is_show_control = enable; }
 	
 	void setBridgeResolution(glm::ivec2 resolution) { bridge_.resolution = resolution; }
+	
+	void setBlendParams(const ofxBlendScreen::Shader::Params &params) { blend_params_ = params; }
 
 	void setExportMeshMinInterval(float interval) { export_.max_mesh_size = interval; }
 	void setExportFolder(const std::string &folder) { export_.folder = folder; }
@@ -114,6 +119,7 @@ private:
 	Bridge bridge_;
 	Result result_;
 	std::string filename_;
+	ofxBlendScreen::Shader::Params blend_params_;
 	
 	ofJson toJson() const;
 	void loadJson(const ofJson &json);

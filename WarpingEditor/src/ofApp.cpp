@@ -426,6 +426,7 @@ void GuiApp::save(bool do_backup) const
 	proj_.setWarpGridData(warp_mesh_->getGridData());
 	proj_.setBlendView(-blend_editor_->getTranslate(), blend_editor_->getScale());
 	proj_.setBlendGridData(blend_editor_->getGridData());
+	proj_.setBlendParams(blend_editor_->getShaderParam());
 	
 	proj_.setBridgeResolution({fbo_.getWidth(), fbo_.getHeight()});
 	
@@ -491,6 +492,8 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		blend_editor_->scale(view.second, {0,0});
 		blend_editor_->setGridData(proj_.getBlendGridData());
 	}
+	blend_editor_->setShaderParam(proj_.getBlendParams());
+	
 	updateRecent(proj_);
 
 	if((texture_source_ = buildTextureSource(proj_))) {

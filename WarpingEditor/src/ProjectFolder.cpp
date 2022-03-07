@@ -22,6 +22,15 @@ struct adl_serializer<glm::tvec4<T>> {
 	}
 };
 template<typename T>
+struct adl_serializer<glm::tvec3<T>> {
+	static void to_json(ofJson &j, const glm::tvec3<T> &v) {
+		j = {v[0],v[1],v[2]};
+	}
+	static void from_json(const ofJson &j, glm::tvec3<T> &v) {
+		v = {j[0],j[1],j[2]};
+	}
+};
+template<typename T>
 struct adl_serializer<glm::tvec2<T>> {
 	static void to_json(ofJson &j, const glm::tvec2<T> &v) {
 		j = {v[0],v[1]};
@@ -179,6 +188,23 @@ struct adl_serializer<ProjectFolder::Result> {
 		updateByJsonValue(v.is_show_control, j, "is_show_control");
 	}
 };
+template<>
+struct adl_serializer<ofxBlendScreen::Shader::Params> {
+	static void to_json(ofJson &j, const ofxBlendScreen::Shader::Params &v) {
+		j = {
+			{"gamma", v.gamma},
+			{"luminance_control", v.luminance_control},
+			{"blend_power", v.blend_power},
+			{"base_color", v.base_color}
+		};
+	}
+	static void from_json(const ofJson &j, ofxBlendScreen::Shader::Params &v) {
+		updateByJsonValue(v.gamma, j, "gamma");
+		updateByJsonValue(v.luminance_control, j, "luminance_control");
+		updateByJsonValue(v.blend_power, j, "blend_power");
+		updateByJsonValue(v.base_color, j, "base_color");
+	}
+};
 }
 
 ofJson ProjectFolder::toJson() const
@@ -191,7 +217,8 @@ ofJson ProjectFolder::toJson() const
 		{"bridge", bridge_},
 		{"grid", grid_},
 		{"filename", filename_},
-		{"result", result_}
+		{"result", result_},
+		{"blend_params", blend_params_}
 	};
 }
 void ProjectFolder::loadJson(const ofJson &json)
@@ -204,6 +231,7 @@ void ProjectFolder::loadJson(const ofJson &json)
 	updateByJsonValue(grid_, json, "grid");
 	updateByJsonValue(filename_, json, "filename");
 	updateByJsonValue(result_, json, "result");
+	updateByJsonValue(blend_params_, json, "blend_params");
 }
 
 void ProjectFolder::setup() {
