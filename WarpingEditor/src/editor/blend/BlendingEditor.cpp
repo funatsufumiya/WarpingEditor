@@ -53,7 +53,6 @@ ofMesh BlendingEditor::makeMeshFromMesh(const DataType &data, const ofColor &col
 }
 ofMesh BlendingEditor::makeWireFromMesh(const DataType &data, const ofColor &color) const
 {
-//	return makeMeshFromMesh(data, color);
 	auto tex_data = tex_.getTextureData();
 	glm::vec2 tex_scale = tex_data.textureTarget == GL_TEXTURE_RECTANGLE_ARB
 	? glm::vec2(1,1)
