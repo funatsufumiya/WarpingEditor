@@ -35,16 +35,17 @@ private:
 		NUM_STATE
 	};
 	int state_;
+	std::string stateName(int state) const;
 	bool isStateWarping() const { return state_ == EDIT_WARP_UV || state_ == EDIT_WARP_MESH; }
 	bool isStateBlending() const { return state_ == EDIT_BLEND; }
-	std::vector<EditorBase*> editor_;
+	std::map<std::string, std::shared_ptr<EditorBase>> editor_;
 
 	std::shared_ptr<WarpingData> warping_data_;
-	WarpingUVEditor warp_uv_;
-	WarpingMeshEditor warp_mesh_;
+	std::shared_ptr<WarpingUVEditor> warp_uv_;
+	std::shared_ptr<WarpingMeshEditor> warp_mesh_;
 	
 	std::shared_ptr<BlendingData> blending_data_;
-	BlendingEditor blend_editor_;
+	std::shared_ptr<BlendingEditor> blend_editor_;
 	
 	std::shared_ptr<ResultView> result_app_;
 	std::shared_ptr<ofAppBaseWindow> result_window_;
@@ -72,20 +73,16 @@ public:
 	void setup() override;
 	void draw() override;
 	
-	void setTexture(const ofTexture &texture) { texture_ = texture; }
-	void setMesh(const ofMesh &mesh) { mesh_ = mesh; }
+	void setEditor(std::shared_ptr<EditorBase> editor) { editor_ = editor; }
+	std::shared_ptr<EditorBase> getEditor() const { return editor_; }
 	
 	void setScaleToViewport(bool enable) { is_scale_to_viewport_ = enable; }
 	bool isScaleToViewport() const { return is_scale_to_viewport_; }
-	
-	void setEnableBlending(bool enable) { is_enabled_blending_ = enable; }
-	bool isEnabledBlending() const { return is_enabled_blending_; }
-	
-	ofxBlendScreen::Shader::Params& getBlendParams() { return shader_.getParams(); } 
+
+	void setShowControl(bool enable) { is_show_control_ = enable; }
+	bool isShowControl() const { return is_show_control_; }
 private:
-	ofMesh mesh_;
-	ofTexture texture_;
+	std::shared_ptr<EditorBase> editor_;
 	bool is_scale_to_viewport_;
-	bool is_enabled_blending_;
-	ofxBlendScreen::Shader shader_;
+	bool is_show_control_;
 };

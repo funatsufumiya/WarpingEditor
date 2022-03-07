@@ -128,14 +128,14 @@ void WarpingMeshEditor::update()
 	}
 }
 
-void WarpingMeshEditor::drawControl() const
+void WarpingMeshEditor::drawControl(float parent_scale) const
 {
 	switch(mode_) {
 		case MODE_MESH:
-			MeshEditor::drawControl();
+			MeshEditor::drawControl(parent_scale);
 			return;
 		case MODE_DIVISION: {
-			float point_size = mouse_near_distance_/getScale();
+			float point_size = mouse_near_distance_/parent_scale;
 			float cross_size = point_size*4;
 			float cross_width = point_size/2.f;
 			ofMesh mesh;

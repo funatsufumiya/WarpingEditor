@@ -23,7 +23,7 @@ public:
 
 	bool isPreventMeshInterpolation() const override { return true; }
 	
-	void draw() const override;
+	void drawMesh() const override;
 	void gui() override;
 
 private:

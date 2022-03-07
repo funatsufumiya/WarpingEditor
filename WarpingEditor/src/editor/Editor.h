@@ -15,9 +15,12 @@ public:
 	void setup();
 	virtual void update();
 	virtual void draw() const{}
+	virtual void drawMesh() const {}
+	virtual void drawControl(float parent_scale) const {}
 	virtual void gui() {}
 
 	void setTexture(ofTexture tex) { tex_ = tex; }
+	glm::vec2 getTextureResolution() const { return {tex_.getWidth(), tex_.getHeight()}; }
 
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
 	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }
@@ -85,7 +88,8 @@ public:
 	
 	void setMeshData(std::shared_ptr<ContainerType> data) { data_ = data; }
 	virtual void draw() const override;
-	virtual void drawControl() const;
+	virtual void drawMesh() const override;
+	virtual void drawControl(float parent_scale) const override;
 	
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
 	void moveSelectedOnScreenScale(const glm::vec2 &delta) override { moveSelected(delta/getScale()); }
@@ -135,9 +139,8 @@ protected:
 	
 	glm::vec2 snap_diff_={0,0};
 	
-	void drawMesh() const;
 	void drawWire() const;
-	void drawPoint(bool only_editable_point) const;
+	void drawPoint(bool only_editable_point, float parent_scale) const;
 	void drawDragRect() const;
 	void drawGrid() const;
 	
@@ -409,9 +412,9 @@ void Editor<Data, Mesh, Index, Point>::drawWire() const
 	mesh.draw();
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
-void Editor<Data, Mesh, Index, Point>::drawPoint(bool only_editable_point) const
+void Editor<Data, Mesh, Index, Point>::drawPoint(bool only_editable_point, float parent_scale) const
 {
-	float point_size = mouse_near_distance_/getScale();
+	float point_size = mouse_near_distance_/parent_scale;
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	auto meshes = data_->getVisibleData();
@@ -494,7 +497,7 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 		drawGrid();
 	}
 	drawMesh();
-	drawControl();
+	drawControl(getScale());
 	popMatrix();
 	if(is_enabled_rect_selection_) {
 		drawDragRect();
@@ -503,10 +506,10 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 }
 
 template<typename Data, typename Mesh, typename Index, typename Point>
-void Editor<Data, Mesh, Index, Point>::drawControl() const
+void Editor<Data, Mesh, Index, Point>::drawControl(float parent_scale) const
 {
 	drawWire();
-	drawPoint(!is_enabled_hovering_uneditable_point_);
+	drawPoint(!is_enabled_hovering_uneditable_point_, parent_scale);
 }
 
 template<typename Data, typename Mesh, typename Index, typename Point>

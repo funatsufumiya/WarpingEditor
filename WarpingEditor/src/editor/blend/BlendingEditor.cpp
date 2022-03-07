@@ -82,23 +82,11 @@ std::shared_ptr<MeshType> BlendingEditor::getIfInside(std::shared_ptr<DataType> 
 	return found ? getMeshType(*data) : nullptr;
 }
 
-void BlendingEditor::draw() const
+void BlendingEditor::drawMesh() const
 {
-	pushScissor();
-	pushMatrix();
-	if(grid_.is_show) {
-		drawGrid();
-	}
 	shader_.begin(tex_);
-	drawMesh();
+	Editor::drawMesh();
 	shader_.end();
-	drawWire();
-	drawPoint(!is_enabled_hovering_uneditable_point_);
-	popMatrix();
-	if(is_enabled_rect_selection_) {
-		drawDragRect();
-	}
-	popScissor();
 }
 
 void BlendingEditor::gui()
