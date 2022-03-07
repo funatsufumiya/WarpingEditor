@@ -462,13 +462,39 @@ template<typename T>
 void readFrom(std::istream& is, T& t) {
 	is.read(reinterpret_cast<char*>(&t), sizeof(T));
 }
+template<>
+void writeTo<glm::vec3>(std::ostream &os, const glm::vec3 &t) {
+	writeTo(os, t[0]);
+	writeTo(os, t[1]);
+	writeTo(os, t[2]);
+}
+template<>
+void readFrom<glm::vec3>(std::istream &is, glm::vec3 &t) {
+	readFrom(is, t[0]);
+	readFrom(is, t[1]);
+	readFrom(is, t[2]);
+}
+template<>
+void writeTo<ofxBlendScreen::Shader::Params>(std::ostream &os, const ofxBlendScreen::Shader::Params &t) {
+	writeTo(os, t.gamma);
+	writeTo(os, t.luminance_control);
+	writeTo(os, t.blend_power);
+	writeTo(os, t.base_color);
+}
+template<>
+void readFrom<ofxBlendScreen::Shader::Params>(std::istream &is, ofxBlendScreen::Shader::Params &t) {
+	readFrom(is, t.gamma);
+	readFrom(is, t.luminance_control);
+	readFrom(is, t.blend_power);
+	readFrom(is, t.base_color);
+}
 }
 
 void GuiApp::saveDataFile(const std::filesystem::path &filepath) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
 	file << "maap";
-	writeTo<std::size_t>(file, 0);	// version number
+	writeTo<std::size_t>(file, 1);	// version number
 	auto writeToPosition = [&](ofFile::pos_type pos, std::size_t size) {
 		file.seekg(pos, std::ios_base::beg);
 		writeTo(file, size);
@@ -489,6 +515,7 @@ void GuiApp::saveDataFile(const std::filesystem::path &filepath) const
 	auto begin_blendsize = file.tellg();
 	{
 		glm::vec2 tex_size = proj_.getBridgeResolution();
+		writeTo(file, blend_editor_->getShaderParam());
 		blending_data_->pack(file, {1/tex_size.x, 1/tex_size.y});
 	}
 	auto blendsize = file.tellg() - begin_blendsize;
@@ -524,6 +551,9 @@ void GuiApp::loadDataFile(const std::filesystem::path &filepath)
 			warping_data_->unpack(file, proj_.getTextureSizeCache());
 		}
 		if(strncmp(chunkname, "blnd", 4) == 0) {
+			if(version >= 1) {
+				readFrom(file, blend_editor_->getShaderParam());
+			}
 			blending_data_->unpack(file, proj_.getBridgeResolution());
 		}
 	}
