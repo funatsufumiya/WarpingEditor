@@ -38,7 +38,7 @@ void GuiApp::setup(){
 	Icon::init();
 	
 //	ofEnableArbTex();
-	ofBackground(0);
+	ofBackground(ofColor::gray);
 
 	gui_.setup(nullptr, true, ImGuiConfigFlags_DockingEnable, true);
 	
@@ -316,6 +316,7 @@ void GuiApp::draw(){
 		auto fbo_size = glm::ivec2{fbo_.getWidth(), fbo_.getHeight()};
 		if(InputInt2("texture_size", &fbo_size.x) && fbo_size.x > 0 && fbo_size.y > 0) {
 			fbo_.allocate(fbo_size.x, fbo_size.y, GL_RGB);
+			warp_mesh_->setBackgroundSize(fbo_size);
 		}
 		bool scale_to_viewport = result_app_->isScaleToViewport();
 		if(Checkbox("scale_to_viewport", &scale_to_viewport)) {
@@ -664,6 +665,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	auto bridge_res = proj_.getBridgeResolution();
 	fbo_.allocate(bridge_res.x, bridge_res.y, GL_RGB);
 	blend_editor_->setTexture(fbo_.getTexture());
+	warp_mesh_->setBackgroundSize(bridge_res);
 }
 
 void GuiApp::openRecent(int index)

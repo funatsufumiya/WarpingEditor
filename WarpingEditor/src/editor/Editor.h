@@ -22,6 +22,15 @@ public:
 		tex_.unbind();
 		endShader();
 	}
+	virtual void drawWorkArea(const ofFloatColor &color, bool fill) const {
+		auto size = getWorkAreaSize();
+		ofPushStyle();
+		ofSetColor(color);
+		fill ? ofFill() : ofNoFill();
+		ofDrawRectangle(0,0,size.x,size.y);
+		ofPopStyle();
+	};
+
 	virtual void beginShader() const {}
 	virtual void endShader() const {}
 	virtual ofMesh getMesh(bool use_control_color) const { return {}; }
@@ -60,6 +69,7 @@ public:
 protected:
 	ofTexture tex_;
 	GridData grid_;
+	virtual glm::vec2 getWorkAreaSize() const { return {tex_.getWidth(), tex_.getHeight()}; }
 
 	bool is_viewport_editable_by_mouse_=true;
 	bool is_enabled_rect_selection_=true;
@@ -516,6 +526,7 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 	}
 	drawMesh(true);
 	drawControl(getScale());
+	drawWorkArea(ofColor::red, false);
 	popMatrix();
 	if(is_enabled_rect_selection_) {
 		drawDragRect();
