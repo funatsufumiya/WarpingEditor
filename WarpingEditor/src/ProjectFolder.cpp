@@ -116,20 +116,47 @@ struct adl_serializer<ProjectFolder::Viewport> {
 };
 
 template<>
+struct adl_serializer<ProjectFolder::Export::Mesh> {
+	static void to_json(ofJson &j, const ProjectFolder::Export::Mesh &v) {
+		j = {
+			{"filename", v.filename},
+			{"max_mesh_size", v.max_mesh_size}
+		};
+	}
+	static void from_json(const ofJson &j, ProjectFolder::Export::Mesh &v) {
+		updateByJsonValue(v.filename, j, "filename");
+		updateByJsonValue(v.max_mesh_size, j, "max_mesh_size");
+	}
+};
+template<>
+struct adl_serializer<ProjectFolder::Export::BlendShader> {
+	static void to_json(ofJson &j, const ProjectFolder::Export::BlendShader &v) {
+		j = {
+			{"filename", v.filename}
+		};
+	}
+	static void from_json(const ofJson &j, ProjectFolder::Export::BlendShader &v) {
+		updateByJsonValue(v.filename, j, "filename");
+	}
+};
+
+template<>
 struct adl_serializer<ProjectFolder::Export> {
 	static void to_json(ofJson &j, const ProjectFolder::Export &v) {
 		j = {
 			{"folder", v.folder},
-			{"filename", v.filename},
 			{"is_arb", v.is_arb},
-			{"max_mesh_size", v.max_mesh_size}
+			{"warp", v.warp},
+			{"blend", v.blend},
+			{"blend_shader", v.blend_shader}
 		};
 	}
 	static void from_json(const ofJson &j, ProjectFolder::Export &v) {
 		updateByJsonValue(v.folder, j, "folder");
-		updateByJsonValue(v.filename, j, "filename");
 		updateByJsonValue(v.is_arb, j, "is_arb");
-		updateByJsonValue(v.max_mesh_size, j, "max_mesh_size");
+		updateByJsonValue(v.warp, j, "warp");
+		updateByJsonValue(v.blend, j, "blend");
+		updateByJsonValue(v.blend_shader, j, "blend_shader");
 	}
 };
 template<>
@@ -268,3 +295,4 @@ void ProjectFolder::setTextureSourceNDI(const std::string &ndi_name)
 	texture_.type = Texture::NDI;
 	texture_.ndi = ndi_name;
 }
+

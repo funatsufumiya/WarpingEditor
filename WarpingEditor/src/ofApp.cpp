@@ -231,27 +231,38 @@ void GuiApp::draw(){
 	}
 	if(BeginPopupModal("is_open_export_dialog_trigger")) {
 		std::string folder = proj_.getExportFolder();
-		float resample_min_interval = proj_.getExportMeshMinInterval();
 		bool is_arb = proj_.getIsExportMeshArb();
-		std::string filename = proj_.getExportFileName();
-		if(InputFloat("resample_min_interval", &resample_min_interval)) {
-			proj_.setExportMeshMinInterval(resample_min_interval);
-		}
 		if(Checkbox("arb", &is_arb)) {
 			proj_.setIsExportMeshArb(is_arb);
 		}
 		if(EditText("export folder", folder, 1024)) {
 			proj_.setExportFolder(folder);
-		}
-		SameLine();
+		} SameLine();
 		if(Button("...")) {
 			ImGuiFileDialog::Instance()->OpenModal("SelectFolderDlgKey", "Choose Export Folder", nullptr, folder);
 		}
-		if(EditText("filename", filename)) {
-			proj_.setExportFileName(filename);
+		if(TreeNodeEx("warping", ImGuiTreeNodeFlags_DefaultOpen)) {
+			auto param = proj_.getExportWarpParam();
+			if(EditText("filename", param.filename)
+			   || InputFloat("resample_min_interval", &param.max_mesh_size)) {
+				proj_.setExportWarpParam(param);
+			}
+			TreePop();
+		}
+		if(TreeNodeEx("blending", ImGuiTreeNodeFlags_DefaultOpen)) {
+			auto param = proj_.getExportBlendParam();
+			if(EditText("filename", param.filename)
+			   || InputFloat("resample_min_interval", &param.max_mesh_size)) {
+				proj_.setExportBlendParam(param);
+			}
+			auto sparam = proj_.getExportBlendShaderParam();
+			if(EditText("shader_param", sparam.filename)) {
+				proj_.setExportBlendShaderParam(sparam);
+			}
+			TreePop();
 		}
 		if(Button("export")) {
-			exportMesh(proj_);
+			sc_export();
 			CloseCurrentPopup();
 		} SameLine();
 		if(Button("cancel")) {
@@ -373,13 +384,49 @@ void GuiApp::exportMesh(float resample_min_interval, const std::filesystem::path
 	glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
 	warping_data_->exportMesh(filepath, resample_min_interval, coord_size);
 }
+
+namespace nlohmann {
+template<typename T>
+struct adl_serializer<glm::tvec3<T>> {
+	static void to_json(ofJson &j, const glm::tvec3<T> &v) {
+		j = {v[0],v[1],v[2]};
+	}
+	static void from_json(const ofJson &j, glm::tvec3<T> &v) {
+		v = {j[0],j[1],j[2]};
+	}
+};
+template<>
+struct adl_serializer<ofxBlendScreen::Shader::Params> {
+	static void to_json(ofJson &j, const ofxBlendScreen::Shader::Params &v) {
+		j = {
+			{"gamma", v.gamma},
+			{"luminance_control", v.luminance_control},
+			{"blend_power", v.blend_power},
+			{"base_color", v.base_color}
+		};
+	}
+};
+}
 void GuiApp::exportMesh(const ProjectFolder &proj) const
 {
 	std::string folder = proj_.getExportFolder();
-	float resample_min_interval = proj_.getExportMeshMinInterval();
 	bool is_arb = proj_.getIsExportMeshArb();
-	std::string filename = proj_.getExportFileName();
-	exportMesh(resample_min_interval, ofFilePath::join(folder, filename), is_arb);
+	{
+		auto param = proj_.getExportWarpParam();
+		auto tex = texture_source_->getTexture();
+		glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
+		warping_data_->exportMesh(ofFilePath::join(folder, param.filename), param.max_mesh_size, coord_size);
+	}
+	{
+		auto param = proj_.getExportBlendParam();
+		auto tex = fbo_.getTexture();
+		glm::vec2 coord_size = is_arb&&tex.isAllocated()?glm::vec2{1,1}: glm::vec2{1/tex.getWidth(), 1/tex.getHeight()};
+		blending_data_->exportMesh(ofFilePath::join(folder, param.filename), param.max_mesh_size, coord_size);
+	}
+	{
+		auto param = proj_.getExportBlendShaderParam();
+		ofSavePrettyJson(ofFilePath::join(folder, param.filename), blend_editor_->getShaderParam());
+	}
 }
 
 

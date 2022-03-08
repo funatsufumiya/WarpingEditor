@@ -3,9 +3,51 @@
 #include "WorkFolder.h"
 #include "Editor.h"
 #include "ofxBlendScreen.h"
+#include "ofJson.h"
 
 class ProjectFolder : public WorkFolder
 {
+public:
+	struct Texture {
+		enum {
+			FILE, NDI
+		};
+		int type = FILE;
+		std::string file;
+		std::string ndi;
+		glm::ivec2 size_cache;
+	};
+	struct Viewport {
+		glm::vec4 result={0,0,1920,1080};
+		std::pair<glm::vec2, float> uv{{0,0},1}, warp{{0,0},1}, blend{{0,0},1};
+	};
+	struct Export {
+		std::string folder;
+		bool is_arb=false;
+		struct Mesh {
+			std::string filename="mesh.ply";
+			float max_mesh_size=100;
+		} warp, blend;
+		struct BlendShader {
+			std::string filename="blend_shader.json";
+		} blend_shader;
+	};
+	struct Backup {
+		bool enabled=true;
+		std::string folder;
+		int limit=0;
+	};
+	struct Grid {
+		EditorBase::GridData uv, warp, blend;
+	};
+	struct Bridge {
+		glm::ivec2 resolution={1920,1080};
+	};
+	struct Result {
+		std::string editor_name="uv";
+		bool is_scale_to_viewport=false;
+		bool is_show_control=false;
+	};
 public:
 	void setup();
 	void load();
@@ -34,10 +76,11 @@ public:
 	
 	ofxBlendScreen::Shader::Params getBlendParams() const { return blend_params_; }
 	
-	float getExportMeshMinInterval() const { return export_.max_mesh_size; }
 	std::string getExportFolder() const { return export_.folder; }
-	std::string getExportFileName() const { return export_.filename; }
 	bool getIsExportMeshArb() const { return export_.is_arb; }
+	Export::Mesh getExportWarpParam() const { return export_.warp; }
+	Export::Mesh getExportBlendParam() const { return export_.blend; }
+	Export::BlendShader getExportBlendShaderParam() const { return export_.blend_shader; }
 	
 	bool isBackupEnabled() const { return backup_.enabled; }
 	std::filesystem::path getBackupFolder() const { return getRelative(backup_.folder); }
@@ -65,10 +108,11 @@ public:
 	
 	void setBlendParams(const ofxBlendScreen::Shader::Params &params) { blend_params_ = params; }
 
-	void setExportMeshMinInterval(float interval) { export_.max_mesh_size = interval; }
 	void setExportFolder(const std::string &folder) { export_.folder = folder; }
-	void setExportFileName(const std::string &filename) { export_.filename = filename; }
-	void setIsExportMeshArb(bool is_arb) { export_.is_arb = is_arb; }
+	void setIsExportMeshArb(bool arb) { export_.is_arb = arb; }
+	void setExportWarpParam(const Export::Mesh &param) { export_.warp = param; }
+	void setExportBlendParam(const Export::Mesh &param) { export_.blend = param; }
+	void setExportBlendShaderParam(const Export::BlendShader &param) { export_.blend_shader = param; }
 
 	void setUVGridData(const EditorBase::GridData &data) { grid_.uv = data; }
 	void setWarpGridData(const EditorBase::GridData &data) { grid_.warp = data; }
@@ -76,40 +120,7 @@ public:
 	
 	void setFileName(const std::string &filename) { filename_ = filename; }
 	
-	struct Texture {
-		enum {
-			FILE, NDI
-		};
-		int type = FILE;
-		std::string file;
-		std::string ndi;
-		glm::ivec2 size_cache;
-	};
-	struct Viewport {
-		glm::vec4 result={0,0,1920,1080};
-		std::pair<glm::vec2, float> uv{{0,0},1}, warp{{0,0},1}, blend{{0,0},1};
-	};
-	struct Export {
-		std::string folder, filename="mesh.ply";
-		float max_mesh_size=100;
-		bool is_arb=false;
-	};
-	struct Backup {
-		bool enabled=true;
-		std::string folder;
-		int limit=0;
-	};
-	struct Grid {
-		EditorBase::GridData uv, warp, blend;
-	};
-	struct Bridge {
-		glm::ivec2 resolution={1920,1080};
-	};
-	struct Result {
-		std::string editor_name="uv";
-		bool is_scale_to_viewport=false;
-		bool is_show_control=false;
-	};
+
 private:
 	Texture texture_;
 	Viewport viewport_;
