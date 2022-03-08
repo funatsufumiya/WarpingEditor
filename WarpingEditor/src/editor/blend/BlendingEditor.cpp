@@ -77,13 +77,6 @@ std::shared_ptr<MeshType> BlendingEditor::getIfInside(std::shared_ptr<DataType> 
 	return found ? getMeshType(*data) : nullptr;
 }
 
-void BlendingEditor::drawMesh() const
-{
-	shader_.begin(tex_);
-	Editor::drawMesh();
-	shader_.end();
-}
-
 void BlendingEditor::gui()
 {
 	using namespace ImGui;

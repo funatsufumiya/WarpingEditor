@@ -15,7 +15,16 @@ public:
 	void setup();
 	virtual void update();
 	virtual void draw() const{}
-	virtual void drawMesh() const {}
+	virtual void drawMesh(bool use_control_color) const {
+		beginShader();
+		tex_.bind();
+		getMesh(use_control_color).draw();
+		tex_.unbind();
+		endShader();
+	}
+	virtual void beginShader() const {}
+	virtual void endShader() const {}
+	virtual ofMesh getMesh(bool use_control_color) const { return {}; }
 	virtual void drawControl(float parent_scale) const {}
 	virtual void drawBackground() const {
 		ofPushStyle();
@@ -26,6 +35,7 @@ public:
 	virtual void gui() {}
 
 	void setTexture(ofTexture tex) { tex_ = tex; }
+	ofTexture getTexture() const { return tex_; }
 	glm::vec2 getTextureResolution() const { return {tex_.getWidth(), tex_.getHeight()}; }
 
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
@@ -94,7 +104,7 @@ public:
 	
 	void setMeshData(std::shared_ptr<ContainerType> data) { data_ = data; }
 	virtual void draw() const override;
-	virtual void drawMesh() const override;
+	virtual ofMesh getMesh(bool use_control_color) const override;
 	virtual void drawControl(float parent_scale) const override;
 	
 	void setEnabledHoveringUneditablePoint(bool enable) { is_enabled_hovering_uneditable_point_ = enable; }
@@ -381,26 +391,29 @@ inline void Editor<Data, Mesh, Index, Point>::procNewMouseEvent(const MouseEvent
 	}
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
-void Editor<Data, Mesh, Index, Point>::drawMesh() const
+ofMesh Editor<Data, Mesh, Index, Point>::getMesh(bool use_control_color) const
 {
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	auto meshes = data_->getVisibleData();
 	for(auto &&mm : meshes) {
 		auto m = mm.second;
-		if(isSelectedMesh(*m)) {
-			mesh.append(makeMeshFromMesh(*m, ofColor::white));
-		}
-		else if(isHoveredMesh(*m)) {
-			mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
+		if(use_control_color) {
+			if(isSelectedMesh(*m)) {
+				mesh.append(makeMeshFromMesh(*m, ofColor::white));
+			}
+			else if(isHoveredMesh(*m)) {
+				mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
+			}
+			else {
+				mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+			}
 		}
 		else {
-			mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+			mesh.append(makeMeshFromMesh(*m, ofColor::white));
 		}
 	}
-	tex_.bind();
-	mesh.draw();
-	tex_.unbind();
+	return mesh;
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
 void Editor<Data, Mesh, Index, Point>::drawWire() const
@@ -501,7 +514,7 @@ void Editor<Data, Mesh, Index, Point>::draw() const
 	if(grid_.is_show) {
 		drawGrid();
 	}
-	drawMesh();
+	drawMesh(true);
 	drawControl(getScale());
 	popMatrix();
 	if(is_enabled_rect_selection_) {

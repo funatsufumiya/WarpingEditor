@@ -725,7 +725,7 @@ void ResultView::draw()
 			auto editor_size = editor_->getTextureResolution();
 			ofScale(ofGetWidth()/editor_size.x, ofGetHeight()/editor_size.y);
 		}
-		editor_->drawMesh();
+		editor_->drawMesh(false);
 		if(is_show_control_) {
 			editor_->drawControl(1);
 		}

@@ -22,7 +22,8 @@ public:
 
 	bool isPreventMeshInterpolation() const override { return true; }
 	
-	void drawMesh() const override;
+	void beginShader() const override { shader_.begin(tex_); }
+	void endShader() const override { shader_.end(); }
 	void gui() override;
 	
 	ofxBlendScreen::Shader::Params& getShaderParam() const { return shader_.getParams(); }
