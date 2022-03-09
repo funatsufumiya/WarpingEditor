@@ -28,15 +28,18 @@ class DataContainer : public DataContainerBase
 {
 public:
 	using DataType = Data;
+	using NamedData = std::pair<std::string, std::shared_ptr<Data>>;
+	using DataMap = std::vector<NamedData>;
+	using NamedDataWeak = std::pair<std::string, std::weak_ptr<Data>>;
 
 	void update();
 	bool remove(const std::string &name);
 	bool remove(const std::shared_ptr<DataType> mesh);
 	void clear() override { data_.clear(); }
 	bool isDirtyAny() const;
-	std::map<std::string, std::shared_ptr<DataType>>& getData() { return data_; }
-	std::map<std::string, std::shared_ptr<DataType>> getVisibleData() const;
-	std::map<std::string, std::shared_ptr<DataType>> getEditableData(bool include_hidden=false) const;
+	DataMap& getData() { return data_; }
+	DataMap getVisibleData() const;
+	DataMap getEditableData(bool include_hidden=false) const;
 	bool isVisible(std::shared_ptr<DataType> mesh) const;
 	bool isEditable(std::shared_ptr<DataType> mesh, bool include_hidden=false) const;
 
@@ -45,13 +48,25 @@ public:
 	
 	void gui(std::function<bool(DataType&)> is_selected, std::function<void(DataType&, bool)> set_selected, std::function<void()> create_new);
 protected:
-	std::map<std::string, std::shared_ptr<DataType>> data_;
-	bool add(const std::string &name, std::shared_ptr<DataType> data) {
-		return data_.insert(std::make_pair(name, data)).second;
+	DataMap data_;
+	std::pair<typename DataMap::iterator, bool> insert(DataMap &src, NamedData data) const {
+		auto found = find(src, data.first);
+		if(found != end(src)) {
+			return {found, false};
+		}
+		return {src.insert(end(src), data), true};
 	}
-	std::pair<std::string, std::shared_ptr<DataType>> createCopy(const std::string &name, std::shared_ptr<DataType> src);
+	typename DataMap::iterator find(DataMap &src, const std::string &name) const {
+		for(auto it = begin(src); it != end(src); ++it) {
+			if(it->first == name) {
+				return it;
+			}
+		}
+		return end(src);
+	}
+	NamedData createCopy(const std::string &name, std::shared_ptr<DataType> src);
 
-	std::pair<std::string, std::weak_ptr<DataType>> mesh_edit_;
+	NamedDataWeak mesh_edit_;
 	std::string mesh_name_buf_;
 	bool need_keyboard_focus_=false;
 };
@@ -141,10 +156,10 @@ class WarpingData : public DataContainer<WarpingMesh>
 public:
 	using UVType = WarpingMesh::UVType;
 	using MeshType = WarpingMesh::MeshType;
-	std::pair<std::string, std::shared_ptr<DataType>> create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect={0,0,1,1});
-	std::pair<std::string, std::shared_ptr<DataType>> createCopy(const std::string &name, std::shared_ptr<DataType> src);
-	std::pair<std::string, std::shared_ptr<DataType>> find(std::shared_ptr<UVType> quad);
-	std::pair<std::string, std::shared_ptr<DataType>> find(std::shared_ptr<MeshType> mesh);
+	NamedData create(const std::string &name, const glm::ivec2 &num_cells, const ofRectangle &vert_rect, const ofRectangle &coord_rect={0,0,1,1});
+	NamedData createCopy(const std::string &name, std::shared_ptr<DataType> src);
+	NamedData find(std::shared_ptr<UVType> quad);
+	NamedData find(std::shared_ptr<MeshType> mesh);
 	
 	void rescale(const glm::vec2 &scale) override { uvRescale(scale); }
 	void uvRescale(const glm::vec2 &scale);
@@ -158,8 +173,8 @@ class BlendingData : public DataContainer<BlendingMesh>
 {
 public:
 	using MeshType = BlendingMesh::MeshType;
-	std::pair<std::string, std::shared_ptr<DataType>> create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio);
-	std::pair<std::string, std::shared_ptr<DataType>> find(std::shared_ptr<MeshType> mesh);
+	NamedData create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio);
+	NamedData find(std::shared_ptr<MeshType> mesh);
 	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 	ofMesh getMesh(float resample_min_interval, const glm::vec2 &coord_size, ofRectangle *viewport=nullptr, bool only_visible=true) const;
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;

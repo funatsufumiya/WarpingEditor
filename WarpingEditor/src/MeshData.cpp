@@ -39,7 +39,7 @@ void DataContainer<Data>::update() {
 }
 template<typename Data>
 bool DataContainer<Data>::remove(const std::string &name) {
-	auto found = data_.find(name);
+	auto found = find(data_, name);
 	if(found == std::end(data_)) {
 		return false;
 	}
@@ -72,9 +72,9 @@ bool DataContainer<Data>::isEditable(std::shared_ptr<Data> data, bool include_hi
 }
 
 template<typename Data>
-std::map<std::string, std::shared_ptr<Data>> DataContainer<Data>::getVisibleData() const
+typename DataContainer<Data>::DataMap DataContainer<Data>::getVisibleData() const
 {
-	std::map<std::string, std::shared_ptr<Data>> ret;
+	DataMap ret;
 	auto isVisible = std::any_of(begin(data_), end(data_), [](const std::pair<std::string, std::shared_ptr<Data>> d) {
 		return d.second->is_solo;
 	}) ? [](std::shared_ptr<Data> d) {
@@ -84,15 +84,15 @@ std::map<std::string, std::shared_ptr<Data>> DataContainer<Data>::getVisibleData
 	};
 	for(auto &&d : data_) {
 		if(isVisible(d.second)) {
-			ret.insert(d);
+			ret.push_back(d);
 		}
 	}
 	return ret;
 }
 template<typename Data>
-std::map<std::string, std::shared_ptr<Data>> DataContainer<Data>::getEditableData(bool include_hidden) const
+typename DataContainer<Data>::DataMap DataContainer<Data>::getEditableData(bool include_hidden) const
 {
-	std::map<std::string, std::shared_ptr<Data>> ret;
+	DataMap ret;
 	auto isVisible = std::any_of(begin(data_), end(data_), [](const std::pair<std::string, std::shared_ptr<Data>> d) {
 		return d.second->is_solo;
 	}) ? [](std::shared_ptr<Data> d) {
@@ -102,7 +102,7 @@ std::map<std::string, std::shared_ptr<Data>> DataContainer<Data>::getEditableDat
 	};
 	for(auto &&d : data_) {
 		if(!d.second->is_locked && (include_hidden || isVisible(d.second))) {
-			ret.insert(d);
+			ret.push_back(d);
 		}
 	}
 	return ret;
@@ -153,9 +153,9 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 		PopID();
 	}
 	if(update_mesh_name) {
-		auto found = meshes.find(mesh_edit_.first);
+		auto found = find(meshes, mesh_edit_.first);
 		assert(found != end(meshes));
-		if(mesh_name_buf_ != "" && meshes.insert({mesh_name_buf_, found->second}).second) {
+		if(mesh_name_buf_ != "" && insert(meshes, {mesh_name_buf_, found->second}).second) {
 			meshes.erase(found);
 		}
 		mesh_edit_.second.reset();
@@ -210,7 +210,7 @@ void DataContainer<Data>::unpack(std::istream &stream, glm::vec2 scale)
 		name.resize(name_size);
 		auto data = std::make_shared<Data>();
 		data->unpack(stream, scale);
-		data_.insert(std::make_pair(name, data));
+		insert(data_, {name, data});
 	}
 }
 
@@ -221,7 +221,7 @@ std::pair<std::string, std::shared_ptr<Data>> DataContainer<Data>::createCopy(co
 	*d = *src;
 	auto n = name;
 	int index = 0;
-	while(!add(n, d)) {
+	while(!insert(data_, {n, d}).second) {
 		n = name+ofToString(index++);
 	}
 	return std::make_pair(n, d);
@@ -263,7 +263,7 @@ std::pair<std::string, std::shared_ptr<WarpingData::DataType>> WarpingData::crea
 	std::string n = name;
 	int index=0;
 	auto d = std::make_shared<DataType>();
-	while(!add(n, d)) {
+	while(!insert(data_, {n, d}).second) {
 		n = name+ofToString(index++);
 	}
 	d->init(num_cells, vert_rect, coord_rect);
@@ -330,7 +330,7 @@ std::pair<std::string, std::shared_ptr<BlendingData::DataType>> BlendingData::cr
 	std::string n = name;
 	int index=0;
 	auto d = std::make_shared<DataType>();
-	while(!add(n, d)) {
+	while(!insert(data_, {n, d}).second) {
 		n = name+ofToString(index++);
 	}
 	d->init(frame, default_inner_ratio);
