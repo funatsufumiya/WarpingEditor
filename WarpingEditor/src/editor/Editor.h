@@ -426,21 +426,32 @@ ofMesh Editor<Data, Mesh, Index, Point>::getMesh(bool use_control_color) const
 	ofMesh mesh;
 	mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	auto meshes = data_->getVisibleData();
-	for(auto &&mm : meshes) {
-		auto m = mm.second;
-		if(use_control_color) {
+	if(use_control_color) {
+		ofMesh selected, hovered, others;
+		float alpha = 0.8f*255;
+		for(auto &&mm : meshes) {
+			auto m = mm.second;
 			if(isSelectedMesh(*m)) {
-				mesh.append(makeMeshFromMesh(*m, ofColor::white));
+				ofColor color = ofColor::white;
+				if(isHoveredMesh(*m)) {
+					color.lerp(ofColor::yellow, 0.5f);
+				}
+				selected.append(makeMeshFromMesh(*m, {color, alpha}));
 			}
 			else if(isHoveredMesh(*m)) {
-				mesh.append(makeMeshFromMesh(*m, {ofColor::yellow, 128}));
+				hovered.append(makeMeshFromMesh(*m, {ofColor::yellow, alpha}));
 			}
 			else {
-				mesh.append(makeMeshFromMesh(*m, {ofColor::gray, 128}));
+				others.append(makeMeshFromMesh(*m, {ofColor::gray, alpha}));
 			}
 		}
-		else {
-			mesh.append(makeMeshFromMesh(*m, ofColor::white));
+		mesh.append(others);
+		mesh.append(selected);
+		mesh.append(hovered);
+	}
+	else {
+		for(auto &&mm : meshes) {
+			mesh.append(makeMeshFromMesh(*mm.second, ofColor::white));
 		}
 	}
 	return mesh;
