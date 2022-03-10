@@ -127,8 +127,8 @@ ofMesh MeshEditor::makeWireFromMesh(const DataType &data, const ofColor &color) 
 	int rows = data.mesh->getNumRows()+1;
 	int cols = data.mesh->getNumCols()+1;
 	ret.clearIndices();
-	for(int y = 0; y < rows-1; y++) {
-		for(int x = 0; x < cols-1; x++) {
+	for(int y = 0; y < rows; y++) {
+		for(int x = 0; x < cols; x++) {
 			if(y < rows-1) {
 				ret.addIndex((x)*rows + y);
 				ret.addIndex((x)*rows + y+1);

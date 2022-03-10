@@ -135,6 +135,7 @@ void WarpingMeshEditor::drawControl(float parent_scale) const
 			MeshEditor::drawControl(parent_scale);
 			return;
 		case MODE_DIVISION: {
+			drawWire();
 			float point_size = mouse_near_distance_/parent_scale;
 			float cross_size = point_size*4;
 			float cross_width = point_size/2.f;
