@@ -46,6 +46,7 @@ public:
 	void setTexture(ofTexture tex) { tex_ = tex; }
 	ofTexture getTexture() const { return tex_; }
 	glm::vec2 getTextureResolution() const { return {tex_.getWidth(), tex_.getHeight()}; }
+	virtual glm::vec2 getWorkAreaSize() const { return {tex_.getWidth(), tex_.getHeight()}; }
 
 	void handleMouse(const ofxEditorFrame::MouseEventArg &arg) { mouse_.set(arg); }
 	void setEnableViewportEditByMouse(bool enable) { is_viewport_editable_by_mouse_ = enable; }
@@ -69,7 +70,6 @@ public:
 protected:
 	ofTexture tex_;
 	GridData grid_;
-	virtual glm::vec2 getWorkAreaSize() const { return {tex_.getWidth(), tex_.getHeight()}; }
 
 	bool is_viewport_editable_by_mouse_=true;
 	bool is_enabled_rect_selection_=true;

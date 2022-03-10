@@ -724,7 +724,7 @@ void ResultView::draw()
 {
 	if(editor_) {
 		if(is_scale_to_viewport_) {
-			auto editor_size = editor_->getTextureResolution();
+			auto editor_size = editor_->getWorkAreaSize();
 			ofScale(ofGetWidth()/editor_size.x, ofGetHeight()/editor_size.y);
 		}
 		editor_->drawMesh(false);
