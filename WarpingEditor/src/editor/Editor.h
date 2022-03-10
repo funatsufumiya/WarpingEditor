@@ -611,7 +611,7 @@ typename Editor<Data, Mesh, Index, Point>::OpHover Editor<Data, Mesh, Index, Poi
 		const float threshold = pow(mouse_near_distance_/getScale(), 2);
 		float distance;
 		auto nearest = getNearestPoint(m.second, mouse_.pos, distance, only_editable_point);
-		if(max_distance > distance && distance < threshold) {
+		if(max_distance >= distance && distance < threshold) {
 			ret.point = nearest;
 			max_distance = distance;
 		}
@@ -624,7 +624,7 @@ typename Editor<Data, Mesh, Index, Point>::OpHover Editor<Data, Mesh, Index, Poi
 			}
 			float distance;
 			auto mesh = getIfInside(m.second, mouse_.pos, distance);
-			if(mesh && max_distance > distance) {
+			if(mesh && max_distance >= distance) {
 				ret.mesh = mesh;
 				max_distance = distance;
 			}
