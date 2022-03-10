@@ -3,3 +3,4 @@ ofxEditorFrame
 ofxImGui
 ofxMapper
 ofxNDI
+ofxUndo

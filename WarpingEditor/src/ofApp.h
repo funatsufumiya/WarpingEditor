@@ -9,6 +9,7 @@
 #include "ofxNDIFinder.h"
 #include "WorkFolder.h"
 #include "ProjectFolder.h"
+#include "Undo.h"
 
 class ResultView;
 
@@ -24,7 +25,14 @@ public:
 	void openRecent(int index=0);
 	void openProject(const std::filesystem::path &proj_path);
 	
+	void saveDataFile(const std::filesystem::path &filepath) const;
+	void loadDataFile(const std::filesystem::path &filepath);
+	void packDataFile(std::ostream &stream) const;
+	void unpackDataFile(std::istream &stream) const;
+	
 	void keyPressed(int key) override;
+	void mouseReleased(int x, int y, int button);
+	
 	void setResultApp(std::shared_ptr<ResultView> app) { result_app_ = app; }
 	void setResultWindow(std::shared_ptr<ofAppBaseWindow> window) { result_window_ = window; }
 private:
@@ -57,15 +65,17 @@ private:
 	void updateRecent(const ProjectFolder &proj);
 	std::deque<WorkFolder> recent_;
 	
-	void saveDataFile(const std::filesystem::path &filepath) const;
-	void loadDataFile(const std::filesystem::path &filepath);
-	
 	void exportMesh(float resample_min_interval, const std::filesystem::path &filepath, bool is_arb=false) const;
 	void exportMesh(const ProjectFolder &proj) const;
+	
+	void undo() { undo_.undo(); }
+	void redo() { undo_.redo(); }
 
 	ofxNDIFinder ndi_finder_;
 	
 	mutable ProjectFolder proj_;
+	
+	Undo undo_;
 	
 	ofFbo fbo_;
 };

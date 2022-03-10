@@ -37,6 +37,8 @@ void GuiApp::setup(){
 	ofDisableArbTex();
 	Icon::init();
 	
+	undo_.setup(this);
+	
 //	ofEnableArbTex();
 	ofBackground(ofColor::gray);
 
@@ -139,7 +141,9 @@ void GuiApp::draw(){
 	Shortcut sc_export{[&]{exportMesh(proj_);}, 'E'};
 	bool is_open_export_dialog_trigger=false;
 	Shortcut sc_export_to{[&]{is_open_export_dialog_trigger = true;}, 'E', Shortcut::MOD_FLAG_DEFAULT|ImGuiKeyModFlags_Shift};
-	for(auto &&s : std::vector<Shortcut>{sc_save,sc_save_as,sc_open,sc_export,sc_export_to}) {
+	Shortcut sc_undo{[&]{undo();}, 'Z'};
+	Shortcut sc_redo{[&]{redo();}, 'Z', Shortcut::MOD_FLAG_DEFAULT|ImGuiKeyModFlags_Shift};
+	for(auto &&s : std::vector<Shortcut>{sc_save,sc_save_as,sc_open,sc_export,sc_export_to,sc_undo,sc_redo}) {
 		if(s.check()) {
 			s();
 		}
@@ -304,6 +308,10 @@ void GuiApp::draw(){
 		}
 		ImGuiFileDialog::Instance()->Close();
 	}
+	if(Begin("status")) {
+		Text("undo length: %d", undo_.getUndoLength());
+	}
+	End();
 	if(Begin("ResultWindow")) {
 		auto position = result_window_->getWindowPosition();
 		if(DragFloat2("position", &position.x, 1, 0, -1, "%0.0f")) {
@@ -457,6 +465,13 @@ void GuiApp::keyPressed(int key){
 	}
 }
 
+void GuiApp::mouseReleased(int x, int y, int button)
+{
+	if(undo_.isModified()) {
+		undo_.store();
+	}
+}
+
 void GuiApp::save(bool do_backup) const
 {
 	{
@@ -541,71 +556,80 @@ void readFrom<ofxBlendScreen::Shader::Params>(std::istream &is, ofxBlendScreen::
 void GuiApp::saveDataFile(const std::filesystem::path &filepath) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
-	file << "maap";
-	writeTo<std::size_t>(file, 1);	// version number
-	auto writeToPosition = [&](ofFile::pos_type pos, std::size_t size) {
-		file.seekg(pos, std::ios_base::beg);
-		writeTo(file, size);
-	};
-	file << "warp";
-	auto pos_warpsize = file.tellg();
-	writeTo<std::size_t>(file, 0);	// placeholder for chunksize
-	auto begin_warpsize = file.tellg();
-	{
-		glm::vec2 tex_size = proj_.getTextureSizeCache();
-		warping_data_->pack(file, {1/tex_size.x, 1/tex_size.y});
-	}
-	auto warpsize = file.tellg() - begin_warpsize;
-	
-	file << "blnd";
-	auto pos_blendsize = file.tellg();
-	writeTo<std::size_t>(file, 0);	// placeholder for chunksize
-	auto begin_blendsize = file.tellg();
-	{
-		glm::vec2 tex_size = proj_.getBridgeResolution();
-		writeTo(file, blend_editor_->getShaderParam());
-		blending_data_->pack(file, {1/tex_size.x, 1/tex_size.y});
-	}
-	auto blendsize = file.tellg() - begin_blendsize;
-	
-	writeToPosition(pos_warpsize, warpsize);
-	writeToPosition(pos_blendsize, blendsize);
-	
+	packDataFile(file);
 	file.close();
 }
 
 void GuiApp::loadDataFile(const std::filesystem::path &filepath)
 {
 	ofFile file(filepath, ofFile::ReadOnly);
+	unpackDataFile(file);
+	file.close();
+}
+
+void GuiApp::packDataFile(std::ostream &stream) const
+{
+	stream << "maap";
+	writeTo<std::size_t>(stream, 1);	// version number
+	auto writeToPosition = [&](ofFile::pos_type pos, std::size_t size) {
+		stream.seekp(pos, std::ios_base::beg);
+		writeTo(stream, size);
+	};
+	stream << "warp";
+	auto pos_warpsize = stream.tellp();
+	writeTo<std::size_t>(stream, 0);	// placeholder for chunksize
+	auto begin_warpsize = stream.tellp();
+	{
+		glm::vec2 tex_size = proj_.getTextureSizeCache();
+		warping_data_->pack(stream, {1/tex_size.x, 1/tex_size.y});
+	}
+	auto warpsize = stream.tellp() - begin_warpsize;
+	
+	stream << "blnd";
+	auto pos_blendsize = stream.tellp();
+	writeTo<std::size_t>(stream, 0);	// placeholder for chunksize
+	auto begin_blendsize = stream.tellp();
+	{
+		glm::vec2 tex_size = proj_.getBridgeResolution();
+		writeTo(stream, blend_editor_->getShaderParam());
+		blending_data_->pack(stream, {1/tex_size.x, 1/tex_size.y});
+	}
+	auto blendsize = stream.tellp() - begin_blendsize;
+	
+	writeToPosition(pos_warpsize, warpsize);
+	writeToPosition(pos_blendsize, blendsize);
+}
+
+void GuiApp::unpackDataFile(std::istream &stream) const
+{
 	char maap[4];
-	readFrom(file, maap);
+	readFrom(stream, maap);
 	if(strncmp(maap, "maap", 4) != 0) {
-		file.seekg(0, std::ios_base::beg);
-		warping_data_->unpack(file, proj_.getTextureSizeCache());
+		stream.seekg(0, std::ios_base::beg);
+		warping_data_->unpack(stream, proj_.getTextureSizeCache());
 		return;
 	}
 	std::size_t version;
-	readFrom(file, version);
+	readFrom(stream, version);
 	
-	while(file.good()) {
+	while(stream.good()) {
 		char chunkname[4];
 		std::size_t chunksize;
-		readFrom(file, chunkname);
-		readFrom(file, chunksize);
-		if(file.eof() || file.fail()) {
+		readFrom(stream, chunkname);
+		readFrom(stream, chunksize);
+		if(stream.eof() || stream.fail()) {
 			break;
 		}
 		if(strncmp(chunkname, "warp", 4) == 0) {
-			warping_data_->unpack(file, proj_.getTextureSizeCache());
+			warping_data_->unpack(stream, proj_.getTextureSizeCache());
 		}
 		if(strncmp(chunkname, "blnd", 4) == 0) {
 			if(version >= 1) {
-				readFrom(file, blend_editor_->getShaderParam());
+				readFrom(stream, blend_editor_->getShaderParam());
 			}
-			blending_data_->unpack(file, proj_.getBridgeResolution());
+			blending_data_->unpack(stream, proj_.getBridgeResolution());
 		}
 	}
-	file.close();
 }
 
 
@@ -666,6 +690,11 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	fbo_.allocate(bridge_res.x, bridge_res.y, GL_RGB);
 	blend_editor_->setTexture(fbo_.getTexture());
 	warp_mesh_->setBackgroundSize(bridge_res);
+	
+	undo_.clear();
+	undo_.create();
+	undo_.store();
+	undo_.enableAuto(1);
 }
 
 void GuiApp::openRecent(int index)
