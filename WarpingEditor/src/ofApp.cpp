@@ -175,6 +175,15 @@ void GuiApp::draw(){
 			}
 			EndMenu();
 		}
+		if(BeginMenu("Edit")) {
+			if(MenuItem("Undo", sc_undo.keyStr().c_str(), false, undo_.getUndoLength()>0)) {
+				sc_undo();
+			}
+			if(MenuItem("Redo", sc_redo.keyStr().c_str(), false, undo_.getRedoLength()>0)) {
+				sc_redo();
+			}
+			EndMenu();
+		}
 		if(BeginMenu("Texture")) {
 			if(BeginMenu("Image File")) {
 				if(MenuItem("Load from file...")) {
