@@ -117,8 +117,11 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 	std::weak_ptr<DataType> mesh_delete;
 	
 	std::map<std::string, std::shared_ptr<DataType>> selected_meshes;
+	const char *dnd_id = "meshD&D";
 	auto &meshes = getData();
-	for(auto &&m : meshes) {
+	int move_from = -1, move_to = -1;
+	for(int i = 0; i < meshes.size(); ++i) {
+		auto &&m = meshes[i];
 		PushID(m.first.c_str());
 		ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
 		ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
@@ -155,6 +158,27 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 			}
 		}
 		PopID();
+		
+		ImGuiDragDropFlags src_flags = 0;
+		src_flags |= ImGuiDragDropFlags_SourceNoDisableHover;
+		src_flags |= ImGuiDragDropFlags_SourceNoHoldToOpenOthers;
+		//src_flags |= ImGuiDragDropFlags_SourceNoPreviewTooltip; // Hide the tooltip
+		if (ImGui::BeginDragDropSource(src_flags)) {
+			if (!(src_flags & ImGuiDragDropFlags_SourceNoPreviewTooltip))
+				ImGui::Text("Moving \"%s\"", m.first.c_str());
+			ImGui::SetDragDropPayload(dnd_id, &i, sizeof(int));
+			ImGui::EndDragDropSource();
+		}
+		if (ImGui::BeginDragDropTarget()) {
+			ImGuiDragDropFlags target_flags = 0;
+			target_flags |= ImGuiDragDropFlags_AcceptBeforeDelivery;
+//			target_flags |= ImGuiDragDropFlags_AcceptNoDrawDefaultRect; // Don't display the yellow rectangle
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dnd_id, target_flags)) {
+				move_from = *(const int*)payload->Data;
+				move_to = i;
+			}
+			ImGui::EndDragDropTarget();
+		}
 	}
 	if(update_mesh_name) {
 		auto found = find(meshes, mesh_edit_.first);
@@ -177,6 +201,10 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 				createCopy(s.first, s.second);
 			}
 		}
+	}
+	if (move_from != -1 && move_to != -1) {
+		swap(meshes[move_to], meshes[move_from]);
+		ImGui::SetDragDropPayload(dnd_id, &move_to, sizeof(int));
 	}
 }
 
