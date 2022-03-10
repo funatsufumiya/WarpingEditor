@@ -18,6 +18,8 @@ public:
 	ofMesh makeMeshFromMesh(const DataType &data, const ofColor &color) const override;
 	ofMesh makeWireFromMesh(const DataType &data, const ofColor &color) const override;
 
+	std::set<IndexType> getIndices(std::shared_ptr<MeshType> mesh) const override;
+
 	std::shared_ptr<MeshType> getIfInside(std::shared_ptr<DataType> data, const glm::vec2 &pos, float &distance) override;
 
 	bool isPreventMeshInterpolation() const override { return true; }

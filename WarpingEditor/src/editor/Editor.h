@@ -121,8 +121,8 @@ public:
 	void moveSelectedOnScreenScale(const glm::vec2 &delta) override { moveSelected(delta/getScale()); }
 
 	virtual bool isSelectedMesh(const DataType &data) const;
-	virtual bool selectMesh(const DataType &data);
-	virtual bool deselectMesh(const DataType &data);
+	virtual bool selectMesh(const DataType &data, bool with_points);
+	virtual bool deselectMesh(const DataType &data, bool with_points);
 	virtual bool isSelectedPoint(const DataType &data, IndexType index) const;
 	
 	bool calcSnapToGrid(const PointType &point, const ofRectangle &grid, float snap_distance, glm::vec2 &diff) const;
@@ -156,6 +156,24 @@ protected:
 			auto indices = found->second;
 			return find(begin(indices), end(indices), p.second) != end(indices);
 		}
+		bool addMesh(std::shared_ptr<MeshType> m) {
+			return mesh.insert(m).second;
+		}
+		bool removeMesh(std::shared_ptr<MeshType> m) {
+			return mesh.erase(m) > 0;
+		}
+		bool addPoints(std::shared_ptr<MeshType> m, std::set<IndexType> indices) {
+			return point.insert({m, indices}).second;
+		}
+		bool removePoints(std::shared_ptr<MeshType> m, std::set<IndexType> indices) {
+			auto found = point.find(m);
+			if(found == end(point)) return false;
+			int success_count = 0;
+			for(auto &&i : indices) {
+				success_count += found->second.erase(i);
+			}
+			return success_count > 0;
+		}
 	} op_selection_, op_selection_pressed_;
 	
 	bool is_grabbing_by_mouse_=false;
@@ -179,6 +197,8 @@ protected:
 	virtual void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta){}
 	void moveMeshOnScreenScale(MeshType &mesh, const glm::vec2 &delta) { moveMesh(mesh, delta/getScale()); }
 	void movePointOnScreenScale(MeshType &mesh, IndexType index, const glm::vec2 &delta) { movePoint(mesh, delta/getScale()); }
+	
+	virtual std::set<IndexType> getIndices(std::shared_ptr<MeshType> mesh) const { return {}; }
 	
 	virtual std::shared_ptr<MeshType> getMeshType(const DataType &data) const { return nullptr; }
 	
@@ -581,9 +601,8 @@ typename Editor<Data, Mesh, Index, Point>::OpHover Editor<Data, Mesh, Index, Poi
 {
 	auto &&data = *data_;
 	auto &&meshes = data.getData();
-	glm::vec2 tex_uv{tex_.getTextureData().tex_t, tex_.getTextureData().tex_u};
+
 	OpHover ret;
-	
 	float max_distance = std::numeric_limits<float>::max();
 	for(auto &&m : meshes) {
 		if(!data.isEditable(m.second)) {
@@ -667,22 +686,26 @@ bool Editor<Data, Mesh, Index, Point>::isSelectedPoint(const DataType &data, Ind
 }
 
 template<typename Data, typename Mesh, typename Index, typename Point>
-bool Editor<Data, Mesh, Index, Point>::selectMesh(const DataType &data)
+bool Editor<Data, Mesh, Index, Point>::selectMesh(const DataType &data, bool with_points)
 {
-	std::weak_ptr<MeshType> ptr = getMeshType(data);
-	return op_selection_.mesh.insert(ptr).second;
+	bool ret = false;
+	std::shared_ptr<MeshType> ptr = getMeshType(data);
+	ret |= op_selection_.addMesh(ptr);
+	if(with_points) {
+		ret |= op_selection_.addPoints(ptr, getIndices(ptr));
+	}
+	return ret;
 }
 template<typename Data, typename Mesh, typename Index, typename Point>
-bool Editor<Data, Mesh, Index, Point>::deselectMesh(const DataType &data)
+bool Editor<Data, Mesh, Index, Point>::deselectMesh(const DataType &data, bool with_points)
 {
-	auto found = find_if(begin(op_selection_.mesh), end(op_selection_.mesh), [&](std::weak_ptr<MeshType> ptr) {
-		return getMeshType(data) == ptr.lock();
-	});
-	if(found == end(op_selection_.mesh)) {
-		return false;
+	bool ret = false;
+	std::shared_ptr<MeshType> ptr = getMeshType(data);
+	ret |= op_selection_.removeMesh(ptr);
+	if(with_points) {
+		ret |= op_selection_.removePoints(ptr, getIndices(ptr));
 	}
-	op_selection_.mesh.erase(found);
-	return true;
+	return ret;
 }
 
 template<typename Data, typename Mesh, typename Index, typename Point>

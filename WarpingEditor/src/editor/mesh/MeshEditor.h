@@ -17,5 +17,6 @@ protected:
 	void moveSelectedCoord(const glm::vec2 &delta);
 	void moveMeshCoord(MeshType &mesh, const glm::vec2 &delta);
 	void movePointCoord(MeshType &mesh, IndexType index, const glm::vec2 &delta);
+	std::set<IndexType> getIndices(std::shared_ptr<MeshType> mesh) const override;
 };
 

@@ -123,6 +123,10 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 		ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
 		ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
 		ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
+		bool deselect = m.second->is_hidden || m.second->is_locked;
+		if(deselect) {
+			set_selected(*m.second, false);
+		}
 		if(mesh_edit_.second.lock() == m.second) {
 			if(need_keyboard_focus_) SetKeyboardFocusHere();
 			need_keyboard_focus_ = false;

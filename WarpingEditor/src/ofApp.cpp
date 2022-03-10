@@ -342,8 +342,8 @@ void GuiApp::draw(){
 								   return state_ == EDIT_WARP_UV ? warp_uv_->isSelectedMesh(data) : warp_mesh_->isSelectedMesh(data);
 							   },
 							   [&](WarpingMesh &data, bool select) {
-								   return state_ == EDIT_WARP_UV ? (select ? warp_uv_->selectMesh(data) : warp_uv_->deselectMesh(data))
-								   : (select ? warp_mesh_->selectMesh(data) : warp_mesh_->deselectMesh(data));
+								   return state_ == EDIT_WARP_UV ? (select ? warp_uv_->selectMesh(data, true) : warp_uv_->deselectMesh(data, true))
+								   : (select ? warp_mesh_->selectMesh(data, true) : warp_mesh_->deselectMesh(data, true));
 							   },
 							   [&]() {
 								   auto tex = texture_source_->getTexture();
@@ -362,7 +362,7 @@ void GuiApp::draw(){
 								   return blend_editor_->isSelectedMesh(data);
 							   },
 							   [&](BlendingMesh &data, bool select) {
-								   return select ? blend_editor_->selectMesh(data) : blend_editor_->deselectMesh(data);
+								   return select ? blend_editor_->selectMesh(data, true) : blend_editor_->deselectMesh(data, true);
 							   },
 							   [&]() {
 								   auto tex = fbo_.getTexture();

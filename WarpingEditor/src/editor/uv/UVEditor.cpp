@@ -89,6 +89,15 @@ ofMesh UVEditor::makeWireFromMesh(const DataType &data, const ofColor &color) co
 	return ret;
 }
 
+std::set<UVEditor::IndexType> UVEditor::getIndices(std::shared_ptr<MeshType> mesh) const
+{
+	std::set<IndexType> ret;
+	for(IndexType i = 0; i < mesh->size(); ++i) {
+		ret.insert(i);
+	}
+	return ret;
+}
+
 
 void UVEditor::gui()
 {

@@ -142,3 +142,14 @@ ofMesh MeshEditor::makeWireFromMesh(const DataType &data, const ofColor &color) 
 	return ret;
 }
 
+
+std::set<MeshEditor::IndexType> MeshEditor::getIndices(std::shared_ptr<MeshType> mesh) const
+{
+	auto selector = data_->find(mesh).second->interpolator;
+	auto selected = selector->getSelectedIndices();
+	std::set<IndexType> ret;
+	for(auto &&s : selected) {
+		ret.insert({s[0],s[1]});
+	}
+	return ret;
+}

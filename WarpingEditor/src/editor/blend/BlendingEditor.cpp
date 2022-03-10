@@ -77,6 +77,17 @@ std::shared_ptr<MeshType> BlendingEditor::getIfInside(std::shared_ptr<DataType> 
 	return found ? getMeshType(*data) : nullptr;
 }
 
+std::set<BlendingEditor::IndexType> BlendingEditor::getIndices(std::shared_ptr<MeshType> mesh) const
+{
+	std::set<IndexType> ret;
+	for(int i = 0; i < MeshType::size(); ++i) {
+		for(int j = 0; j < mesh->quad[i].size(); ++j) {
+			ret.insert({i,j});
+		}
+	}
+	return ret;
+}
+
 void BlendingEditor::gui()
 {
 	using namespace ImGui;
