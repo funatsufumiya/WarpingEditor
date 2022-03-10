@@ -126,6 +126,7 @@ public:
 	virtual bool isSelectedPoint(const DataType &data, IndexType index) const;
 	
 	bool calcSnapToGrid(const PointType &point, const ofRectangle &grid, float snap_distance, glm::vec2 &diff) const;
+	bool calcSnapToAxis(const PointType &point, const PointType &base, glm::vec2 &diff) const;
 	virtual PointType getPoint(const MeshType &mesh, const IndexType &index) const = 0;
 
 protected:
@@ -356,6 +357,19 @@ inline bool Editor<Data, Mesh, Index, Point>::calcSnapToGrid(const PointType &po
 }
 
 template<typename Data, typename Mesh, typename Index, typename Point>
+inline bool Editor<Data, Mesh, Index, Point>::calcSnapToAxis(const PointType &point, const PointType &base, glm::vec2 &diff) const
+{
+	diff = base - point;
+	if(std::abs(diff.x) > std::abs(diff.y)) {
+		diff.x = 0;
+	}
+	else {
+		diff.y = 0;
+	}
+	return diff.x != 0 || diff.y != 0;
+}
+
+template<typename Data, typename Mesh, typename Index, typename Point>
 inline void Editor<Data, Mesh, Index, Point>::procNewMouseEvent(const MouseEvent &mouse)
 {
 	bool used = false;
@@ -364,11 +378,25 @@ inline void Editor<Data, Mesh, Index, Point>::procNewMouseEvent(const MouseEvent
 			if(is_grabbing_by_mouse_ && is_mesh_movable_by_mouse_) {
 				moveSelected(mouse.delta/getScale()-snap_diff_);
 				snap_diff_ = {0,0};
-				if(grid_.enabled_snap && op_selection_.contains(op_hover_.point)) {
-					glm::vec2 snap_diff;
-					if(calcSnapToGrid(getPoint(*op_hover_.point.first.lock(), op_hover_.point.second), {grid_.offset, grid_.offset+grid_.size}, mouse_near_distance_/getScale(), snap_diff)) {
-						moveSelected(snap_diff);
-						snap_diff_ = snap_diff;
+				if(op_selection_.contains(op_hover_.point)) {
+					bool snap_axis = ImGui::IsModKeyDown(ImGuiKeyModFlags_Shift);
+					if(snap_axis) {
+						glm::vec2 snap_diff;
+						if(calcSnapToAxis(getPoint(*op_hover_.point.first.lock(), op_hover_.point.second), getIn(mouse.getPressedPos()), snap_diff)) {
+							moveSelected(snap_diff);
+							snap_diff_ += snap_diff;
+						}
+					}
+					if(grid_.enabled_snap) {
+						glm::vec2 snap_diff;
+						if(calcSnapToGrid(getPoint(*op_hover_.point.first.lock(), op_hover_.point.second), {grid_.offset, grid_.offset+grid_.size}, mouse_near_distance_/getScale(), snap_diff)) {
+							if(snap_axis) {
+								if(snap_diff_.x != 0) snap_diff.x = 0;
+								if(snap_diff_.y != 0) snap_diff.y = 0;
+							}
+							moveSelected(snap_diff);
+							snap_diff_ += snap_diff;
+						}
 					}
 				}
 				used = true;
