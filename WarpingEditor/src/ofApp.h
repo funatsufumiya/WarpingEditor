@@ -10,6 +10,7 @@
 #include "WorkFolder.h"
 #include "ProjectFolder.h"
 #include "Undo.h"
+#include "SaveData.h"
 
 class ResultView;
 
@@ -28,7 +29,7 @@ public:
 	void saveDataFile(const std::filesystem::path &filepath) const;
 	void loadDataFile(const std::filesystem::path &filepath);
 	void packDataFile(std::ostream &stream) const;
-	void unpackDataFile(std::istream &stream) const;
+	void unpackDataFile(std::istream &stream);
 	
 	void keyPressed(int key) override;
 	void mouseReleased(int x, int y, int button) override;

@@ -11,14 +11,16 @@
 #include "ofxMapperMesh.h"
 #include "ofxMapperUpSampler.h"
 #include "Quad.h"
+#include "ofxBlendScreen.h"
+#include "SaveData.h"
 
-class DataContainerBase
+class DataContainerBase : public HasSaveDataWithArg<glm::vec2>
 {
 public:
 	void save(const std::filesystem::path &filepath, glm::vec2 scale) const;
 	void load(const std::filesystem::path &filepath, glm::vec2 scale);
-	virtual void pack(std::ostream &stream, glm::vec2 scale) const {}
-	virtual void unpack(std::istream &stream, glm::vec2 scale) {}
+	using HasSaveDataWithArg::pack;
+	using HasSaveDataWithArg::unpack;
 	virtual void clear(){}
 	virtual void rescale(const glm::vec2 &scale) {}
 };
@@ -43,8 +45,8 @@ public:
 	bool isVisible(std::shared_ptr<DataType> mesh) const;
 	bool isEditable(std::shared_ptr<DataType> mesh, bool include_hidden=false) const;
 
-	void pack(std::ostream &stream, glm::vec2 scale) const override;
-	void unpack(std::istream &stream, glm::vec2 scale) override;
+	virtual void pack(std::ostream &stream, const glm::vec2 &scale) const override;
+	virtual void unpack(std::istream &stream, const glm::vec2 &scale) override;
 	
 	void gui(std::function<bool(DataType&)> is_selected, std::function<void(DataType&, bool)> set_selected, std::function<void()> create_new);
 protected:
@@ -173,11 +175,21 @@ class BlendingData : public DataContainer<BlendingMesh>
 {
 public:
 	using MeshType = BlendingMesh::MeshType;
+	BlendingData() {
+		shader_ = std::make_shared<ofxBlendScreen::Shader>();
+		shader_->setup();
+	}
 	NamedData create(const std::string &name, const ofRectangle &frame, const float &default_inner_ratio);
 	NamedData find(std::shared_ptr<MeshType> mesh);
 	void exportMesh(const std::filesystem::path &filepath, float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
 	ofMesh getMesh(float resample_min_interval, const glm::vec2 &coord_size, ofRectangle *viewport=nullptr, bool only_visible=true) const;
 	ofMesh getMeshForExport(float resample_min_interval, const glm::vec2 &coord_size, bool only_visible=true) const;
+
+	std::shared_ptr<ofxBlendScreen::Shader> getShader() const { return shader_; }
+	virtual void pack(std::ostream &stream, const glm::vec2 &scale) const override;
+	virtual void unpack(std::istream &stream, const glm::vec2 &scale) override;
+private:
+	std::shared_ptr<ofxBlendScreen::Shader> shader_;
 };
 
 extern template class DataContainer<WarpingMesh>;

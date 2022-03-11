@@ -3,6 +3,7 @@
 #include "GuiFunc.h"
 #include "Icon.h"
 #include "ofxBlendScreen.h"
+#include "SaveData.h"
 
 #pragma mark - IO
 
@@ -211,7 +212,7 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 #pragma mark - IO
 
 template<typename Data>
-void DataContainer<Data>::pack(std::ostream &stream, glm::vec2 scale) const
+void DataContainer<Data>::pack(std::ostream &stream, const glm::vec2 &scale) const
 {
 	writeTo(stream, data_.size());
 	const int name_alignemt = 4;
@@ -226,7 +227,7 @@ void DataContainer<Data>::pack(std::ostream &stream, glm::vec2 scale) const
 }
 
 template<typename Data>
-void DataContainer<Data>::unpack(std::istream &stream, glm::vec2 scale)
+void DataContainer<Data>::unpack(std::istream &stream, const glm::vec2 &scale)
 {
 	const int name_alignemt = 4;
 	data_.clear();
@@ -401,6 +402,18 @@ ofMesh BlendingData::getMesh(float resample_min_interval, const glm::vec2 &coord
 		ret.append(d.second->getMesh(resample_min_interval, coord_size, viewport));
 	}
 	return ret;
+}
+
+void BlendingData::pack(std::ostream &stream, const glm::vec2 &scale) const
+{
+	SaveData::pack(stream, shader_->getParams());
+	DataContainer::pack(stream, scale);
+	
+}
+void BlendingData::unpack(std::istream &stream, const glm::vec2 &scale)
+{
+	SaveData::unpack(stream, shader_->getParams());
+	DataContainer::unpack(stream, scale);
 }
 
 void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)

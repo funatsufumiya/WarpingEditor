@@ -88,6 +88,15 @@ std::set<BlendingEditor::IndexType> BlendingEditor::getIndices(std::shared_ptr<M
 	return ret;
 }
 
+void BlendingEditor::beginShader() const
+{
+	data_->getShader()->begin(tex_);
+}
+void BlendingEditor::endShader() const
+{
+	data_->getShader()->end();
+}
+
 void BlendingEditor::gui()
 {
 	using namespace ImGui;
@@ -150,7 +159,7 @@ void BlendingEditor::gui()
 
 	if(Begin("Blending")) {
 		if(TreeNode("shader")) {
-			auto &p = shader_.getParams();
+			auto &p = data_->getShader()->getParams();
 			SliderFloat("blend_power", &p.blend_power, 0, 2);
 			SliderFloat("luminance_control", &p.luminance_control, 0, 1);
 			SliderFloat3("gamma", &p.gamma[0], 0, 3);

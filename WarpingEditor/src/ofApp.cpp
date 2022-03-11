@@ -443,7 +443,7 @@ void GuiApp::exportMesh(const ProjectFolder &proj) const
 	}
 	{
 		auto param = proj_.getExportBlendShaderParam();
-		ofSavePrettyJson(ofFilePath::join(folder, param.filename), blend_editor_->getShaderParam());
+		ofSavePrettyJson(ofFilePath::join(folder, param.filename), blending_data_->getShader()->getParams());
 	}
 }
 
@@ -498,7 +498,7 @@ void GuiApp::save(bool do_backup) const
 	proj_.setWarpGridData(warp_mesh_->getGridData());
 	proj_.setBlendView(-blend_editor_->getTranslate(), blend_editor_->getScale());
 	proj_.setBlendGridData(blend_editor_->getGridData());
-	proj_.setBlendParams(blend_editor_->getShaderParam());
+	proj_.setBlendParams(blending_data_->getShader()->getParams());
 	
 	proj_.setBridgeResolution({fbo_.getWidth(), fbo_.getHeight()});
 	
@@ -525,43 +525,6 @@ void GuiApp::save(bool do_backup) const
 	}
 }
 
-namespace {
-template<typename T>
-void writeTo(std::ostream& os, const T& t) {
-	os.write(reinterpret_cast<const char*>(&t), sizeof(T));
-}
-template<typename T>
-void readFrom(std::istream& is, T& t) {
-	is.read(reinterpret_cast<char*>(&t), sizeof(T));
-}
-template<>
-void writeTo<glm::vec3>(std::ostream &os, const glm::vec3 &t) {
-	writeTo(os, t[0]);
-	writeTo(os, t[1]);
-	writeTo(os, t[2]);
-}
-template<>
-void readFrom<glm::vec3>(std::istream &is, glm::vec3 &t) {
-	readFrom(is, t[0]);
-	readFrom(is, t[1]);
-	readFrom(is, t[2]);
-}
-template<>
-void writeTo<ofxBlendScreen::Shader::Params>(std::ostream &os, const ofxBlendScreen::Shader::Params &t) {
-	writeTo(os, t.gamma);
-	writeTo(os, t.luminance_control);
-	writeTo(os, t.blend_power);
-	writeTo(os, t.base_color);
-}
-template<>
-void readFrom<ofxBlendScreen::Shader::Params>(std::istream &is, ofxBlendScreen::Shader::Params &t) {
-	readFrom(is, t.gamma);
-	readFrom(is, t.luminance_control);
-	readFrom(is, t.blend_power);
-	readFrom(is, t.base_color);
-}
-}
-
 void GuiApp::saveDataFile(const std::filesystem::path &filepath) const
 {
 	ofFile file(filepath, ofFile::WriteOnly);
@@ -578,67 +541,34 @@ void GuiApp::loadDataFile(const std::filesystem::path &filepath)
 
 void GuiApp::packDataFile(std::ostream &stream) const
 {
-	stream << "maap";
-	writeTo<std::size_t>(stream, 1);	// version number
-	auto writeToPosition = [&](ofFile::pos_type pos, std::size_t size) {
-		stream.seekp(pos, std::ios_base::beg);
-		writeTo(stream, size);
-	};
-	stream << "warp";
-	auto pos_warpsize = stream.tellp();
-	writeTo<std::size_t>(stream, 0);	// placeholder for chunksize
-	auto begin_warpsize = stream.tellp();
+	SaveData saver;
 	{
 		glm::vec2 tex_size = proj_.getTextureSizeCache();
-		warping_data_->pack(stream, {1/tex_size.x, 1/tex_size.y});
+		warping_data_->setPackArg({1/tex_size.x, 1/tex_size.y});
+		saver.append((char *)"warp", warping_data_);
 	}
-	auto warpsize = stream.tellp() - begin_warpsize;
-	
-	stream << "blnd";
-	auto pos_blendsize = stream.tellp();
-	writeTo<std::size_t>(stream, 0);	// placeholder for chunksize
-	auto begin_blendsize = stream.tellp();
 	{
 		glm::vec2 tex_size = proj_.getBridgeResolution();
-		writeTo(stream, blend_editor_->getShaderParam());
-		blending_data_->pack(stream, {1/tex_size.x, 1/tex_size.y});
+		blending_data_->setPackArg({1/tex_size.x, 1/tex_size.y});
+		saver.append((char *)"blnd", blending_data_);
 	}
-	auto blendsize = stream.tellp() - begin_blendsize;
-	
-	writeToPosition(pos_warpsize, warpsize);
-	writeToPosition(pos_blendsize, blendsize);
+	saver.pack(stream);
 }
 
-void GuiApp::unpackDataFile(std::istream &stream) const
+void GuiApp::unpackDataFile(std::istream &stream)
 {
-	char maap[4];
-	readFrom(stream, maap);
-	if(strncmp(maap, "maap", 4) != 0) {
-		stream.seekg(0, std::ios_base::beg);
-		warping_data_->unpack(stream, proj_.getTextureSizeCache());
-		return;
+	SaveData loader;
+	{
+		glm::vec2 tex_size = proj_.getTextureSizeCache();
+		warping_data_->setUnpackArg(tex_size);
+		loader.append((char *)"warp", warping_data_);
 	}
-	std::size_t version;
-	readFrom(stream, version);
-	
-	while(stream.good()) {
-		char chunkname[4];
-		std::size_t chunksize;
-		readFrom(stream, chunkname);
-		readFrom(stream, chunksize);
-		if(stream.eof() || stream.fail()) {
-			break;
-		}
-		if(strncmp(chunkname, "warp", 4) == 0) {
-			warping_data_->unpack(stream, proj_.getTextureSizeCache());
-		}
-		if(strncmp(chunkname, "blnd", 4) == 0) {
-			if(version >= 1) {
-				readFrom(stream, blend_editor_->getShaderParam());
-			}
-			blending_data_->unpack(stream, proj_.getBridgeResolution());
-		}
+	{
+		glm::vec2 tex_size = proj_.getBridgeResolution();
+		blending_data_->setUnpackArg(tex_size);
+		loader.append((char *)"blnd", blending_data_);
 	}
+	loader.unpack(stream);
 }
 
 
@@ -680,7 +610,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		blend_editor_->scale(view.second, {0,0});
 		blend_editor_->setGridData(proj_.getBlendGridData());
 	}
-	blend_editor_->setShaderParam(proj_.getBlendParams());
+	blending_data_->getShader()->getParams() = proj_.getBlendParams();
 	
 	updateRecent(proj_);
 

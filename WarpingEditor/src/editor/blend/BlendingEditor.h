@@ -7,9 +7,6 @@
 class BlendingEditor : public Editor<BlendingMesh, BlendingMesh::MeshType, std::pair<int,int>>
 {
 public:
-	BlendingEditor() {
-		shader_.setup();
-	}
 	PointType getPoint(const MeshType &mesh, const IndexType &index) const override;
 	void moveMesh(MeshType &mesh, const glm::vec2 &delta) override;
 	void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta) override;
@@ -24,15 +21,10 @@ public:
 
 	bool isPreventMeshInterpolation() const override { return true; }
 	
-	void beginShader() const override { shader_.begin(tex_); }
-	void endShader() const override { shader_.end(); }
+	void beginShader() const override;
+	void endShader() const override;
 	void gui() override;
-	
-	ofxBlendScreen::Shader::Params& getShaderParam() const { return shader_.getParams(); }
-	void setShaderParam(const ofxBlendScreen::Shader::Params &params) { shader_.getParams() = params; }
 
 private:
 	std::vector<int> getEditableMeshIndex(int state);
-	
-	mutable ofxBlendScreen::Shader shader_;
 };
