@@ -66,3 +66,12 @@ void Undo::loadUndo(const DataType &data)
 	app_->unpackDataFile(stream);
 	cache_ = data;
 }
+
+std::size_t Undo::getDataSize() const
+{
+	std::size_t ret = 0;
+	for(auto &&h : history_) {
+		ret += h.size();
+	}
+	return ret;
+}

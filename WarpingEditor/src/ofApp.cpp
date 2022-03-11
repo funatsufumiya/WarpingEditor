@@ -37,8 +37,6 @@ void GuiApp::setup(){
 	ofDisableArbTex();
 	Icon::init();
 	
-	undo_.setup(this);
-	
 //	ofEnableArbTex();
 	ofBackground(ofColor::gray);
 
@@ -70,8 +68,20 @@ void GuiApp::setup(){
 	// avoid weird flipping
 	fbo_.allocate(1,1, GL_RGB);
 
+
+	undo_.setup(this);
+
 	loadRecent();
 	openRecent();
+	
+	undo_.enableAuto(1);
+}
+
+void GuiApp::initUndo()
+{
+	undo_.clear();
+	undo_.create();
+	undo_.store();
 }
 
 //--------------------------------------------------------------
@@ -318,7 +328,21 @@ void GuiApp::draw(){
 		ImGuiFileDialog::Instance()->Close();
 	}
 	if(Begin("status")) {
-		Text("undo length: %d", undo_.getUndoLength());
+		if(TreeNode("undo/redo")) {
+			int max_length = (int)undo_.getHistoryLengthLimit();
+			if(InputInt("max length", &max_length)) {
+				undo_.setHistoryLengthLimit(std::max(0, max_length));
+			}
+			if(IsItemHovered()) {
+				SetTooltip("0: unlimited");
+			}
+			Text("current history length: %d", undo_.getUndoLength()+undo_.getRedoLength());
+			Text("data size: %lukB", undo_.getDataSize()/1024);
+			if(Button("clear")) {
+				initUndo();
+			}
+			TreePop();
+		}
 	}
 	End();
 	if(Begin("ResultWindow")) {
@@ -630,10 +654,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 	blend_editor_->setTexture(fbo_.getTexture());
 	warp_mesh_->setBackgroundSize(bridge_res);
 	
-	undo_.clear();
-	undo_.create();
-	undo_.store();
-	undo_.enableAuto(1);
+	initUndo();
 }
 
 void GuiApp::openRecent(int index)

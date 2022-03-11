@@ -26,6 +26,8 @@ public:
 	DataType create() const;
 	DataType createUndo() const override;
 	void loadUndo(const DataType &data) override;
+	
+	std::size_t getDataSize() const;
 private:
 	GuiApp *app_;
 	mutable UndoBuf cache_;

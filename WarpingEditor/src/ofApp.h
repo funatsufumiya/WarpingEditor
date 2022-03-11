@@ -77,6 +77,7 @@ private:
 	mutable ProjectFolder proj_;
 	
 	Undo undo_;
+	void initUndo();
 	
 	ofFbo fbo_;
 };
