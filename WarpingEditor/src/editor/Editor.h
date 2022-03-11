@@ -8,6 +8,7 @@
 #include "imgui_internal.h"
 #include "ofGraphics.h"
 #include "of3dUtils.h"
+#include "AppFunc.h"
 
 class EditorBase : public ofxEditorFrame
 {
@@ -178,9 +179,6 @@ protected:
 	} op_selection_, op_selection_pressed_;
 	
 	bool is_grabbing_by_mouse_=false;
-	bool isOpAdd() const;
-	bool isOpAlt() const;
-	bool isOpDefault() const;
 	
 	glm::vec2 snap_diff_={0,0};
 	
@@ -223,31 +221,10 @@ protected:
 };
 
 template<typename Data, typename Mesh, typename Index, typename Point>
-inline bool Editor<Data, Mesh, Index, Point>::isOpAdd() const
-{
-	return ImGui::IsModKeyDown(ImGuiKeyModFlags_Shift);
-}
-template<typename Data, typename Mesh, typename Index, typename Point>
-inline bool Editor<Data, Mesh, Index, Point>::isOpAlt() const
-{
-#ifdef TARGET_OSX
-	return ImGui::IsModKeyDown(ImGuiKeyModFlags_Super);
-#else
-	return ImGui::IsModKeyDown(ImGuiKeyModFlags_Ctrl);
-#endif
-}
-template<typename Data, typename Mesh, typename Index, typename Point>
-inline bool Editor<Data, Mesh, Index, Point>::isOpDefault() const
-{
-	return !(isOpAdd() || isOpAlt());
-}
-
-
-template<typename Data, typename Mesh, typename Index, typename Point>
 inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh, Index, Point>::updateSelection(const OpSelection &selection, const OpHover &hover, bool for_grabbing)
 {
 	OpSelection ret = selection;
-	if(isOpDefault()) {
+	if(app::isOpDefault()) {
 		if(!(selection.contains(hover.mesh) || selection.contains(hover.point)) || !for_grabbing) {
 			ret.mesh.clear();
 			ret.point.clear();
@@ -259,11 +236,11 @@ inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh,
 		auto result = point.insert(hover.point.second);
 		bool is_new = result.second;
 		if(!is_new) {
-			if(isOpAlt()) {
+			if(app::isOpAlt()) {
 				point.erase(result.first);
 			}
 		}
-		else if(isOpDefault()) {
+		else if(app::isOpDefault()) {
 			ret.point.clear();
 			ret.point.insert(std::make_pair(hover.point.first, std::set<IndexType>{hover.point.second}));
 		}
@@ -272,11 +249,11 @@ inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh,
 		auto result = ret.mesh.insert(hover.mesh);
 		bool is_new = result.second;
 		if(!is_new) {
-			if(isOpAlt()) {
+			if(app::isOpAlt()) {
 				ret.mesh.erase(result.first);
 			}
 		}
-		else if(isOpDefault()) {
+		else if(app::isOpDefault()) {
 			ret.mesh = {hover.mesh};
 		}
 	}
@@ -288,7 +265,7 @@ template<typename Data, typename Mesh, typename Index, typename Point>
 inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh, Index, Point>::updateSelection(const OpSelection &selection, const OpRect &rect)
 {
 	OpSelection ret = selection;
-	if(isOpDefault()) {
+	if(app::isOpDefault()) {
 		ret.mesh.clear();
 		ret.point.clear();
 	}
@@ -298,11 +275,11 @@ inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh,
 			auto result = point.insert(i);
 			bool is_new = result.second;
 			if(!is_new) {
-				if(isOpAlt()) {
+				if(app::isOpAlt()) {
 					point.erase(result.first);
 				}
 			}
-			else if(isOpDefault()) {
+			else if(app::isOpDefault()) {
 				ret.point[p.first].insert(i);
 			}
 		}
