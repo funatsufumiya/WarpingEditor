@@ -31,7 +31,7 @@ public:
 	void unpackDataFile(std::istream &stream) const;
 	
 	void keyPressed(int key) override;
-	void mouseReleased(int x, int y, int button);
+	void mouseReleased(int x, int y, int button) override;
 	
 	void setResultApp(std::shared_ptr<ResultView> app) { result_app_ = app; }
 	void setResultWindow(std::shared_ptr<ofAppBaseWindow> window) { result_window_ = window; }
