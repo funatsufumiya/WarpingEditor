@@ -121,6 +121,8 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 	const char *dnd_id = "meshD&D";
 	auto &meshes = getData();
 	int move_from = -1, move_to = -1;
+	
+	auto cursor_start = GetCursorPos();
 	for(int i = 0; i < meshes.size(); ++i) {
 		auto &&m = meshes[i];
 		PushID(m.first.c_str());
@@ -206,6 +208,17 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 	if (move_from != -1 && move_to != -1) {
 		swap(meshes[move_to], meshes[move_from]);
 		ImGui::SetDragDropPayload(dnd_id, &move_to, sizeof(int));
+	}
+	if(!selected_meshes.empty()) {
+		auto cursor_end = GetCursorPos();
+		SetCursorPos(cursor_start);
+		if(InvisibleButton("clear selction", GetContentRegionAvail())) {
+			for(auto &&m : selected_meshes) {
+				set_selected(*m.second, false);
+			}
+			selected_meshes.clear();
+		}
+		SetCursorPos(cursor_end);
 	}
 }
 
