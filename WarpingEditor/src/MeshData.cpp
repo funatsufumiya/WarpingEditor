@@ -4,6 +4,7 @@
 #include "Icon.h"
 #include "ofxBlendScreen.h"
 #include "SaveData.h"
+#include "AppFunc.h"
 
 #pragma mark - IO
 
@@ -117,22 +118,55 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 	bool update_mesh_name = false;
 	std::weak_ptr<DataType> mesh_delete;
 	
-	std::map<std::string, std::shared_ptr<DataType>> selected_meshes;
 	const char *dnd_id = "meshD&D";
 	auto &meshes = getData();
 	int move_from = -1, move_to = -1;
-	
 	auto cursor_start = GetCursorPos();
+	std::map<std::string, std::shared_ptr<DataType>> selected_meshes = [is_selected, meshes]() {
+		std::map<std::string, std::shared_ptr<DataType>> ret;
+		for(auto &&m : meshes) {
+			if(is_selected(*m.second)) {
+				ret.insert(m);
+			}
+		}
+		return ret;
+	}();
+	auto clearSelection = [&]() {
+		for(auto &&m : meshes) {
+			set_selected(*m.second, false);
+		}
+		selected_meshes.clear();
+	};
+	auto addSelection = [&](std::pair<std::string, std::shared_ptr<DataType>> p) {
+		set_selected(*p.second, true);
+		selected_meshes.insert(p);
+	};
+	auto removeSelection = [&](std::pair<std::string, std::shared_ptr<DataType>> p) {
+		set_selected(*p.second, false);
+		selected_meshes.erase(p.first);
+	};
+	bool is_any_solo = std::any_of(begin(meshes), end(meshes), [](const std::pair<std::string, std::shared_ptr<DataType>> p) {
+		return p.second->is_solo;
+	});
+	auto switches = [is_any_solo](std::shared_ptr<DataType> m, bool &hidden, bool &locked, bool &solo, bool *editable) {
+		bool ret = false;
+		ret |= ToggleButton("##hide", hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
+		ret |= ToggleButton("##lock", locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
+		ret |= ToggleButton("##solo", solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);
+		if(editable) {
+			*editable = (!is_any_solo || solo) && !hidden && !locked;
+		}
+		return ret;
+	};
 	for(int i = 0; i < meshes.size(); ++i) {
 		auto &&m = meshes[i];
 		PushID(m.first.c_str());
-		ToggleButton("##hide", m.second->is_hidden, Icon::HIDE, Icon::SHOW, {17,17}, 0);	SameLine();
-		ToggleButton("##lock", m.second->is_locked, Icon::LOCK, Icon::UNLOCK, {17,17}, 0);	SameLine();
-		ToggleButton("##solo", m.second->is_solo, Icon::FLAG, Icon::BLANK, {17,17}, 0);	SameLine();
-		bool deselect = m.second->is_hidden || m.second->is_locked;
-		if(deselect) {
+		bool editable = false;
+		switches(m.second, m.second->is_hidden, m.second->is_locked, m.second->is_solo, &editable);
+		if(!editable) {
 			set_selected(*m.second, false);
 		}
+		SameLine();
 		if(mesh_edit_.second.lock() == m.second) {
 			if(need_keyboard_focus_) SetKeyboardFocusHere();
 			need_keyboard_focus_ = false;
@@ -141,10 +175,16 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 		else {
 			bool selected = is_selected(*m.second);
 			if(Selectable(m.first.c_str(), &selected)) {
-				set_selected(*m.second, selected);
-			}
-			if(selected) {
-				selected_meshes.insert(m);
+				if(app::isOpDefault()) {
+					clearSelection();
+					addSelection(m);
+				}
+				if(app::isOpAlt()) {
+					selected ? addSelection(m) : removeSelection(m);
+				}
+				if(app::isOpAdd() && selected) {
+					addSelection(m);
+				}
 			}
 			if(IsItemClicked(ImGuiPopupFlags_MouseButtonLeft)) {
 				mesh_edit_.second.reset();
@@ -213,10 +253,7 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 		auto cursor_end = GetCursorPos();
 		SetCursorPos(cursor_start);
 		if(InvisibleButton("clear selction", GetContentRegionAvail())) {
-			for(auto &&m : selected_meshes) {
-				set_selected(*m.second, false);
-			}
-			selected_meshes.clear();
+			clearSelection();
 		}
 		SetCursorPos(cursor_end);
 	}
