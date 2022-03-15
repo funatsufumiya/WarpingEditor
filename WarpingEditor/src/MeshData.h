@@ -13,6 +13,7 @@
 #include "Quad.h"
 #include "ofxBlendScreen.h"
 #include "SaveData.h"
+#include "Memo.h"
 
 class DataContainerBase : public HasSaveDataWithArg<glm::vec2>
 {
@@ -73,6 +74,27 @@ protected:
 	bool need_keyboard_focus_=false;
 };
 
+class CacheChecker;
+struct CacheIdentifier {
+	float resample_min_interval;
+	ofRectangle valid_viewport;
+	CacheIdentifier& operator=(const CacheChecker &c);
+};
+struct CacheChecker {
+	float resample_min_interval;
+	const ofRectangle *use_area;
+	bool operator!=(const CacheIdentifier &cache) const {
+		return !ofIsFloatEqual(resample_min_interval, cache.resample_min_interval)
+		|| (use_area && *use_area != cache.valid_viewport);
+	}
+};
+inline CacheIdentifier& CacheIdentifier::operator=(const CacheChecker &c) {
+	this->resample_min_interval = c.resample_min_interval;
+	if(c.use_area) {
+		this->valid_viewport = *c.use_area;
+	}
+	return *this;
+}
 struct MeshData {
 	bool is_hidden=false;
 	bool is_locked=false;
@@ -81,10 +103,11 @@ struct MeshData {
 	bool isDirty() const { return is_dirty_; }
 	void pack(std::ostream &stream, glm::vec2 scale) const;
 	void unpack(std::istream &stream, glm::vec2 scale);
+	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
+	virtual ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const { return {}; }
+
 protected:
-	mutable ofMesh cache_;
-	mutable float cached_resample_interval_;
-	mutable ofRectangle cached_valid_viewport_;
+	mutable Memo<ofMesh, CacheIdentifier, CacheChecker> memo_;
 	mutable bool is_dirty_=true;
 };
 
@@ -94,8 +117,7 @@ struct WarpingMesh : public MeshData {
 	std::shared_ptr<UVType> uv_quad;
 	std::shared_ptr<MeshType> mesh;
 	std::shared_ptr<ofx::mapper::Interpolator> interpolator;
-	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
-	ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
+	ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const override;
 	WarpingMesh() {
 		uv_quad = std::make_shared<UVType>();
 		mesh = std::make_shared<MeshType>();
@@ -134,9 +156,8 @@ struct BlendingMesh : public MeshData {
 	void pack(std::ostream &stream, glm::vec2 scale) const;
 	void unpack(std::istream &stream, glm::vec2 scale);
 
-	ofMesh getMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
 	ofMesh getWireframe(const glm::vec2 &remap_coord={1,1}, const ofFloatColor &color=ofFloatColor::white) const;
-	ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const;
+	ofMesh createMesh(float resample_min_interval, const glm::vec2 &remap_coord={1,1}, const ofRectangle *use_area=nullptr) const override;
 	bool blend_l=true;
 	bool blend_r=true;
 	bool blend_t=true;

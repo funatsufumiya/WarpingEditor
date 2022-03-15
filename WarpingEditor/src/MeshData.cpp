@@ -320,18 +320,6 @@ bool DataContainer<Data>::isDirtyAny() const
 
 // -------------
 
-ofMesh WarpingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const {
-	if(is_dirty_ || ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
-		cache_ = createMesh(resample_min_interval, remap_coord, use_area);
-		is_dirty_ = false;
-		cached_resample_interval_ = resample_min_interval;
-		if(use_area) {
-			cached_valid_viewport_ = *use_area;
-		}
-	}
-	return cache_;
-}
-
 ofMesh WarpingMesh::createMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
 {
 	ofMesh ret = ofx::mapper::UpSampler().proc(*mesh, resample_min_interval, use_area);
@@ -474,17 +462,21 @@ void BlendingMesh::init(const ofRectangle &frame, float default_inner_ratio)
 	mesh->quad[1] = inner;
 }
 
-ofMesh BlendingMesh::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
+ofMesh MeshData::getMesh(float resample_min_interval, const glm::vec2 &remap_coord, const ofRectangle *use_area) const
 {
-	if(is_dirty_ || !ofIsFloatEqual(cached_resample_interval_, resample_min_interval) || (use_area && *use_area != cached_valid_viewport_)) {
-		cache_ = createMesh(resample_min_interval, remap_coord, use_area);
-		is_dirty_ = false;
-		cached_resample_interval_ = resample_min_interval;
-		if(use_area) {
-			cached_valid_viewport_ = *use_area;
-		}
+	auto create = [&]() {
+		return createMesh(resample_min_interval, remap_coord, use_area);
+	};
+	CacheChecker checker{resample_min_interval, use_area};
+	if(is_dirty_) {
+		memo_.updateIdentifier(checker);
+		memo_.reset(create());
 	}
-	return cache_;
+	else {
+		memo_.update(create, checker);
+	}
+	is_dirty_ = false;
+	return memo_;
 }
 
 
