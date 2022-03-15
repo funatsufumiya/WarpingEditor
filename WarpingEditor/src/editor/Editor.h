@@ -590,7 +590,8 @@ std::pair<std::weak_ptr<Mesh>, Index> Editor<Data, Mesh, Index, Point>::getNeare
 		}
 		float d2 = glm::distance2(point, p);
 		if(d2 < distance2) {
-			decltype(ret) tmp{getMeshType(*data), index};
+			std::weak_ptr<MeshType> weak = getMeshType(*data);
+			std::pair<std::weak_ptr<MeshType>, IndexType> tmp{weak, index};
 			swap(ret, tmp);
 			distance2 = d2;
 		}

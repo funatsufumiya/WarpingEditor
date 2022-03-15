@@ -174,7 +174,7 @@ void GuiApp::draw(){
 						openProject(r.getAbsolute());
 					}
 				}
-				EndMenu();
+				ImGui::EndMenu();
 			}
 			Separator();
 			if(MenuItem("Save", sc_save.keyStr().c_str())) {
@@ -183,7 +183,7 @@ void GuiApp::draw(){
 			if(MenuItem("Save as...", sc_save_as.keyStr().c_str())) {
 				sc_save_as();
 			}
-			EndMenu();
+			ImGui::EndMenu();
 		}
 		if(BeginMenu("Edit")) {
 			if(MenuItem("Undo", sc_undo.keyStr().c_str(), false, undo_.getUndoLength()>0)) {
@@ -192,7 +192,7 @@ void GuiApp::draw(){
 			if(MenuItem("Redo", sc_redo.keyStr().c_str(), false, undo_.getRedoLength()>0)) {
 				sc_redo();
 			}
-			EndMenu();
+			ImGui::EndMenu();
 		}
 		if(BeginMenu("Texture")) {
 			if(BeginMenu("Image File")) {
@@ -212,7 +212,7 @@ void GuiApp::draw(){
 						}
 					}
 				}
-				EndMenu();
+				ImGui::EndMenu();
 			}
 			if(BeginMenu("NDI")) {
 				auto source = ndi_finder_.getSources();
@@ -224,9 +224,9 @@ void GuiApp::draw(){
 						texture_source_ = buildTextureSource(proj_);
 					}
 				}
-				EndMenu();
+				ImGui::EndMenu();
 			}
-			EndMenu();
+			ImGui::EndMenu();
 		}
 		if(BeginMenu("Export")) {
 			if(MenuItem("export by recent settings", sc_export.keyStr().c_str())) {
@@ -235,7 +235,7 @@ void GuiApp::draw(){
 			if(MenuItem("export...", sc_export_to.keyStr().c_str())) {
 				sc_export_to();
 			}
-			EndMenu();
+			ImGui::EndMenu();
 		}
 		EndMainMenuBar();
 	}
