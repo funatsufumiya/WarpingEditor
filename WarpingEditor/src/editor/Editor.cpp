@@ -30,5 +30,10 @@ void EditorBase::drawCursor() const
 	cross(pos-glm::vec2{1,1});
 	ofSetColor(ofColor::black);
 	cross(pos);
+	if(mouse_.isDragged(OF_MOUSE_BUTTON_RIGHT)) {
+		auto rect = mouse_.getDragRect();
+		ofSetColor(ofColor::white, 64);
+		ofDrawRectangle({getIn(rect.getTopLeft()), getIn(rect.getBottomRight())});
+	}
 	ofPopStyle();
 }
