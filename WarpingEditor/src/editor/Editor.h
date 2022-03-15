@@ -36,6 +36,7 @@ public:
 	virtual void endShader() const {}
 	virtual ofMesh getMesh(bool use_control_color) const { return {}; }
 	virtual void drawControl(float parent_scale) const {}
+	virtual void drawCursor() const;
 	virtual void drawBackground() const {
 		ofPushStyle();
 		ofSetColor(32);

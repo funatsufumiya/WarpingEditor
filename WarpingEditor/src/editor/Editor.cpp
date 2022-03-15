@@ -14,3 +14,21 @@ void EditorBase::update()
 		procNewMouseEvent(mouse_);
 	}
 }
+
+void EditorBase::drawCursor() const
+{
+	glm::vec2 lt{0,0};
+	glm::vec2 rb = getWorkAreaSize();
+	auto pos = getIn(mouse_.pos);
+	auto cross = [lt,rb](glm::vec2 pos) {
+		ofDrawLine(lt.x, pos.y, rb.x, pos.y);
+		ofDrawLine(pos.x, lt.y, pos.x, rb.y);
+	};
+	ofPushStyle();
+	ofSetColor(ofColor::white);
+	cross(pos+glm::vec2{1,1});
+	cross(pos-glm::vec2{1,1});
+	ofSetColor(ofColor::black);
+	cross(pos);
+	ofPopStyle();
+}

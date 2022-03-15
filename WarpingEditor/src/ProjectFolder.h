@@ -47,6 +47,7 @@ public:
 		std::string editor_name="uv";
 		bool is_scale_to_viewport=false;
 		bool is_show_control=false;
+		bool is_show_cursor=false;
 	};
 public:
 	void setup();
@@ -71,6 +72,7 @@ public:
 	std::string getResultEditorName() const { return result_.editor_name; }
 	bool isResultScaleToViewport() const { return result_.is_scale_to_viewport; }
 	bool isResultShowControl() const { return result_.is_show_control; }
+	bool isResultShowCursor() const { return result_.is_show_cursor; }
 	
 	glm::ivec2 getBridgeResolution() const { return bridge_.resolution; }
 	
@@ -103,6 +105,7 @@ public:
 	void setResultEditorName(const std::string &name) { result_.editor_name = name; }
 	void setResultScaleToViewport(bool enable) { result_.is_scale_to_viewport = enable; }
 	void setResultShowControl(bool enable) { result_.is_show_control = enable; }
+	void setResultShowCursor(bool enable) { result_.is_show_cursor = enable; }
 	
 	void setBridgeResolution(glm::ivec2 resolution) { bridge_.resolution = resolution; }
 	

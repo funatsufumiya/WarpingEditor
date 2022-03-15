@@ -96,8 +96,12 @@ public:
 
 	void setShowControl(bool enable) { is_show_control_ = enable; }
 	bool isShowControl() const { return is_show_control_; }
+
+	void setShowCursor(bool enable) { is_show_cursor_ = enable; }
+	bool isShowCursor() const { return is_show_cursor_; }
 private:
 	std::shared_ptr<EditorBase> editor_;
 	bool is_scale_to_viewport_;
 	bool is_show_control_;
+	bool is_show_cursor_;
 };

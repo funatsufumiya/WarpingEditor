@@ -15,65 +15,6 @@
 #include "SaveData.h"
 #include "Memo.h"
 
-class DataContainerBase : public HasSaveDataWithArg<glm::vec2>
-{
-public:
-	void save(const std::filesystem::path &filepath, glm::vec2 scale) const;
-	void load(const std::filesystem::path &filepath, glm::vec2 scale);
-	using HasSaveDataWithArg::pack;
-	using HasSaveDataWithArg::unpack;
-	virtual void clear(){}
-	virtual void rescale(const glm::vec2 &scale) {}
-};
-
-template<typename Data>
-class DataContainer : public DataContainerBase
-{
-public:
-	using DataType = Data;
-	using NamedData = std::pair<std::string, std::shared_ptr<Data>>;
-	using DataMap = std::vector<NamedData>;
-	using NamedDataWeak = std::pair<std::string, std::weak_ptr<Data>>;
-
-	void update();
-	bool remove(const std::string &name);
-	bool remove(const std::shared_ptr<DataType> mesh);
-	void clear() override { data_.clear(); }
-	bool isDirtyAny() const;
-	DataMap& getData() { return data_; }
-	DataMap getVisibleData() const;
-	DataMap getEditableData(bool include_hidden=false) const;
-	bool isVisible(std::shared_ptr<DataType> mesh) const;
-	bool isEditable(std::shared_ptr<DataType> mesh, bool include_hidden=false) const;
-
-	virtual void pack(std::ostream &stream, const glm::vec2 &scale) const override;
-	virtual void unpack(std::istream &stream, const glm::vec2 &scale) override;
-	
-	void gui(std::function<bool(DataType&)> is_selected, std::function<void(DataType&, bool)> set_selected, std::function<void()> create_new);
-protected:
-	DataMap data_;
-	std::pair<typename DataMap::iterator, bool> insert(DataMap &src, NamedData data) const {
-		auto found = find(src, data.first);
-		if(found != end(src)) {
-			return {found, false};
-		}
-		return {src.insert(end(src), data), true};
-	}
-	typename DataMap::iterator find(DataMap &src, const std::string &name) const {
-		for(auto it = begin(src); it != end(src); ++it) {
-			if(it->first == name) {
-				return it;
-			}
-		}
-		return end(src);
-	}
-	NamedData createCopy(const std::string &name, std::shared_ptr<DataType> src);
-
-	NamedDataWeak mesh_edit_;
-	std::string mesh_name_buf_;
-	bool need_keyboard_focus_=false;
-};
-
 class CacheChecker;
 struct CacheIdentifier {
 	float resample_min_interval;
@@ -174,6 +115,68 @@ struct BlendingMesh : public MeshData {
 		return *this;
 	}
 };
+
+
+
+class DataContainerBase : public HasSaveDataWithArg<glm::vec2>
+{
+public:
+	void save(const std::filesystem::path &filepath, glm::vec2 scale) const;
+	void load(const std::filesystem::path &filepath, glm::vec2 scale);
+	using HasSaveDataWithArg::pack;
+	using HasSaveDataWithArg::unpack;
+	virtual void clear(){}
+	virtual void rescale(const glm::vec2 &scale) {}
+};
+
+template<typename Data>
+class DataContainer : public DataContainerBase
+{
+public:
+	using DataType = Data;
+	using NamedData = std::pair<std::string, std::shared_ptr<Data>>;
+	using DataMap = std::vector<NamedData>;
+	using NamedDataWeak = std::pair<std::string, std::weak_ptr<Data>>;
+
+	void update();
+	bool remove(const std::string &name);
+	bool remove(const std::shared_ptr<DataType> mesh);
+	void clear() override { data_.clear(); }
+	bool isDirtyAny() const;
+	DataMap& getData() { return data_; }
+	DataMap getVisibleData() const;
+	DataMap getEditableData(bool include_hidden=false) const;
+	bool isVisible(std::shared_ptr<DataType> mesh) const;
+	bool isEditable(std::shared_ptr<DataType> mesh, bool include_hidden=false) const;
+
+	virtual void pack(std::ostream &stream, const glm::vec2 &scale) const override;
+	virtual void unpack(std::istream &stream, const glm::vec2 &scale) override;
+	
+	void gui(std::function<bool(DataType&)> is_selected, std::function<void(DataType&, bool)> set_selected, std::function<void()> create_new);
+protected:
+	DataMap data_;
+	std::pair<typename DataMap::iterator, bool> insert(DataMap &src, NamedData data) const {
+		auto found = find(src, data.first);
+		if(found != end(src)) {
+			return {found, false};
+		}
+		return {src.insert(end(src), data), true};
+	}
+	typename DataMap::iterator find(DataMap &src, const std::string &name) const {
+		for(auto it = begin(src); it != end(src); ++it) {
+			if(it->first == name) {
+				return it;
+			}
+		}
+		return end(src);
+	}
+	NamedData createCopy(const std::string &name, std::shared_ptr<DataType> src);
+
+	NamedDataWeak mesh_edit_;
+	std::string mesh_name_buf_;
+	bool need_keyboard_focus_=false;
+};
+
 class WarpingData : public DataContainer<WarpingMesh>
 {
 public:

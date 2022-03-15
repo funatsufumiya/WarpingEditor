@@ -206,13 +206,15 @@ struct adl_serializer<ProjectFolder::Result> {
 		j = {
 			{"editor_name", v.editor_name},
 			{"is_scale_to_viewport", v.is_scale_to_viewport},
-			{"is_show_control", v.is_show_control}
+			{"is_show_control", v.is_show_control},
+			{"is_show_cursor", v.is_show_cursor}
 		};
 	}
 	static void from_json(const ofJson &j, ProjectFolder::Result &v) {
 		updateByJsonValue(v.editor_name, j, "editor_name");
 		updateByJsonValue(v.is_scale_to_viewport, j, "is_scale_to_viewport");
 		updateByJsonValue(v.is_show_control, j, "is_show_control");
+		updateByJsonValue(v.is_show_cursor, j, "is_show_cursor");
 	}
 };
 template<>

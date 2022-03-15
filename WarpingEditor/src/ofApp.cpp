@@ -367,6 +367,10 @@ void GuiApp::draw(){
 		if(Checkbox("show_control", &show_control)) {
 			result_app_->setShowControl(show_control);
 		}
+		bool show_cursor = result_app_->isShowCursor();
+		if(Checkbox("show_cursor", &show_cursor)) {
+			result_app_->setShowCursor(show_cursor);
+		}
 		Text("%s", "Show Editor");
 		for(auto &&e : editor_) {
 			if(RadioButton(e.first.c_str(), e.second == result_app_->getEditor())) {
@@ -515,6 +519,7 @@ void GuiApp::save(bool do_backup) const
 		proj_.setResultEditorName(stateName(state_));
 		proj_.setResultScaleToViewport(result_app_->isScaleToViewport());
 		proj_.setResultShowControl(result_app_->isShowControl());
+		proj_.setResultShowCursor(result_app_->isShowCursor());
 	}
 	proj_.setUVView(-warp_uv_->getTranslate(), warp_uv_->getScale());
 	proj_.setUVGridData(warp_uv_->getGridData());
@@ -612,6 +617,7 @@ void GuiApp::openProject(const std::filesystem::path &proj_path)
 		}
 		result_app_->setScaleToViewport(proj_.isResultScaleToViewport());
 		result_app_->setShowControl(proj_.isResultShowControl());
+		result_app_->setShowCursor(proj_.isResultShowCursor());
 	}
 	{
 		auto view = proj_.getUVView();
@@ -706,7 +712,7 @@ void GuiApp::dragEvent(ofDragInfo dragInfo)
 //--------------------------------------------------------------
 void ResultView::setup()
 {
-	ofBackground(0);
+	ofBackground(255,0,0);
 }
 
 void ResultView::draw()
@@ -719,6 +725,9 @@ void ResultView::draw()
 		editor_->drawMesh(false);
 		if(is_show_control_) {
 			editor_->drawControl(1);
+		}
+		if(is_show_cursor_) {
+			editor_->drawCursor();
 		}
 	}
 }
