@@ -549,9 +549,9 @@ namespace {
 std::vector<std::string> getModKeyNames(ImGuiKeyModFlags f) {
 	std::vector<std::string> ss;
 	if((f&ImGuiKeyModFlags_Super)!=0) {
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX)
 		ss.push_back("Command");
-#elif TARGET_WIN32
+#elif defined(TARGET_WIN32)
 		ss.push_back("Win");
 #else
 		ss.push_back("Super");
@@ -561,7 +561,7 @@ std::vector<std::string> getModKeyNames(ImGuiKeyModFlags f) {
 		ss.push_back("Ctrl");
 	}
 	if((f&ImGuiKeyModFlags_Alt)!=0) {
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX)
 		ss.push_back("Option");
 #else
 		ss.push_back("Alt");

@@ -79,11 +79,11 @@ typename DataContainer<Data>::DataMap DataContainer<Data>::getVisibleData() cons
 	DataMap ret;
 	auto isVisible = std::any_of(begin(data_), end(data_), [](const std::pair<std::string, std::shared_ptr<Data>> d) {
 		return d.second->is_solo;
-	}) ? [](std::shared_ptr<Data> d) {
+	}) ? std::function<bool(std::shared_ptr<Data>)>([](std::shared_ptr<Data> d) {
 		return d->is_solo && !d->is_hidden;
-	} : [](std::shared_ptr<Data> d) {
+	}) : std::function<bool(std::shared_ptr<Data>)>([](std::shared_ptr<Data> d) {
 		return !d->is_hidden;
-	};
+	});
 	for(auto &&d : data_) {
 		if(isVisible(d.second)) {
 			ret.push_back(d);
@@ -97,11 +97,11 @@ typename DataContainer<Data>::DataMap DataContainer<Data>::getEditableData(bool 
 	DataMap ret;
 	auto isVisible = std::any_of(begin(data_), end(data_), [](const std::pair<std::string, std::shared_ptr<Data>> d) {
 		return d.second->is_solo;
-	}) ? [](std::shared_ptr<Data> d) {
+	}) ? std::function<bool(std::shared_ptr<Data>)>([](std::shared_ptr<Data> d) {
 		return d->is_solo && !d->is_hidden;
-	} : [](std::shared_ptr<Data> d) {
+	}) : std::function<bool(std::shared_ptr<Data>)>([](std::shared_ptr<Data> d) {
 		return !d->is_hidden;
-	};
+	});
 	for(auto &&d : data_) {
 		if(!d.second->is_locked && (include_hidden || isVisible(d.second))) {
 			ret.push_back(d);

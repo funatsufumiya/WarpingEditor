@@ -4,8 +4,10 @@
 bool WorkFolder::loadJson(const std::filesystem::path &json_path)
 {
 	auto json = ofLoadJson(json_path);
-	return setRelative(json["rel"])
-	|| setAbsolute(json["abs"]);
+	std::string rel = json["rel"].get<std::string>();
+	std::string abs = json["abs"].get<std::string>();
+	return setRelative(rel)
+	|| setAbsolute(abs);
 }
 void WorkFolder::saveJson(const std::filesystem::path &json_path) const
 {

@@ -53,7 +53,7 @@ namespace ImGui {
 			}
 		}
 		std::string format;
-		private:
+		protected:
 			template<typename T> void setType();
 			template<> void setType<char>() { type = ImGuiDataType_S8; }
 			template<> void setType<unsigned char>() { type = ImGuiDataType_U8; }
@@ -106,9 +106,9 @@ namespace ImGui {
 
 	struct Shortcut {
 		static const int MOD_FLAG_DEFAULT = 
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX)
 			 ImGuiKeyModFlags_Super;
-#elif TARGET_WIN32
+#elif defined(TARGET_WIN32)
 			 ImGuiKeyModFlags_Ctrl;
 #else
 			 ImGuiKeyModFlags_Super;
