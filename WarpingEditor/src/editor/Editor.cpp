@@ -20,20 +20,34 @@ void EditorBase::drawCursor() const
 	glm::vec2 lt{0,0};
 	glm::vec2 rb = getWorkAreaSize();
 	auto pos = getIn(mouse_.pos);
-	auto cross = [lt,rb](glm::vec2 pos) {
-		ofDrawLine(lt.x, pos.y, rb.x, pos.y);
-		ofDrawLine(pos.x, lt.y, pos.x, rb.y);
+	
+	ofMesh mesh;
+	mesh.setMode(OF_PRIMITIVE_LINES);
+	auto cross = [lt,rb](glm::vec2 pos, ofColor color, ofMesh &mesh) {
+		auto offset = (ofIndexType)mesh.getNumVertices();
+		mesh.addVertices({
+			{pos.x, pos.y, 0},
+			{lt.x, pos.y, 0}, {rb.x, pos.y, 0},
+			{pos.x, lt.y, 0}, {pos.x, rb.y, 0}
+		});
+		auto transparent = ofColor(color, 32);
+		mesh.addColors({color, transparent, transparent, transparent, transparent});
+		mesh.addIndices({
+			offset, offset+1,
+			offset, offset+2,
+			offset, offset+3,
+			offset, offset+4,
+		});
 	};
-	ofPushStyle();
-	ofSetColor(ofColor::white);
-	cross(pos+glm::vec2{1,1});
-	cross(pos-glm::vec2{1,1});
-	ofSetColor(ofColor::black);
-	cross(pos);
+	cross(pos+glm::vec2{1,1}, ofColor::white, mesh);
+	cross(pos-glm::vec2{1,1}, ofColor::white, mesh);
+	cross(pos, ofColor::black, mesh);
+	mesh.draw();
 	if(mouse_.isDragged(OF_MOUSE_BUTTON_RIGHT)) {
+		ofPushStyle();
 		auto rect = mouse_.getDragRect();
 		ofSetColor(ofColor::white, 64);
 		ofDrawRectangle({getIn(rect.getTopLeft()), getIn(rect.getBottomRight())});
+		ofPopStyle();
 	}
-	ofPopStyle();
 }
