@@ -33,6 +33,19 @@ bool isCorner(const WarpingMeshEditor::MeshType &mesh, WarpingMeshEditor::IndexT
 }
 }
 
+void WarpingMeshEditor::moveMesh(MeshType &mesh, const glm::vec2 &delta)
+{
+	app::isOpAlt()
+	? MeshEditor::moveMeshCoord(mesh, -delta/glm::vec2{tex_.getWidth(), tex_.getHeight()})
+	: MeshEditor::moveMesh(mesh, delta);
+}
+void WarpingMeshEditor::movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta)
+{
+	app::isOpAlt()
+	? MeshEditor::movePointCoord(mesh, index, -delta/glm::vec2{tex_.getWidth(), tex_.getHeight()})
+	: MeshEditor::movePoint(mesh, index, delta);
+}
+
 void WarpingMeshEditor::update()
 {
 	auto mode_prev = mode_;

@@ -22,6 +22,8 @@ public:
 	void gui() override;
 	
 	bool isPreventMeshInterpolation() const override { return mode_==MODE_DIVISION; }
+	void moveMesh(MeshType &mesh, const glm::vec2 &delta) override;
+	void movePoint(MeshType &mesh, IndexType index, const glm::vec2 &delta) override;
 
 private:
 	int mode_=MODE_MESH;
