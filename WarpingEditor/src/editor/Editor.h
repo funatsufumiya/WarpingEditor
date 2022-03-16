@@ -237,7 +237,7 @@ inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh,
 		auto result = point.insert(hover.point.second);
 		bool is_new = result.second;
 		if(!is_new) {
-			if(app::isOpAlt()) {
+			if(app::isOpToggle()) {
 				point.erase(result.first);
 			}
 		}
@@ -250,7 +250,7 @@ inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh,
 		auto result = ret.mesh.insert(hover.mesh);
 		bool is_new = result.second;
 		if(!is_new) {
-			if(app::isOpAlt()) {
+			if(app::isOpToggle()) {
 				ret.mesh.erase(result.first);
 			}
 		}
@@ -276,7 +276,7 @@ inline typename Editor<Data, Mesh, Index, Point>::OpSelection Editor<Data, Mesh,
 			auto result = point.insert(i);
 			bool is_new = result.second;
 			if(!is_new) {
-				if(app::isOpAlt()) {
+				if(app::isOpToggle()) {
 					point.erase(result.first);
 				}
 			}

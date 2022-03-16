@@ -179,7 +179,7 @@ void DataContainer<Data>::gui(std::function<bool(DataType&)> is_selected, std::f
 					clearSelection();
 					addSelection(m);
 				}
-				if(app::isOpAlt()) {
+				if(app::isOpToggle()) {
 					selected ? addSelection(m) : removeSelection(m);
 				}
 				if(app::isOpAdd() && selected) {
