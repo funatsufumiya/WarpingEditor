@@ -99,7 +99,7 @@ void WarpingMeshEditor::update()
 					}
 				}
 			}
-			if(mouse_.isClicked(OF_MOUSE_BUTTON_LEFT)) {
+			if(mouse_.isClicked(OF_MOUSE_BUTTON_LEFT) || (mouse_.isClicked(OF_MOUSE_BUTTON_MIDDLE) && app::isOpAlt())) {
 				if(is_div_point_valid_) {
 					auto mesh = getMeshType(*div_mesh);
 					int col = dst_findex.x;
@@ -107,15 +107,31 @@ void WarpingMeshEditor::update()
 					if(is_row && is_col) {
 						mesh->divideCol(col, dst_findex.x - col);
 						mesh->divideRow(row, dst_findex.y - row);
-						div_mesh->interpolator->selectPoint(col+1, row+1);
+						if(app::isOpAlt()) {
+							div_mesh->interpolator->selectRow(row+1);
+							div_mesh->interpolator->selectCol(col+1);
+						}
+						else {
+							div_mesh->interpolator->selectPoint(col+1, row+1);
+						}
 					}
 					else if(is_row) {
 						mesh->divideCol(col, dst_findex.x - col);
-						div_mesh->interpolator->selectPoint(col+1, row);
+						if(app::isOpAlt()) {
+							div_mesh->interpolator->selectCol(col+1);
+						}
+						else {
+							div_mesh->interpolator->selectPoint(col+1, row);
+						}
 					}
 					else if(is_col) {
 						mesh->divideRow(row, dst_findex.y - row);
-						div_mesh->interpolator->selectPoint(col, row+1);
+						if(app::isOpAlt()) {
+							div_mesh->interpolator->selectRow(row+1);
+						}
+						else {
+							div_mesh->interpolator->selectPoint(col, row+1);
+						}
 					}
 					div_mesh->setDirty();
 					is_div_point_valid_ = false;
