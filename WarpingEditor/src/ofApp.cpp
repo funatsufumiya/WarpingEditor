@@ -497,7 +497,7 @@ void GuiApp::keyPressed(int key){
 		move *= 10;
 	}
 	auto editor = editor_[stateName(state_)];
-	if(editor) {
+	if(editor && glm::length2(move) > 0) {
 		editor->moveSelectedOnScreenScale(move);
 	}
 }
