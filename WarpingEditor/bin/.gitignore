@@ -1,4 +1,3 @@
 data/*.ply
 data/*.bin
-data/testdata
 data/private

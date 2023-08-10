@@ -1,0 +1,124 @@
+{
+    "backup": {
+        "enabled": true,
+        "folder": "backup",
+        "limit": 0
+    },
+    "blend_params": {
+        "base_color": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "blend_power": 2.0,
+        "gamma": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "luminance_control": 0.5
+    },
+    "bridge": {
+        "resolution": [
+            5760,
+            1080
+        ]
+    },
+    "export": {
+        "blend": {
+            "filename": "mesh.ply",
+            "max_mesh_size": 100.0
+        },
+        "blend_shader": {
+            "filename": "blend_shader.json"
+        },
+        "folder": "",
+        "is_arb": false,
+        "warp": {
+            "filename": "mesh.ply",
+            "max_mesh_size": 100.0
+        }
+    },
+    "filename": "testdata",
+    "grid": {
+        "blend": {
+            "offset": [
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "size": [
+                1920.0,
+                1080.0
+            ],
+            "snap": true
+        },
+        "uv": {
+            "offset": [
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "size": [
+                1920.0,
+                1080.0
+            ],
+            "snap": true
+        },
+        "warp": {
+            "offset": [
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "size": [
+                1920.0,
+                1080.0
+            ],
+            "snap": true
+        }
+    },
+    "result": {
+        "editor_name": "blend",
+        "is_scale_to_viewport": true,
+        "is_show_control": false,
+        "is_show_cursor": false
+    },
+    "texture": {
+        "arg": "/Users/nariakiiwatani/Works/of0.11.0/apps/Maaaaap/WarpingEditor/bin/data/testdata/of.png",
+        "size_cache": [
+            338,
+            338
+        ],
+        "type": "File"
+    },
+    "viewport": {
+        "blend": {
+            "pos": [
+                3845.03076171875,
+                3057.008544921875
+            ],
+            "scale": 0.14458584785461426
+        },
+        "result": [
+            0.0,
+            44.0,
+            800.0,
+            150.0
+        ],
+        "uv": {
+            "pos": [
+                755.572998046875,
+                427.4593200683594
+            ],
+            "scale": 0.9930920600891113
+        },
+        "warp": {
+            "pos": [
+                2526.423095703125,
+                1568.1605224609375
+            ],
+            "scale": 0.26425421237945557
+        }
+    }
+}
