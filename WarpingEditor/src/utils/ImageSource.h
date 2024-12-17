@@ -47,7 +47,7 @@ public:
 				return {ofxNDI::Source(), false};
 			}
 			auto found = find_if(begin(sources), end(sources), [name_or_url](const ofxNDI::Source &s) {
-				return ofIsStringInString(s.ndi_name, name_or_url) || ofIsStringInString(s.url_address, name_or_url);
+				return ofIsStringInString(s.p_ndi_name, name_or_url) || ofIsStringInString(s.p_url_address, name_or_url);
 			});
 			if(found == end(sources)) {
 				ofLogWarning("ofxNDI") << "no NDI source found by string:" << name_or_url;
