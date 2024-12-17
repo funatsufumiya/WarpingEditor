@@ -1,6 +1,7 @@
 #include "ImageSource.h"
 #include "ofImage.h"
 #include "ofFileUtils.h"
+#include "ofUtils.h"
 #include "ofVideoPlayer.h"
 
 namespace {

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ofGLBaseTypes.h"
+#include "ofUtils.h"
+#include "ofLog.h"
 #include "ofxNDIFinder.h"
 #include "ofxNDIVideoGrabber.h"
 

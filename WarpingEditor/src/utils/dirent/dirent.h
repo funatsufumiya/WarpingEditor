@@ -1,3 +1,9 @@
+#ifndef _WIN32
+#ifndef DIRENT_H
+#include "dirent_mac.h"
+#endif
+#else
+
 /*
  * Dirent interface for Microsoft Visual Studio
  *
@@ -1158,3 +1164,4 @@ dirent_set_errno(
 }
 #endif
 #endif /*DIRENT_H*/
+#endif // _WIN32
